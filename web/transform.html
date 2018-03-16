@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transform</title>
+    <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
+    <link rel="stylesheet" href="static/citemed.css" type="text/css">
+    <style>
+
+        html {
+            overflow: hidden;
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            position: absolute;
+            bottom: 0;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 100%;
+            overflow: auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            border: 0 solid #000;
+            font-size: 12px;
+            font-family: "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Courier, monospace;
+            background-color: #ffffff;
+            color: #111;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="columns" id="vue">
+        <div class="column col-6">
+            <editor editor-id="query" :content="input" v-on:change-content="updateInput"></editor>
+        </div>
+        <div class="column col-6">
+            <textarea title="output" disabled id="transformation" :value="output" v-model="output"></textarea>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="static/vue.js"></script>
+<script type="text/javascript" src="static/ace.js"></script>
+<script type="text/javascript" src="static/worker-json.js"></script>
+<script type="text/javascript" src="static/mode-json.js"></script>
+<script type="text/javascript" src="static/lodash.min.js"></script>
+<script type="text/javascript">
+    Vue.component('Editor', {
+        template: '<div :id="editorId" style="width: 100%; height: 100%;"></div>',
+        props   : ['editorId', 'content', 'lang', 'theme'],
+        data    : function () {
+            return {
+                editor       : Object,
+                beforeContent: ''
+            }
+        },
+        watch   : {
+            'content': function (value) {
+                if (this.beforeContent !== value) {
+                    this.editor.setValue(value, 1)
+                }
+            }
+        },
+        mounted : function () {
+            this.editor = window.ace.edit(this.editorId);
+            this.editor.setValue(this.content, 1);
+            this.editor.session.setMode("ace/mode/json");
+
+            var self = this;
+            this.editor.on('change', function () {
+                self.beforeContent = self.editor.getValue();
+                self.$emit('change-content', self.editor.getValue());
+            });
+
+
+        }
+    });
+
+    var trans = document.getElementById("transformation");
+    var vm = new Vue({
+        el     : "#vue",
+        data   : {
+            input : "{{ .Query }}",
+            output: ""
+        },
+        methods: {
+            transform  : _.debounce(function () {
+                var request = new XMLHttpRequest();
+                var self = this;
+                request.addEventListener("load", function (ev) {
+                    if (ev.currentTarget.status === 200) {
+                        self.output = ev.currentTarget.responseText
+                    }
+                });
+                request.open("POST", "http://localhost:8080/api/transform");
+                console.log(this.input);
+                request.setRequestHeader("Content-Type", "text/plain");
+                request.send(this.input);
+            }, 300),
+            updateInput: function (val) {
+                var self = this;
+                // _.debounce(function (e) {
+                console.log(val);
+                self.input = val;
+                self.$nextTick(function () {
+                    self.transform()
+                });
+                // }, 500)()
+            }
+        }
+    })
+    vm.transform()
+</script>
+</body>
+</html>

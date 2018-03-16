@@ -1,0 +1,40 @@
+<html>
+<head>
+    <title>CiteMed</title>
+    <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
+    <link rel="stylesheet" href="static/citemed.css" type="text/css">
+</head>
+<body>
+<div class="container">
+    <div class="columns pt-2">
+        <div class="column col-2">
+            <ul class="nav fixed">
+                <li><h1>CiteMed</h1></li>
+            </ul>
+        </div>
+        <div class="column col-9">
+            <form action="/query" method="post" accept-charset="UTF-8">
+                <div class="form-group">
+                    <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here."
+                              rows="20" required></textarea>
+                    <small><em>Queries use a language similar to that of MEDLINE.</em></small>
+                </div>
+                <div class="form-group">
+                    <input class="btn btn-primary" type="submit"/>
+                </div>
+                <div>
+                {{ if .  }}
+                    <h2>Previous Queries</h2>
+                {{ range . }}
+                    <pre class="code">{{ . }}</pre>
+                {{ end }}
+                    <a href="/clear" class="btn btn-link">Clear</a>
+                {{ end }}
+                </div>
+            </form>
+        </div>
+        <div class="column col-2"></div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+.code {
+    font-size: 12px;
+    background-color: #EFEFEF;
+    border-radius: 3px;
+    padding: 12px;
+    overflow-x: scroll;
+}
+
+.column, .columns {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+}
+
+.container {
+    padding: 0;
+    height: 100%;
+}
+
+html {
+    overflow: hidden;
+    height: 100%;
+}
+
+body {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    color: #333;
+    background: url("back.png") repeat fixed;
+    margin: 0;
+    position: absolute;
+    height: 100%;
+    bottom: 0;
+    top: 0;
+    right: 0;
+    left: 0;
+}
+
+h3 {
+    font-size: 1rem;
+}
+
+p, li {
+    text-align: justify;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+textarea {
+    font-family: "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Courier, monospace;
+    font-size: 12px !important;
+}
