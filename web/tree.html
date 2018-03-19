@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml" xmlns:v-bind="http://www.w3.org/1999/xhtml"
+>
 <head>
     <meta charset="UTF-8">
     <title>CiteMed - Tree Editor</title>
@@ -24,28 +25,242 @@
             margin: 0;
         }
 
+        .nav-height {
+            height: 4vh;
+        }
+
+        .navbar {
+            padding-left: 8px;
+        }
+
+        .container {
+            height: 93vh;
+        }
+
+        .tab-block {
+            margin: 0;
+            height: 3vh;
+        }
+
+        .tab-item {
+            font-size: 14px;
+            border: 1px solid #eee;
+        }
+
+        .tab-item a {
+            padding: 0 !important;
+        }
+
+        .panel-header, .panel-body, .panel-footer {
+            padding: 0 !important;
+        }
+
+        .panel {
+            padding-left: 12px !important;
+        }
 
     </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="app">
+    <header class="navbar bg-secondary nav-height">
+        <section class="navbar-section">
+            <a href="/" class="navbar-brand mr-2">CiteMed</a>
+        </section>
+        <section class="navbar-section">
+            <button class="btn btn-link btn-sm text-error nav-height" v-on:click="updateTree">
+                <i class="icon icon-refresh"></i> Update Tree
+            </button>
+        </section>
+    </header>
     <div class="columns">
         <div class="column col-4">
-            <div class="form-group">
+            <ul class="tab tab-block bg-gray">
+                <li class="tab-item addon-sm" v-bind:class="{active: tabEditor===0}" v-on:click="tabEditor=0">
+                    <a href="#">Text Editor</a>
+                </li>
+                <li class="tab-item addon-sm" v-bind:class="{active: tabEditor===1}" v-on:click="tabEditor=1">
+                    <a href="#">Interactive Editor</a>
+                </li>
+            </ul>
+            <div v-if="tabEditor===0">
+                <div class="form-group">
                     <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here."
-                              rows="20" required></textarea>
-                <button class="btn btn-primary form-input" type="button" id="submit">Visualise</button>
-                <button class="btn btn-text form-input" type="button" id="edit">Edit</button>
-                <button class="btn btn-text form-input" type="button" id="explore">Explore</button>
+                              rows="20" required v-model="textQuery" v-on:change="updateText"></textarea>
+                </div>
+            </div>
+            <div v-if="tabEditor===1" style="overflow-y: scroll; height: 100%">
+                <ied v-bind:query="cqrQuery" v-model="cqrQuery"></ied>
             </div>
         </div>
         <div class="column col-8">
+            <ul class="tab tab-block bg-gray">
+                <li class="tab-item active">
+                    <a href="#">Tree View</a>
+                </li>
+            </ul>
             <div id="tree-wrapper">
                 <div id="tree" class="c-move"></div>
             </div>
         </div>
     </div>
 </div>
+
+<script type="text/x-template" id="bool-query">
+    <div class="panel mb-1">
+        <div class="panel-header">
+            <span class="text-uppercase text-bold">[[query.operator]]</span>
+        </div>
+        <div class="panel-body">
+            <draggable v-model="query.children" :options="{group: 'children'}" style="min-height: 16px"
+                       @change="updateText">
+                <ied v-bind:query="child" v-for="child in query.children" class="c-move"></ied>
+            </draggable>
+        </div>
+        <div class="panel-footer">
+            <button class="btn btn-link btn-sm" v-on:click="addKeyword">
+                <i class="icon icon-plus"></i> Keyword
+            </button>
+            <button class="btn btn-link btn-sm" v-on:click="addBool">
+                <i class="icon icon-plus"></i> Child
+            </button>
+        </div>
+    </div>
+</script>
+<script type="text/x-template" id="keyword-query">
+    <div class="tile tile-centered rounded m-1 pl-1 pt-1 bg-secondary ">
+        <div class="tile-content">
+            <div class="tile-title">
+                <!--suppress HtmlUnknownAttribute -->
+                <input title="Query string" class="form-input input-sm" type="text" v-model="query.query"
+                       ref="query" v-on:change="updateText">
+            </div>
+            <div class="tile-subtitle text-gray">[[query.fields]]</div>
+        </div>
+        <div class="tile-action">
+            <button class="btn btn-link btn-sm">
+                <i class="icon icon-cross"></i>
+            </button>
+        </div>
+    </div>
+</script>
+<script type="text/x-template" id="ied">
+    <div v-if="query.operator">
+        <bool-query v-bind:query="query"></bool-query>
+    </div>
+    <div v-else-if="query.fields">
+        <keyword-query v-bind:query="query"></keyword-query>
+    </div>
+    <div v-else>
+        <div class="empty">
+            <div class="empty-icon">
+                <i class="icon icon-flag"></i>
+            </div>
+            <p class="empty-title h5">Error</p>
+            <p class="empty-subtitle">There is an error with the query. Use the text editor to resolve.</p>
+        </div>
+    </div>
+</script>
+<script src="static/vue.js" type="text/javascript"></script>
+<script src="static/Sortable.min.js"></script>
+<script src="static/vuedraggable.min.js"></script>
+<script type="text/javascript" src="static/lodash.min.js"></script>
+<!--suppress JSUnusedGlobalSymbols -->
+<script>
+    var updateText = function () {
+        var data = JSON.stringify(vm.$data.cqrQuery);
+        var request = new XMLHttpRequest();
+        request.addEventListener("load", function (ev) {
+            if (ev.currentTarget.status === 200) {
+                vm.$data.textQuery = ev.currentTarget.responseText
+            }
+        });
+        request.open("POST", "http://localhost:8080/api/transform");
+        request.setRequestHeader("Content-Type", "text/plain");
+        request.send(data);
+    };
+
+    Vue.component("ied", {
+        delimiters: ["[[", "]]"],
+        template  : "#ied",
+        props     : ["query"],
+        methods   : {
+            updateText: updateText
+        }
+    });
+
+    Vue.component("bool-query", {
+        delimiters: ["[[", "]]"],
+        template  : "#bool-query",
+        props     : ["query"],
+        methods   : {
+            updateText: updateText,
+            addBool   : function () {
+                this.query.children.push({
+                    operator: "or",
+                    children: [],
+                    options : {}
+                })
+            },
+            addKeyword: function () {
+                this.query.children.push({
+                    query  : "",
+                    fields : [],
+                    options: {}
+                })
+            }
+        }
+    });
+
+    Vue.component("keyword-query", {
+        delimiters: ["[[", "]]"],
+        template  : "#keyword-query",
+        props     : ["query"],
+        methods   : {
+            updateText: updateText
+        },
+        mounted   : function () {
+            this.$refs.query.focus();
+        }
+    });
+
+    var vm = new Vue({
+        delimiters: ["[[", "]]"],
+        el        : "#app",
+        data      : {
+            tabEditor: 0,
+            visEditor: 0,
+            textQuery: "",
+            cqrQuery : {}
+        },
+        methods   : {
+            updateTree: function (ev) {
+                var el = ev.srcElement;
+                el.classList.add("loading");
+                var request = new XMLHttpRequest();
+                request.addEventListener("load", function (ev) {
+                    network.setData(JSON.parse(ev.target.responseText));
+                    el.classList.remove("loading");
+                });
+                request.open("POST", "http://localhost:8080/api/tree", true);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                request.send("query=" + this.textQuery);
+            },
+            updateText: _.debounce(function () {
+                var self = this;
+                var request = new XMLHttpRequest();
+                request.addEventListener("load", function (ev) {
+                    if (ev.currentTarget.status === 200) {
+                        self.cqrQuery = JSON.parse(ev.currentTarget.responseText)
+                    }
+                });
+                request.open("POST", "http://localhost:8080/api/medline2cqr");
+                request.setRequestHeader("Content-Type", "text/plain");
+                request.send(self.textQuery);
+            }, 300)
+        }
+    })
+</script>
 
 <script src="static/vis.min.js" type="text/javascript"></script>
 <script type="text/javascript">
@@ -67,7 +282,7 @@
         physics: {
             enabled              : true,
             hierarchicalRepulsion: {
-                nodeDistance: 200
+                nodeDistance: 300
             }
         },
         edges  : {
@@ -105,64 +320,14 @@
                 blockShifting       : false,
                 edgeMinimization    : false,
                 parentCentralization: false,
-                nodeSpacing         : 600
+                nodeSpacing         : 150,
+                levelSeparation     : 300
             }
         }
     };
 
     // initialize your network!
     var network = new vis.Network(container, data, options);
-</script>
-<script>
-    var submitEl = document.getElementById("submit");
-    var searchEl = document.getElementById("search-box");
-
-    submitEl.addEventListener("click", function () {
-        submitEl.classList.add("loading");
-        submitEl.disabled = true;
-        searchEl.disabled = true;
-        var request = new XMLHttpRequest();
-        request.addEventListener("load", function (ev) {
-            network.setData(JSON.parse(ev.target.responseText));
-            submitEl.classList.remove("loading");
-            submitEl.disabled = false;
-            searchEl.disabled = false;
-        });
-        request.open("POST", "http://localhost:8080/api/tree", true);
-        request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        request.send("query=" + searchEl.value);
-    })
-</script>
-<script>
-    var editEl = document.getElementById("edit");
-    var exploreEl = document.getElementById("explore");
-
-    editEl.addEventListener("click", function () {
-        openWindowWithPost("/transform", searchEl.value)
-    });
-
-    exploreEl.addEventListener("click", function () {
-        openWindowWithPost("/query", searchEl.value)
-    });
-
-    function openWindowWithPost(url, data) {
-        var form = document.createElement("form");
-        form.target = "_blank";
-        form.method = "POST";
-        form.action = url;
-        form.style.display = "none";
-
-        var input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "query";
-        input.value = data;
-        form.appendChild(input);
-
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-    }
-
 </script>
 </body>
 </html>

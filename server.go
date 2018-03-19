@@ -109,6 +109,10 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 			}
 			combDocs[i] = combinator.Document(id)
 		}
+		switch q := query.(type) {
+		case cqr.Keyword:
+			seen[combinator.HashCQR(query)] = combinator.NewAtom(q, combDocs)
+		}
 		docs = len(d)
 	}
 	switch q := query.(type) {
@@ -136,8 +140,10 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 
 func buildTreeRec(node combinator.LogicalTreeNode, id, parent, level int, ss *stats.ElasticsearchStatisticsSource) (nid int, t Tree) {
 	if node == nil {
+		fmt.Println("top", node, id, parent, level)
 		return
 	}
+	fmt.Println("good", node, id, parent, level)
 	docs := node.Documents()
 	switch n := node.(type) {
 	case combinator.Combinator:
@@ -148,6 +154,10 @@ func buildTreeRec(node combinator.LogicalTreeNode, id, parent, level int, ss *st
 		this := id
 		id++
 		for _, child := range n.Clauses {
+			if child == nil {
+				fmt.Println("child", node, child, id, parent, level)
+				continue
+			}
 			var nt Tree
 			id, nt = buildTreeRec(child, id, this, level+1, ss)
 			t.Nodes = append(t.Nodes, nt.Nodes...)
@@ -188,7 +198,7 @@ func apiTree(c *gin.Context) {
 		stats.ElasticsearchDocumentType("doc"),
 		stats.ElasticsearchHosts("http://sef-is-017660:8200"),
 		stats.ElasticsearchField("text"),
-		stats.ElasticsearchSearchOptions(stats.SearchOptions{Size: 10000, RunName: "citemed"}),
+		stats.ElasticsearchSearchOptions(stats.SearchOptions{Size: 3000, RunName: "citemed"}),
 	)
 	repr, err := cq.Representation()
 	if err != nil {
@@ -364,6 +374,32 @@ func apiTransform(c *gin.Context) {
 		return
 	}
 
+	c.Data(200, "text/plain", []byte(s))
+}
+
+func apiTransformMedline2CQR(c *gin.Context) {
+	b, err := c.GetRawData()
+	if err != nil {
+		c.AbortWithError(500, err)
+		return
+	}
+
+	log.Println(string(b))
+
+	q, err := cqrPipeline.Execute(string(b))
+	if err != nil {
+		c.AbortWithError(500, err)
+		return
+	}
+
+	fmt.Println(q)
+
+	s, err := q.StringPretty()
+	if err != nil {
+		c.AbortWithError(500, err)
+		return
+	}
+
 	c.Data(200, "application/json", []byte(s))
 }
 
@@ -394,6 +430,8 @@ func main() {
 	router.GET("/transform", handleTransform)
 	router.POST("/transform", handleTransform)
 	router.POST("/api/transform", apiTransform)
+	router.POST("/api/cqr2medline", apiTransform)
+	router.POST("/api/medline2cqr", apiTransformMedline2CQR)
 
 	// Visualisation interface.
 	router.GET("/tree", handleTree)
