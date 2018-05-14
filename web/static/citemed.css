@@ -9,29 +9,14 @@
 .column, .columns {
     padding: 0;
     margin: 0;
-    height: 100%;
 }
 
 .container {
     padding: 0;
 }
 
-html {
-    overflow: hidden;
-    height: 100%;
-}
-
 body {
-    /*font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;*/
     color: #333;
-    /*background: url("back.png") repeat fixed;*/
-    margin: 0;
-    position: absolute;
-    height: 100%;
-    bottom: 0;
-    top: 0;
-    right: 0;
-    left: 0;
 }
 
 h3 {
