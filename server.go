@@ -85,15 +85,29 @@ var (
 			RequiresLexing: false,
 		})
 	previousQueries []string
-	seen            = make(map[uint64]combinator.LogicalTreeNode)
+	//flatTransform  = func(s string) []string { return []string{} }
+	blockTransform = func(blockSize int) func(string) []string {
+		return func(s string) []string {
+			var (
+				sliceSize = len(s) / blockSize
+				pathSlice = make([]string, sliceSize)
+			)
+			for i := 0; i < sliceSize; i++ {
+				from, to := i*blockSize, (i*blockSize)+blockSize
+				pathSlice[i] = s[from:to]
+			}
+			return pathSlice
+		}
+	}
+	seen = combinator.NewFileQueryCache("file_cache")
 )
 
 func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss *stats.ElasticsearchStatisticsSource) (nid int, t Tree) {
 	var docs int
-	if d, ok := seen[combinator.HashCQR(query)]; ok {
-		docs = len(d.Documents())
+	if documents, err := seen.Get(query); err == nil {
+		docs = len(documents)
 	} else {
-		d, err := ss.Execute(groove.NewPipelineQuery("adj", 1, query), ss.SearchOptions())
+		d, err := ss.Execute(groove.NewPipelineQuery("adj", "0", query), ss.SearchOptions())
 		if err != nil {
 			log.Println("something bad happened")
 			log.Fatalln(err)
@@ -111,7 +125,11 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 		}
 		switch q := query.(type) {
 		case cqr.Keyword:
-			seen[combinator.HashCQR(query)] = combinator.NewAtom(q, combDocs)
+			//seen[combinator.HashCQR(query)] = combinator.NewAtom(q, combDocs)
+			err := seen.Set(query, combinator.NewAtom(q).Documents(seen))
+			if err != nil {
+				panic(err)
+			}
 		}
 		docs = len(d)
 	}
@@ -140,11 +158,11 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 
 func buildTreeRec(node combinator.LogicalTreeNode, id, parent, level int, ss *stats.ElasticsearchStatisticsSource) (nid int, t Tree) {
 	if node == nil {
-		fmt.Println("top", node, id, parent, level)
+		log.Println("top", node, id, parent, level)
 		return
 	}
-	fmt.Println("good", node, id, parent, level)
-	docs := node.Documents()
+	log.Println("good", node, id, parent, level)
+	docs := node.Documents(seen)
 	switch n := node.(type) {
 	case combinator.Combinator:
 		t.Nodes = append(t.Nodes, Node{id, len(docs), level, n.String(), "circle"})
@@ -198,7 +216,7 @@ func apiTree(c *gin.Context) {
 		stats.ElasticsearchDocumentType("doc"),
 		stats.ElasticsearchHosts("http://sef-is-017660:8200"),
 		stats.ElasticsearchField("text"),
-		stats.ElasticsearchSearchOptions(stats.SearchOptions{Size: 3000, RunName: "citemed"}),
+		stats.ElasticsearchSearchOptions(stats.SearchOptions{Size: 800, RunName: "citemed"}),
 	)
 	repr, err := cq.Representation()
 	if err != nil {
@@ -209,7 +227,7 @@ func apiTree(c *gin.Context) {
 	analysed := preprocess.SetAnalyseField(repr.(cqr.CommonQueryRepresentation), ss)()
 
 	var root combinator.LogicalTree
-	root, seen, err = combinator.NewLogicalTree(groove.NewPipelineQuery("citemed", 0, analysed.(cqr.CommonQueryRepresentation)), ss, seen)
+	root, _, err = combinator.NewLogicalTree(groove.NewPipelineQuery("citemed", "0", analysed.(cqr.CommonQueryRepresentation)), ss, seen)
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
@@ -418,7 +436,12 @@ func main() {
 	log.Println("Setting up routes...")
 	router := gin.Default()
 
-	router.LoadHTMLFiles("web/query.html", "web/index.html", "web/transform.html", "web/tree.html")
+	router.LoadHTMLFiles(
+		// Views.
+		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
+		// Components.
+		"components/sidebar.tmpl.html", "components/util.tmpl.html",
+	)
 	router.Static("/static/", "./web/static")
 
 	// Main query interface.
@@ -438,5 +461,5 @@ func main() {
 	router.POST("/api/tree", apiTree)
 
 	log.Println("let's go!")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":9999", router))
 }

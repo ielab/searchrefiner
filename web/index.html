@@ -1,40 +1,100 @@
+<!--suppress HtmlUnknownTarget -->
 <html>
 <head>
     <title>CiteMed</title>
+    <link rel="icon" href="static/favicon.png" type="image/x-png">
     <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="static/citemed.css" type="text/css">
+    <style>
+        body {
+            padding: 32px;
+            background: url("static/citemed.png") no-repeat bottom right;
+            background-size: 50%;
+        }
+
+        .container, .column, .columns {
+            height: auto;
+        }
+
+    </style>
 </head>
 <body>
 <div class="container">
+    <h1>CiteMed</h1>
     <div class="columns pt-2">
-        <div class="column col-2">
-            <ul class="nav fixed">
-                <li><h1>CiteMed</h1></li>
-            </ul>
-        </div>
-        <div class="column col-9">
+        <div class="column col-8">
+            <h2>Search</h2>
             <form action="/query" method="post" accept-charset="UTF-8">
                 <div class="form-group">
                     <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here."
-                              rows="20" required></textarea>
-                    <small><em>Queries use a language similar to that of MEDLINE.</em></small>
+                              rows="16" required></textarea>
+
+                </div>
+                <div class="form-group">
+                    <label>Query Language
+                        <select class="form-select">
+                            <option>MEDLINE</option>
+                            <option disabled>PubMed</option>
+                            <option disabled>Cochrane Library</option>
+                            <option disabled>EMBASE</option>
+                        </select>
+                    </label>
                 </div>
                 <div class="form-group">
                     <input class="btn btn-primary" type="submit"/>
                 </div>
-                <div>
-                {{ if .  }}
-                    <h2>Previous Queries</h2>
-                {{ range . }}
-                    <pre class="code">{{ . }}</pre>
-                {{ end }}
-                    <a href="/clear" class="btn btn-link">Clear</a>
-                {{ end }}
-                </div>
             </form>
+
+            <div>
+            {{ if .  }}
+                <h3>Previous Queries</h3>
+            {{ range . }}
+                <form action="/query" method="post" accept-charset="UTF-8">
+                    <input type="hidden" name="query" value="{{ . }}">
+                    <div class="code">
+                        <pre>{{ . }}</pre>
+                        <div class="form-group">
+                            <input class="btn btn-primary" type="submit"/>
+                        </div>
+                    </div>
+                </form>
+            {{ end }}
+                <a href="/clear" class="btn btn-link">Clear</a>
+            {{ end }}
+            </div>
         </div>
-        <div class="column col-2"></div>
+        <div class="column col-4">
+            <h2 class="ml-2">Apps</h2>
+            <div class="card ml-2">
+                <div class="card-header">
+                    <div class="card-title h5">QueryVis</div>
+                </div>
+                <div class="card-body">
+                    Visualise queries as a syntax tree overlaid with retrieval statistics and other understandability
+                    visualisations.
+                </div>
+                <div class="card-footer">
+                    <a href="/tree" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
+                </div>
+            </div>
+            <div class="card ml-2 mt-2">
+                <div class="card-header">
+                    <div class="card-title h5">Transform</div>
+                </div>
+                <div class="card-body">
+                    Write queries in real-time and see how they are represented in other query languages.
+                </div>
+                <div class="card-footer">
+                    <a href="/transform" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+<footer>
+    <small>Version {{template "version"}}</small>
+</footer>
 </body>
 </html>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml" xmlns:v-bind="http://www.w3.org/1999/xhtml"
->
+<html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml" xmlns:v-bind="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
-    <title>CiteMed - Tree Editor</title>
+    <title>CiteMed - QueryVis</title>
+    <link rel="icon" href="static/favicon.png" type="image/x-png">
     <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
     <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
     <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
@@ -77,14 +77,12 @@
 <body>
 <div class="container" id="app">
     <header class="navbar bg-secondary nav-height">
-        <section class="navbar-section">
-            <a href="/" class="navbar-brand mr-2">CiteMed</a>
-        </section>
+    {{template "sidebar"}}
         <section class="navbar-section">
             <button class="btn btn-link btn-sm text-error nav-height" v-on:click="updateTree">
                 <i class="icon icon-refresh"></i> Update Tree
             </button>
-            <button class="btn btn-link btn-sm text-error nav-height" >
+            <button class="btn btn-link btn-sm text-error nav-height">
                 <i class="icon icon-refresh"></i> Update Overlap
             </button>
         </section>
@@ -213,7 +211,7 @@
                 vm.$data.textQuery = ev.currentTarget.responseText
             }
         });
-        request.open("POST", "http://localhost:8080/api/transform");
+        request.open("POST", "/api/transform");
         request.setRequestHeader("Content-Type", "text/plain");
         request.send(data);
     };
@@ -223,39 +221,39 @@
 
     Vue.component("ied", {
         delimiters: ["[[", "]]"],
-        template  : "#ied",
-        props     : ["query"],
-        data      : function () {
+        template: "#ied",
+        props: ["query"],
+        data: function () {
             return {
                 id: structuredID++
             }
         },
-        methods   : {
+        methods: {
             updateText: updateText
         }
     });
     Vue.component("bool-query", {
         delimiters: ["[[", "]]"],
-        template  : "#bool-query",
-        props     : ["query"],
-        data      : function () {
+        template: "#bool-query",
+        props: ["query"],
+        data: function () {
             return {
                 id: structuredID++
             }
         },
-        methods   : {
+        methods: {
             updateText: updateText,
-            addBool   : function () {
+            addBool: function () {
                 this.query.children.push({
                     operator: "or",
                     children: [],
-                    options : {}
+                    options: {}
                 })
             },
             addKeyword: function () {
                 this.query.children.push({
-                    query  : "",
-                    fields : [],
+                    query: "",
+                    fields: [],
                     options: {}
                 })
             }
@@ -263,21 +261,21 @@
     });
     Vue.component("keyword-query", {
         delimiters: ["[[", "]]"],
-        template  : "#keyword-query",
-        props     : ["query"],
-        data      : function () {
+        template: "#keyword-query",
+        props: ["query"],
+        data: function () {
             return {
-                id      : structuredID++,
+                id: structuredID++,
                 selected: false
             }
         },
-        methods   : {
+        methods: {
             updateText: updateText
         },
-        mounted   : function () {
+        mounted: function () {
             this.$refs.query.focus();
         },
-        watch     : {
+        watch: {
             selected: function (val) {
                 if (val) {
                     vennSelected[this.id] = JSON.stringify(this.query)
@@ -289,13 +287,13 @@
     });
     Vue.component("venn-diagram", {
         template: "#venn-diagram",
-        props   : ["sets"],
-        data    : function () {
+        props: ["sets"],
+        data: function () {
             return {
                 chart: venn.VennDiagram()
             }
         },
-        mounted : function () {
+        mounted: function () {
             // console.log(this.sets)
             var div = d3.select(this.$el);
             div.datum(this.sets).call(this.chart);
@@ -335,11 +333,11 @@
 
     var vm = new Vue({
         delimiters: ["[[", "]]"],
-        el        : "#app",
-        data      : {
-            tabEditor   : 1,
+        el: "#app",
+        data: {
+            tabEditor: 1,
             tabVisualise: 0,
-            textQuery   : "1 Lymphoma/\n" +
+            textQuery: "1 Lymphoma/\n" +
             "2 exp Hodgkin Disease/\n" +
             "3 Germinoblastom$.tw,kf,ot.\n" +
             "4 Reticulolymphosarcom$.tw,kf,ot.\n" +
@@ -367,232 +365,232 @@
             "26 humans.sh.\n" +
             "27 25 and 26\n" +
             "28 17 and 27",
-            cqrQuery    : {
+            cqrQuery: {
                 "operator": "and",
                 "children": [{
                     "operator": "and",
                     "children": [{
                         "operator": "or",
                         "children": [{
-                            "query"  : "randomized controlled trial",
-                            "fields" : ["publication_types"],
+                            "query": "randomized controlled trial",
+                            "fields": ["publication_types"],
                             "options": {"exploded": false, "truncated": false}
                         }, {
-                            "query"  : "controlled clinical trial",
-                            "fields" : ["publication_types"],
+                            "query": "controlled clinical trial",
+                            "fields": ["publication_types"],
                             "options": {"exploded": false, "truncated": false}
                         }, {
-                            "query"  : "randomi?ed",
-                            "fields" : ["text"],
+                            "query": "randomi?ed",
+                            "fields": ["text"],
                             "options": {"exploded": false, "truncated": true}
                         }, {
-                            "query"  : "placebo",
-                            "fields" : ["text"],
+                            "query": "placebo",
+                            "fields": ["text"],
                             "options": {"exploded": false, "truncated": false}
                         }, {
-                            "query"  : "clinical trials as topic",
-                            "fields" : ["mesh_headings"],
+                            "query": "clinical trials as topic",
+                            "fields": ["mesh_headings"],
                             "options": {"exploded": false, "truncated": false}
                         }, {
-                            "query"  : "randomly",
-                            "fields" : ["text"],
+                            "query": "randomly",
+                            "fields": ["text"],
                             "options": {"exploded": false, "truncated": false}
                         }, {"query": "trial", "fields": ["title"], "options": {"exploded": false, "truncated": false}}],
-                        "options" : {}
+                        "options": {}
                     }, {
-                        "query"  : "humans",
-                        "fields" : ["mesh_headings"],
+                        "query": "humans",
+                        "fields": ["mesh_headings"],
                         "options": {"exploded": false, "truncated": false}
                     }],
-                    "options" : {}
+                    "options": {}
                 }, {
                     "operator": "and",
                     "children": [{
                         "operator": "or",
                         "children": [{
-                            "query"  : "Lymphoma",
-                            "fields" : ["mesh_headings"],
+                            "query": "Lymphoma",
+                            "fields": ["mesh_headings"],
                             "options": {"exploded": false, "truncated": false}
                         }, {
-                            "query"  : "Hodgkin Disease",
-                            "fields" : ["mesh_headings"],
+                            "query": "Hodgkin Disease",
+                            "fields": ["mesh_headings"],
                             "options": {"exploded": true, "truncated": false}
                         }, {
-                            "query"  : "Germinoblastom~",
-                            "fields" : ["title", "text", "mesh_headings", "title"],
+                            "query": "Germinoblastom~",
+                            "fields": ["title", "text", "mesh_headings", "title"],
                             "options": {"exploded": false, "truncated": true}
                         }, {
-                            "query"  : "Reticulolymphosarcom~",
-                            "fields" : ["title", "text", "mesh_headings", "title"],
+                            "query": "Reticulolymphosarcom~",
+                            "fields": ["title", "text", "mesh_headings", "title"],
                             "options": {"exploded": false, "truncated": true}
                         }, {
-                            "query"  : "Hodgkin~",
-                            "fields" : ["title", "text", "mesh_headings", "title"],
+                            "query": "Hodgkin~",
+                            "fields": ["title", "text", "mesh_headings", "title"],
                             "options": {"exploded": false, "truncated": true}
                         }, {
                             "operator": "adj2",
                             "children": [{
-                                "query"  : "malignan~",
-                                "fields" : ["title", "text"],
+                                "query": "malignan~",
+                                "fields": ["title", "text"],
                                 "options": {"exploded": false, "truncated": true}
                             }, {
                                 "operator": "or",
                                 "children": [{
-                                    "query"  : "lymphogranulom~",
-                                    "fields" : ["title", "text"],
+                                    "query": "lymphogranulom~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "granulom~",
-                                    "fields" : ["title", "text"],
+                                    "query": "granulom~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }],
-                                "options" : {}
+                                "options": {}
                             }],
-                            "options" : {}
+                            "options": {}
                         }],
-                        "options" : {}
+                        "options": {}
                     }, {
                         "operator": "or",
                         "children": [{
-                            "query"  : "Positron-Emission Tomography",
-                            "fields" : ["mesh_headings"],
+                            "query": "Positron-Emission Tomography",
+                            "fields": ["mesh_headings"],
                             "options": {"exploded": true, "truncated": false}
                         }, {
-                            "query"  : "Tomography, Emission-Computed",
-                            "fields" : ["mesh_headings"],
+                            "query": "Tomography, Emission-Computed",
+                            "fields": ["mesh_headings"],
                             "options": {"exploded": true, "truncated": false}
                         }, {
                             "operator": "or",
                             "children": [{
-                                "query"  : "pet~",
-                                "fields" : ["title", "text"],
+                                "query": "pet~",
+                                "fields": ["title", "text"],
                                 "options": {"exploded": false, "truncated": true}
                             }, {
-                                "query"  : "petscan~",
-                                "fields" : ["title", "text"],
+                                "query": "petscan~",
+                                "fields": ["title", "text"],
                                 "options": {"exploded": false, "truncated": true}
                             }, {
                                 "operator": "and",
                                 "children": [{
-                                    "query"  : "Positron~",
-                                    "fields" : ["title", "text"],
+                                    "query": "Positron~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "emission~",
-                                    "fields" : ["title", "text"],
+                                    "query": "emission~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }],
-                                "options" : {}
+                                "options": {}
                             }, {
                                 "operator": "and",
                                 "children": [{
-                                    "query"  : "Positron~",
-                                    "fields" : ["title", "text"],
+                                    "query": "Positron~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "tomography~",
-                                    "fields" : ["title", "text"],
+                                    "query": "tomography~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }],
-                                "options" : {}
+                                "options": {}
                             }],
-                            "options" : {}
+                            "options": {}
                         }, {
                             "operator": "and",
                             "children": [{
-                                "query"  : "pet~",
-                                "fields" : ["title", "text"],
+                                "query": "pet~",
+                                "fields": ["title", "text"],
                                 "options": {"exploded": false, "truncated": true}
                             }, {
                                 "operator": "or",
                                 "children": [{
-                                    "query"  : "deoxy~",
-                                    "fields" : ["title", "text"],
+                                    "query": "deoxy~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "fluor~",
-                                    "fields" : ["title", "text"],
+                                    "query": "fluor~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "18fluor~",
-                                    "fields" : ["title", "text"],
+                                    "query": "18fluor~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "fdg~",
-                                    "fields" : ["title", "text"],
+                                    "query": "fdg~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "18fdg~",
-                                    "fields" : ["title", "text"],
+                                    "query": "18fdg~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "fludeoxy~",
-                                    "fields" : ["title", "text"],
+                                    "query": "fludeoxy~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }],
-                                "options" : {}
+                                "options": {}
                             }],
-                            "options" : {}
+                            "options": {}
                         }, {
                             "operator": "or",
                             "children": [{
-                                "query"  : "pet~",
-                                "fields" : ["title", "text"],
+                                "query": "pet~",
+                                "fields": ["title", "text"],
                                 "options": {"exploded": false, "truncated": true}
                             }, {
-                                "query"  : "petscan~",
-                                "fields" : ["title", "text"],
+                                "query": "petscan~",
+                                "fields": ["title", "text"],
                                 "options": {"exploded": false, "truncated": true}
                             }],
-                            "options" : {}
+                            "options": {}
                         }, {
                             "operator": "and",
                             "children": [{
                                 "operator": "or",
                                 "children": [{
-                                    "query"  : "tomograph~",
-                                    "fields" : ["title", "text"],
+                                    "query": "tomograph~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "tomographs~",
-                                    "fields" : ["title", "text"],
+                                    "query": "tomographs~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "tomographic~",
-                                    "fields" : ["title", "text"],
+                                    "query": "tomographic~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "tomography~",
-                                    "fields" : ["title", "text"],
+                                    "query": "tomography~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }, {
-                                    "query"  : "tomographies~",
-                                    "fields" : ["title", "text"],
+                                    "query": "tomographies~",
+                                    "fields": ["title", "text"],
                                     "options": {"exploded": false, "truncated": true}
                                 }],
-                                "options" : {}
+                                "options": {}
                             }, {
-                                "query"  : "emission~",
-                                "fields" : ["title", "text", "mesh_headings", "title"],
+                                "query": "emission~",
+                                "fields": ["title", "text", "mesh_headings", "title"],
                                 "options": {"exploded": false, "truncated": true}
                             }],
-                            "options" : {}
+                            "options": {}
                         }],
-                        "options" : {}
+                        "options": {}
                     }],
-                    "options" : {}
+                    "options": {}
                 }],
-                "options" : {}
+                "options": {}
             },
             vennSelected: vennSelected,
-            sets        : [{sets: ['petscan$'], size: 5012},
+            sets: [{sets: ['petscan$'], size: 5012},
                 {sets: ['tomographic$'], size: 227669},
                 {sets: ['petscan$', 'tomographic$'], size: 412},
                 {sets: ['Lymphoma/'], size: 151659},
                 {sets: ['Lymphoma/', 'tomographic$'], size: 6524}
             ]
         },
-        methods   : {
+        methods: {
             updateTree: function (ev) {
                 var el = ev.srcElement;
                 el.classList.add("loading");
@@ -601,7 +599,7 @@
                     network.setData(JSON.parse(ev.target.responseText));
                     el.classList.remove("loading");
                 });
-                request.open("POST", "http://localhost:8080/api/tree", true);
+                request.open("POST", "/api/tree", true);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 request.send("query=" + this.textQuery);
             },
@@ -613,12 +611,12 @@
                         self.cqrQuery = JSON.parse(ev.currentTarget.responseText)
                     }
                 });
-                request.open("POST", "http://localhost:8080/api/medline2cqr");
+                request.open("POST", "/api/medline2cqr");
                 request.setRequestHeader("Content-Type", "text/plain");
                 request.send(self.textQuery);
             }, 300)
         },
-        watch     : {
+        watch: {
             vennSelected: function () {
                 console.log(this.vennSelected)
             }
@@ -645,48 +643,48 @@
     };
     var options = {
         physics: {
-            enabled              : true,
+            enabled: true,
             hierarchicalRepulsion: {
                 nodeDistance: 300
             }
         },
-        edges  : {
-            font  : {
+        edges: {
+            font: {
                 align: "top"
             },
             smooth: {
                 enabled: true,
-                type   : "dynamic"
+                type: "dynamic"
             }
         },
-        nodes  : {
-            shape          : "box",
-            color          : "#CED2FF",
-            font           : {
+        nodes: {
+            shape: "box",
+            color: "#CED2FF",
+            font: {
                 color: "#333333"
             },
-            scaling        : {
+            scaling: {
                 customScalingFunction: function (min, max, total, value) {
                     return value / total;
                 },
-                min                  : 10,
-                max                  : 80,
-                label                : {
+                min: 10,
+                max: 80,
+                label: {
                     enabled: true,
-                    min    : 20,
-                    max    : 100
+                    min: 20,
+                    max: 100
                 }
             },
             widthConstraint: true
         },
-        layout : {
+        layout: {
             hierarchical: {
-                enabled             : true,
-                blockShifting       : false,
-                edgeMinimization    : false,
+                enabled: true,
+                blockShifting: false,
+                edgeMinimization: false,
                 parentCentralization: false,
-                nodeSpacing         : 150,
-                levelSeparation     : 300
+                nodeSpacing: 150,
+                levelSeparation: 300
             }
         }
     };
