@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
     <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="static/vis.min.css" type="text/css">
+    <link rel="stylesheet" href="static/logtail.css" type="text/css">
     <link rel="stylesheet" href="static/citemed.css" type="text/css">
     <style>
         body, html, .container {
@@ -61,6 +62,14 @@
             opacity: 0;
         }
 
+        #console {
+            margin: 0;
+            overflow-y: scroll;
+            height: 100%;
+            background-color: #1c1c1c;
+            color: #f9f9f9;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -93,7 +102,6 @@
                 </div>
             </div>
             <div style="clear: both;"></div>
-        {{/*This shit*/}}
             <div v-if="tabEditor===1">
                 <div style="position: absolute; height: calc(100% - 77px); display: flex; flex-direction: column; width:33.33333333%">
                     <div style="display: flex; flex: 1;min-height: 0">
@@ -115,12 +123,41 @@
                 <li class="tab-item" v-bind:class="{active: tabVisualise===1}" v-on:click="tabVisualise=1">
                     <a href="#">Overlap Visualisation</a>
                 </li>
+                <li class="tab-item" v-bind:class="{active: tabVisualise===2}" v-on:click="tabVisualise=2">
+                    <a href="#">Console</a>
+                </li>
             </ul>
             <div id="tree-wrapper" v-show="tabVisualise===0">
                 <div id="tree" class="c-move"></div>
             </div>
             <div id="tree-wrapper" v-show="tabVisualise===1">
                 <venn-diagram v-bind:sets="sets" v-model="sets"></venn-diagram>
+            </div>
+            <div id="tree-wrapper" v-show="tabVisualise===2">
+                <pre id="console">Loading...</pre>
+                <a href="#" id="console-pause" class="btn btn-primary" style="position: absolute;bottom: 32px;right: 32px;">Pause</a>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-id">
+        <a href="#close" class="modal-overlay" aria-label="Close"></a>
+        <div class="modal-container" role="document">
+            <div class="modal-header">
+                <a href="#close" class="btn btn-clear float-right" aria-label="Close"></a>
+                <div class="modal-title h5">QueryVis Settings</div>
+            </div>
+            <div class="modal-body">
+                <div class="content">
+                    <div class="form-group">
+                        <label> Validation PMIDs
+                            <small>(comma separated)</small>
+                            <textarea class="form-input"></textarea>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-link">Close</a>
             </div>
         </div>
     </div>
@@ -467,5 +504,9 @@
     // initialize your network!
     var network = new vis.Network(container, data, options);
 </script>
+
+<!-- Console view. -->
+<script src="static/jquery.min.js" type="text/javascript"></script>
+<script src="static/logtail.js" type="text/javascript"></script>
 </body>
 </html>
