@@ -1,15 +1,49 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"log"
 	"fmt"
-	"github.com/hscells/groove/stats"
-	"github.com/hscells/groove/preprocess"
+	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
-	"github.com/hscells/groove/combinator"
 	"github.com/hscells/groove"
+	"github.com/hscells/groove/combinator"
+	"github.com/hscells/groove/preprocess"
+	"github.com/hscells/groove/stats"
+	"log"
 )
+
+type document struct {
+	ID    string
+	Title string
+	Text  string
+}
+
+type searchResponse struct {
+	TotalHits          int64
+	TookInMillis       int64
+	Documents          []document
+	OriginalQuery      string
+	ElasticsearchQuery string
+}
+
+type node struct {
+	ID    int    `json:"id"`
+	Value int    `json:"value"`
+	Level int    `json:"level"`
+	Label string `json:"label"`
+	Shape string `json:"shape"`
+}
+
+type edge struct {
+	From  int    `json:"from"`
+	To    int    `json:"to"`
+	Value int    `json:"value"`
+	Label string `json:"label"`
+}
+
+type tree struct {
+	Nodes []node `json:"nodes"`
+	Edges []edge `json:"edges"`
+}
 
 func (s server) apiTree(c *gin.Context) {
 	rawQuery := c.PostForm("query")

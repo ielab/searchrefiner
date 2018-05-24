@@ -1,16 +1,16 @@
 package main
 
 import (
-	"encoding/json"
-	"net/http"
-	"github.com/gin-gonic/gin"
-	"fmt"
-	"github.com/hscells/groove/stats"
-	"github.com/hscells/groove/preprocess"
-	"github.com/hscells/cqr"
 	"bytes"
-	"gopkg.in/olivere/elastic.v5"
 	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/hscells/cqr"
+	"github.com/hscells/groove/preprocess"
+	"github.com/hscells/groove/stats"
+	"gopkg.in/olivere/elastic.v5"
+	"net/http"
 )
 
 func handleTree(c *gin.Context) {
@@ -87,12 +87,12 @@ func handleQuery(c *gin.Context) {
 		c.AbortWithError(500, err)
 		return
 	}
-	sr := SearchResponse{
+	sr := searchResponse{
 		TotalHits:          resp.Hits.TotalHits,
 		TookInMillis:       resp.TookInMillis,
 		OriginalQuery:      rawQuery,
 		ElasticsearchQuery: sp,
-		Documents:          make([]Document, len(resp.Hits.Hits)),
+		Documents:          make([]document, len(resp.Hits.Hits)),
 	}
 
 	for i, hit := range resp.Hits.Hits {
@@ -103,7 +103,7 @@ func handleQuery(c *gin.Context) {
 			return
 		}
 
-		sr.Documents[i] = Document{
+		sr.Documents[i] = document{
 			Id:    hit.Id,
 			Title: doc["title"].(string),
 			Text:  doc["text"].(string),

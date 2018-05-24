@@ -1,58 +1,24 @@
 package main
 
 import (
-	"gopkg.in/olivere/elastic.v5"
-	"log"
+	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/http"
+	"github.com/hscells/groove/combinator"
 	"github.com/hscells/transmute/backend"
 	"github.com/hscells/transmute/lexer"
 	"github.com/hscells/transmute/parser"
 	"github.com/hscells/transmute/pipeline"
-	"github.com/hscells/groove/combinator"
-	"os"
-	"io"
-	"github.com/xyproto/pinterface"
 	"github.com/xyproto/permissionbolt"
-	"encoding/json"
+	"github.com/xyproto/pinterface"
+	"gopkg.in/olivere/elastic.v5"
+	"io"
+	"log"
+	"net/http"
+	"os"
 	"strings"
-	"fmt"
 	"time"
 )
-
-type Document struct {
-	Id    string
-	Title string
-	Text  string
-}
-
-type SearchResponse struct {
-	TotalHits          int64
-	TookInMillis       int64
-	Documents          []Document
-	OriginalQuery      string
-	ElasticsearchQuery string
-}
-
-type Node struct {
-	Id    int    `json:"id"`
-	Value int    `json:"value"`
-	Level int    `json:"level"`
-	Label string `json:"label"`
-	Shape string `json:"shape"`
-}
-
-type Edge struct {
-	From  int    `json:"from"`
-	To    int    `json:"to"`
-	Value int    `json:"value"`
-	Label string `json:"label"`
-}
-
-type Tree struct {
-	Nodes []Node `json:"nodes"`
-	Edges []Edge `json:"edges"`
-}
 
 var (
 	client      *elastic.Client
@@ -177,16 +143,16 @@ func main() {
 
 	// Administration.
 	router.GET("/admin", s.handleAdmin)
-	router.POST("/admin/api/confirm", s.handleApiAdminConfirm)
+	router.POST("/admin/api/confirm", s.apiAdminConfirm)
 
 	// Authentication views.
 	router.GET("/account/login", handleAccountLogin)
 	router.GET("/account/create", handleAccountCreate)
 
 	// Authentication API.
-	router.POST("/account/api/login", s.handleAuthAccountLogin)
-	router.POST("/account/api/create", s.handleAuthAccountCreate)
-	router.GET("/account/api/logout", s.handleAuthAccountLogout)
+	router.POST("/account/api/login", s.apiAccountLogin)
+	router.POST("/account/api/create", s.apiAccountCreate)
+	router.GET("/account/api/logout", s.apiAccountLogout)
 
 	// Main query interface.
 	router.GET("/", s.handleIndex)

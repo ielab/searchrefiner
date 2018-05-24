@@ -1,15 +1,15 @@
 package main
 
 import (
-	"strconv"
-	"github.com/hscells/groove/combinator"
 	"github.com/hscells/cqr"
-	"github.com/hscells/groove/stats"
 	"github.com/hscells/groove"
+	"github.com/hscells/groove/combinator"
+	"github.com/hscells/groove/stats"
 	"log"
+	"strconv"
 )
 
-func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss *stats.ElasticsearchStatisticsSource) (nid int, t Tree) {
+func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss *stats.ElasticsearchStatisticsSource) (nid int, t tree) {
 	var docs int
 	if documents, err := seen.Get(query); err == nil {
 		docs = len(documents)
@@ -42,18 +42,18 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 	}
 	switch q := query.(type) {
 	case cqr.Keyword:
-		t.Nodes = append(t.Nodes, Node{id, docs, level, q.StringPretty(), "box"})
-		t.Edges = append(t.Edges, Edge{parent, id, docs, strconv.Itoa(docs)})
+		t.Nodes = append(t.Nodes, node{id, docs, level, q.StringPretty(), "box"})
+		t.Edges = append(t.Edges, edge{parent, id, docs, strconv.Itoa(docs)})
 		id++
 	case cqr.BooleanQuery:
-		t.Nodes = append(t.Nodes, Node{id, docs, level, q.StringPretty(), "circle"})
+		t.Nodes = append(t.Nodes, node{id, docs, level, q.StringPretty(), "circle"})
 		if parent > 0 {
-			t.Edges = append(t.Edges, Edge{parent, id, docs, strconv.Itoa(docs)})
+			t.Edges = append(t.Edges, edge{parent, id, docs, strconv.Itoa(docs)})
 		}
 		this := id
 		id++
 		for _, child := range q.Children {
-			var nt Tree
+			var nt tree
 			id, nt = buildAdjTree(child, id, this, level+1, ss)
 			t.Nodes = append(t.Nodes, nt.Nodes...)
 			t.Edges = append(t.Edges, nt.Edges...)
@@ -63,34 +63,34 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 	return
 }
 
-func buildTreeRec(node combinator.LogicalTreeNode, id, parent, level int, ss *stats.ElasticsearchStatisticsSource) (nid int, t Tree) {
-	if node == nil {
-		log.Printf("node %v was nil (top node?) (id %v) with parent %v at level %v\n", node, id, parent, level)
+func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss *stats.ElasticsearchStatisticsSource) (nid int, t tree) {
+	if treeNode == nil {
+		log.Printf("treeNode %v was nil (top treeNode?) (id %v) with parent %v at level %v\n", treeNode, id, parent, level)
 		return
 	}
-	log.Printf("combined %v (id %v) with parent %v at level %v\n", node, id, parent, level)
-	docs := node.Documents(seen)
-	switch n := node.(type) {
+	log.Printf("combined %v (id %v) with parent %v at level %v\n", treeNode, id, parent, level)
+	docs := treeNode.Documents(seen)
+	switch n := treeNode.(type) {
 	case combinator.Combinator:
-		t.Nodes = append(t.Nodes, Node{id, len(docs), level, n.String(), "circle"})
+		t.Nodes = append(t.Nodes, node{id, len(docs), level, n.String(), "circle"})
 		if parent > 0 {
-			t.Edges = append(t.Edges, Edge{parent, id, len(docs), strconv.Itoa(len(docs))})
+			t.Edges = append(t.Edges, edge{parent, id, len(docs), strconv.Itoa(len(docs))})
 		}
 		this := id
 		id++
 		for _, child := range n.Clauses {
 			if child == nil {
-				log.Printf("child node %v (%v; id: %v) combined with %v and level %v\n", node, child, id, parent, level)
+				log.Printf("child treeNode %v (%v; id: %v) combined with %v and level %v\n", treeNode, child, id, parent, level)
 				continue
 			}
-			var nt Tree
+			var nt tree
 			id, nt = buildTreeRec(child, id, this, level+1, ss)
 			t.Nodes = append(t.Nodes, nt.Nodes...)
 			t.Edges = append(t.Edges, nt.Edges...)
 		}
 	case combinator.Atom:
-		t.Nodes = append(t.Nodes, Node{id, len(docs), level, n.String(), "box"})
-		t.Edges = append(t.Edges, Edge{parent, id, len(docs), strconv.Itoa(len(docs))})
+		t.Nodes = append(t.Nodes, node{id, len(docs), level, n.String(), "box"})
+		t.Edges = append(t.Edges, edge{parent, id, len(docs), strconv.Itoa(len(docs))})
 		id++
 	case combinator.AdjAtom:
 		id, t = buildAdjTree(n.Query(), id, parent, level, ss)
@@ -99,7 +99,7 @@ func buildTreeRec(node combinator.LogicalTreeNode, id, parent, level int, ss *st
 	return
 }
 
-func buildTree(node combinator.LogicalTreeNode, ss *stats.ElasticsearchStatisticsSource) (t Tree) {
+func buildTree(node combinator.LogicalTreeNode, ss *stats.ElasticsearchStatisticsSource) (t tree) {
 	_, t = buildTreeRec(node, 1, 0, 0, ss)
 	log.Println("finished processing query, tree has been constructed")
 	return

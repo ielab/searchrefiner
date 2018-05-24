@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"log"
+	"net/http"
 )
 
 func handleAccountLogin(c *gin.Context) {
@@ -14,7 +14,7 @@ func handleAccountCreate(c *gin.Context) {
 	c.HTML(http.StatusOK, "account_create.html", nil)
 }
 
-func (s server) handleAuthAccountLogin(c *gin.Context) {
+func (s server) apiAccountLogin(c *gin.Context) {
 	var username, password string
 	if v, ok := c.GetPostForm("email"); ok {
 		username = v
@@ -43,7 +43,7 @@ func (s server) handleAuthAccountLogin(c *gin.Context) {
 	return
 }
 
-func (s server) handleAuthAccountCreate(c *gin.Context) {
+func (s server) apiAccountCreate(c *gin.Context) {
 	var username, password, password2 string
 	if v, ok := c.GetPostForm("email"); ok {
 		username = v
@@ -103,7 +103,7 @@ func (s server) handleAuthAccountCreate(c *gin.Context) {
 	return
 }
 
-func (s server) handleAuthAccountLogout(c *gin.Context) {
+func (s server) apiAccountLogout(c *gin.Context) {
 	username := s.UserState.Username(c.Request)
 	if s.UserState.IsLoggedIn(username) {
 		s.UserState.Logout(username)
@@ -127,7 +127,7 @@ func (s server) handleAdmin(c *gin.Context) {
 	c.HTML(http.StatusOK, "admin.html", admin{Unconfirmed: u})
 }
 
-func (s server) handleApiAdminConfirm(c *gin.Context) {
+func (s server) apiAdminConfirm(c *gin.Context) {
 	if v, ok := c.GetPostForm("username"); ok {
 		s.UserState.Confirm(v)
 	} else {
