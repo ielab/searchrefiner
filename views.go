@@ -10,7 +10,6 @@ import (
 	"github.com/hscells/cqr"
 	"bytes"
 	"gopkg.in/olivere/elastic.v5"
-	"log"
 	"context"
 )
 
@@ -79,7 +78,6 @@ func handleQuery(c *gin.Context) {
 		Query(elastic.NewRawStringQuery(elasticQuery)).
 		Do(context.Background())
 	if err != nil {
-		log.Println(elasticQuery)
 		c.AbortWithError(500, err)
 		return
 	}
@@ -116,7 +114,10 @@ func handleQuery(c *gin.Context) {
 	c.HTML(http.StatusOK, "query.html", sr)
 }
 
-func handleIndex(c *gin.Context) {
+func (s server) handleIndex(c *gin.Context) {
+	if !s.UserState.IsLoggedIn(s.UserState.Username(c.Request)) {
+		c.Redirect(http.StatusTemporaryRedirect, "/account/login")
+	}
 	// reverse the list
 	q := make([]string, len(previousQueries))
 	j := 0

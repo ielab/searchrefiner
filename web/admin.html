@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CiteMed Administration</title>
+</head>
+<body>
+<h1>Unconfirmed users:</h1>
+<ol>
+{{ range .Unconfirmed }}
+     <li>
+         <form method="post" action="/admin/api/confirm">
+             <input type="hidden" name="username" value="{{ . }}">
+             <div>{{ . }}</div>
+             <div><input type="submit" value="confirm"></div>
+         </form>
+     </li>
+{{end}}
+</ol>
+</body>
+</html>

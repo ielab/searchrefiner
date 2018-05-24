@@ -11,7 +11,7 @@ import (
 	"github.com/hscells/groove"
 )
 
-func apiTree(c *gin.Context) {
+func (s server) apiTree(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 
 	log.Println(rawQuery)
@@ -28,7 +28,7 @@ func apiTree(c *gin.Context) {
 		stats.ElasticsearchScroll(true),
 		stats.ElasticsearchIndex("med_stem_sim2"),
 		stats.ElasticsearchDocumentType("doc"),
-		stats.ElasticsearchHosts("http://sef-is-017660:8200"),
+		stats.ElasticsearchHosts(s.Config.Elasticsearch),
 		stats.ElasticsearchField("text"),
 		stats.ElasticsearchSearchOptions(stats.SearchOptions{Size: 800, RunName: "citemed"}),
 	)

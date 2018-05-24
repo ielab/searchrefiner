@@ -1,0 +1,23 @@
+{{template "authentication_header"}}
+<div class="panel-nav">
+    <ul class="tab tab-block">
+        <li class="tab-item">
+            <a href="/account/login">Login</a>
+        </li>
+        <li class="tab-item active">
+            <a href="/account/create">Create Account</a>
+        </li>
+    </ul>
+</div>
+<div class="panel-body">
+    <form class="form-group" action="/account/api/create" method="post">
+        <label class="form-label" for="email">Username</label>
+        <input class="form-input" type="text" id="email" name="email" placeholder="example">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-input" type="password" id="password" name="password" placeholder="*************">
+        <label class="form-label" for="password2">Repeat Password</label>
+        <input class="form-input" type="password" id="password2" name="password2" placeholder="*************">
+        <input class="btn btn-primary mt-2" type="submit">
+    </form>
+</div>
+{{template "authentication_footer"}}

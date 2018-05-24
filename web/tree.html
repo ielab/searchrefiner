@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
     <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="static/vis.min.css" type="text/css">
+    <link rel="stylesheet" href="static/vue-multiselect.min.css" type="text/css">
     <link rel="stylesheet" href="static/logtail.css" type="text/css">
     <link rel="stylesheet" href="static/citemed.css" type="text/css">
     <style>
@@ -18,7 +19,7 @@
         }
 
         #tree {
-            height: calc(100% - 77px);
+            height: 100%;
         }
 
         .columns {
@@ -27,7 +28,7 @@
 
         #tree-wrapper {
             background-color: #f9f9f9;
-            height: calc(100% - 77px);
+            height: 100%;
         }
 
         textarea {
@@ -46,6 +47,8 @@
         .panel {
             padding-left: 12px !important;
         }
+
+
 
         .venntooltip {
             position: absolute;
@@ -135,7 +138,8 @@
             </div>
             <div id="tree-wrapper" v-show="tabVisualise===2">
                 <pre id="console">Loading...</pre>
-                <a href="#" id="console-pause" class="btn btn-primary" style="position: absolute;bottom: 32px;right: 32px;">Pause</a>
+                <a href="#" id="console-pause" class="btn btn-primary"
+                   style="position: absolute;bottom: 32px;right: 32px;">Pause</a>
             </div>
         </div>
     </div>
@@ -172,7 +176,6 @@
 </script>
 
 <!-- Structured Query Editor components. -->
-
 <script type="text/x-template" id="bool-query">
     <div class="panel mb-1">
         <div class="panel-header">
@@ -205,7 +208,21 @@
                 <input title="Query string" class="form-input input-sm" type="text" v-model="query.query"
                        ref="query" v-on:change="updateText">
             </div>
-            <div class="tile-subtitle text-gray">[[query.fields]]</div>
+            <div class="btn-group btn-group-block">
+                <label v-for="field in fields" class="small btn btn-sm" v-bind:class="{ 'btn-primary' : field.checked }"
+                       v-bind:for="[[ id + field.fancy ]]">[[field.fancy]]
+                    <input v-bind:id="[[ id + field.name ]]" type="checkbox" v-bind:value="[[field.name]]"
+                           v-model="field.checked" v-bind:title="[[field.name]]" style="display:none;">
+                </label>
+            </div>
+            <div class="btn-group">
+                <span class="structured-check btn-group btn-group-block">
+                    <label v-bind:for="[[ id ]]">exploded?
+                        <input v-bind:id="[[ id ]]" type="checkbox" v-bind:value="exploded"
+                               v-model="query.options.exploded" v-bind:title="exploded">
+                    </label>
+                </span>
+            </div>
         </div>
         <div class="tile-action">
             <button class="btn btn-link btn-sm ">
@@ -253,9 +270,9 @@
         request.send(data);
     };
 
+
     var structuredID = 0;
     var vennSelected = {};
-
     Vue.component("ied", {
         delimiters: ["[[", "]]"],
         template: "#ied",
@@ -303,16 +320,50 @@
         data: function () {
             return {
                 id: structuredID++,
-                selected: false
+                selected: false,
+                fields: [
+                    {name: "title", checked: false, fancy: "ti"},
+                    {name: "text", checked: false, fancy: "ab"},
+                    {name: "mesh_headings", checked: false, fancy: "sh"},
+                    {name: "publication_types", checked: false, fancy: "pt"},
+                    {name: "pubdate", checked: false, fancy: "pd"}
+                ],
+                exploded: false
             }
         },
         methods: {
             updateText: updateText
         },
         mounted: function () {
+            if (!("exploded" in this.$props.query.options)) {
+                this.$props.query.options.exploded = false;
+            }
+            for (var i = 0; i < this.fields.length; i++) {
+                for (var j = 0; j < this.$props.query.fields.length; j++) {
+                    if (this.fields[i].name === this.$props.query.fields[j]) {
+                        this.fields[i].checked = true;
+                        break;
+                    }
+                }
+            }
             this.$refs.query.focus();
         },
         watch: {
+            exploded: function () {
+                this.$props.query.options.exploded = this.exploded;
+            },
+            fields: {
+                handler: function () {
+                    this.$props.query.fields = [];
+                    for (var i = 0; i < this.fields.length; i++) {
+                        if (this.fields[i].checked) {
+                            this.$props.query.fields.push(this.fields[i].name);
+                        }
+                    }
+                    updateText();
+                },
+                deep: true
+            },
             selected: function (val) {
                 if (val) {
                     vennSelected[this.id] = JSON.stringify(this.query)
@@ -375,16 +426,16 @@
             tabEditor: 0,
             tabVisualise: 0,
             textQuery: "1. exp ORTHODONTICS/\n" +
-            "2. orthodontic$.mp.\n" +
+            "2. orthodontic~.mp.\n" +
             "3. or/1-2\n" +
-            "4. (retention or retain$).mp.\n" +
-            "5. (stabilise$ or stabilize$).mp.\n" +
-            "6. (fraenectom$ or frenectom$).mp.\n" +
-            "7. (fiberotom$ or fibreotom$).mp.\n" +
+            "4. (retention or retain~).mp.\n" +
+            "5. (stabilise~ or stabilize~).mp.\n" +
+            "6. (fraenectom~ or frenectom~).mp.\n" +
+            "7. (fiberotom~ or fibreotom~).mp.\n" +
             "8. \"interproximal stripping\".mp.\n" +
             "9. pericision.mp.\n" +
-            "10. reproximat$.mp.\n" +
-            "11. ((gingiv$ or periodont$).mp. adj4 surg$).mp.\n" +
+            "10. reproximat~.mp.\n" +
+            "11. ((gingiv~ or periodont~).mp. and surg~).mp.\n" +
             "12. (retain or retention).mp.\n" +
             "13. 11 and 12\n" +
             "14. or/4-10\n" +
@@ -392,11 +443,11 @@
             "16. 3 and 15",
             cqrQuery: {},
             vennSelected: vennSelected,
-            sets: [{sets: ['petscan$'], size: 5012},
-                {sets: ['tomographic$'], size: 227669},
-                {sets: ['petscan$', 'tomographic$'], size: 412},
-                {sets: ['Lymphoma/'], size: 151659},
-                {sets: ['Lymphoma/', 'tomographic$'], size: 6524}
+            sets: [{sets: ['fraenectom~.mp.'], size: 5012},
+                {sets: ['orthodontic~.mp.'], size: 227669},
+                {sets: ['fraenectom~.mp.', 'orthodontic~.mp.'], size: 412},
+                {sets: ['exp ORTHODONTICS/'], size: 151659},
+                {sets: ['exp ORTHODONTICS/', 'orthodontic~.mp.'], size: 100524}
             ]
         },
         methods: {
