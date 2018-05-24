@@ -1,0 +1,14 @@
+repository: ielab/citemed
+timezone: AEST
+# Dependencies
+markdown:       kramdown
+highlighter:    rouge
+
+kramdown:
+  auto_ids:     true
+
+# Permalinks
+permalink:      pretty
+
+exclude:
+    - _site/

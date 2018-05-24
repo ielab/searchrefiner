@@ -1,0 +1,19 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+body {
+    margin: 32pt;
+}
+
+ol, ul {
+    margin-left: 32pt;
+    margin-bottom: 8pt;
+}
+
+.small, .small p {
+    font-size: xx-small;
+    padding: 0pt;
+    margin: 0pt;
+}
