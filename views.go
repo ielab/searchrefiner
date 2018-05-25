@@ -104,7 +104,7 @@ func handleQuery(c *gin.Context) {
 		}
 
 		sr.Documents[i] = document{
-			Id:    hit.Id,
+			ID:    hit.Id,
 			Title: doc["title"].(string),
 			Text:  doc["text"].(string),
 		}

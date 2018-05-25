@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Help</title>
+    <style>
+        * {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif
+        }
+
+        body {
+            margin: 0 25% 10% 25%;
+        }
+
+        pre {
+            font-family: monospace;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+<h1>CiteMed Help</h1>
+<strong>Contents</strong>
+<ol>
+    <li><a href="#WritingQueries">Writing Queries</a></li>
+    <li><a href="#StructuredEditor">Using the Structured Editor</a></li>
+    <li><a href="#QueryVis">Using the QueryVis Tree View</a></li>
+    <li><a href="#Elasticsearch">How Retrieval Works</a></li>
+</ol>
+<h2 id="WritingQueries">Writing Queries</h2>
+
+<p>Currently queries can be submitted to CiteMed in two query languages. The first query language is MEDLINE. these
+    queries look like this:</p>
+
+<pre>
+1. exp ORTHODONTICS/
+2. orthodontic$.mp.
+3. or/1-2
+4. (retention or retain$).mp.
+5. (stabilise$ or stabilize$).mp.
+6. (fraenectom$ or frenectom$).mp.
+7. (fiberotom$ or fibreotom$).mp.
+8. "interproximal stripping".mp.
+9. pericision.mp.
+10. reproximat$.mp.
+11. ((gingiv$ or periodont$).mp. adj4 surg$).mp.
+12. (retain or retention).mp.
+13. 11 and 12
+14. or/4-10
+15. 13 or 14
+16. 3 and 15
+</pre>
+
+<p>In the MEDLINE query language, keywords of the query can be expressed individually on lines (e.g. line 1 or 2), or
+    grouped together (e.g. line 4). These keyword clauses can be combined with infix logical operators if grouped on a
+    single line or by stating which lines to combine (e.g. line 15 combines the clauses specified on line 13 and 14 with
+    the OR operator). Keywords are restricted to fields by the two letter identifier at the end (e.g. .mp., which
+    restricts the keyword to the title, abstract, and MeSH headings). MeSH only keywords are specified with / and can be
+    exploded with exp (e.g. line 1). Keywords can also be explicitly stemmed or expanded with the $ and * modifiers.</p>
+
+<p>In the PubMed query language, queries look like this:</p>
+
+<pre>((ORTHODONTICS[Mesh] OR orthodontic~[All Fields]) AND (((surg~[All Fields] ADJ4 (gingiv~[All Fields] OR periodont~[All Fields])) AND (retain[All Fields] OR retention[All Fields])) OR (reproximat~[All Fields] OR "interproximal stripping"[All Fields] OR pericision[All Fields] OR (retention[All Fields] OR retain~[All Fields]) OR (stabilise~[All Fields] OR stabilize~[All Fields]) OR (fraenectom~[All Fields] OR frenectom~[All Fields]) OR (fiberotom~[All Fields] OR fibreotom~[All Fields]))))</pre>
+
+<p>In PubMed query syntax, the query is contained on a single line, fields are indicated by square brackets and keywords
+    are grouped with infix logical operators.</p>
+
+<h2 id="StructuredEditor">Using the Structured Editor</h2>
+
+<p>This is a two-way binding of textual query to a structured editor. This allows
+    users to paste in existing queries (e.g. from other interfaces or existing systematic reviews) and edit them
+    conveniently in a structured way by dragging and dropping clauses of the Boolean query. The logical operators,
+    fields, queries, and MeSH explosion can be edited in this structured editor and all updates are reflected in the
+    textual editor in real time. The structured editor can be used to supplement search interfaces in other tools
+    because of this two way binding. For example, a query can be formulated in PubMed, but to make refinements to it
+    without introducing syntactic errors one may paste it into the textual editor, edit in the structured editor, and
+    copy it back to PubMed via the textual editor. The structured editor removes the requirement for understanding the
+    details of such a query. It allows, in fact, novice users to write and edit queries without learning the different
+    query syntaxes for each database that is used to retrieve literature for systematic reviews (all queries syntaxes
+    look the same in the structured editor and the structured editor can output queries in different syntaxes).</p>
+
+<h2 id="QueryVis">Using the QueryVis Tree View</h2>
+
+<p>By using the tree view, one may visualise the number of citations that are retrieved by each clause of the query, and
+    how the number of retrieved citations is affected by logical operators (i.e. AND, OR,
+    NOT, etc.). This visualisation can be augmented with relevance assessments in order to ensure a monitor the
+    retrieval of number of known relevant citations, or for training purposes.</p>
+
+<h2 id="Elasticsearch">How Retrieval Works</h2>
+
+Elasticsearch is used in the query SERP page and the tree visualisation to retrieve clauses. Eventually PubMed will be
+used to retrieve clauses. The Elasticsearch query may be viewed at the bottom of the SERP page after issuing a query.
+</body>
+</html>

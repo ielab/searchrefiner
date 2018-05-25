@@ -104,8 +104,11 @@ func main() {
 	perm.AddUserPath("/query")
 	perm.AddUserPath("/transform")
 	perm.AddUserPath("/api")
+
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
+	perm.AddPublicPath("/help")
+
 	perm.AddAdminPath("/admin")
 
 	s := server{
@@ -135,6 +138,7 @@ func main() {
 		// Views.
 		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
+		"web/help.html",
 		// Components.
 		"components/sidebar.tmpl.html", "components/util.tmpl.html",
 		"components/login.template.html",
@@ -169,6 +173,11 @@ func main() {
 	// Visualisation interface.
 	router.GET("/tree", handleTree)
 	router.POST("/api/tree", s.apiTree)
+
+	// Other utility pages.
+	router.GET("/help", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "help.html", nil)
+	})
 
 	log.Println("let's go!")
 	router.Run("0.0.0.0:4853")
