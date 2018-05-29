@@ -29,7 +29,7 @@
                     <ul class="nav">
                     {{ range .Documents }}
                         <li class="nav-item">
-                            <a href="#{{ .Id }}">{{ .Id }}</a>
+                            <a href="#{{ .ID }}">{{ .ID }}</a>
                         </li>
                     {{ end }}
                     </ul>
@@ -52,11 +52,22 @@
                 <div class="form-group">
                     <textarea name="query" id="query" class="form-input" id="search-box" placeholder="Enter query here."
                               rows="20" required>{{ .OriginalQuery }}</textarea>
-                    <small><em>Queries use a language similar to that of MEDLINE.</em></small>
+                    <div class="form-group">
+                        <label>Query Language
+                            <small><a href="/help#WritingQueries">help?</a></small>
+                            <select class="form-select" name="lang">
+                                <option value="medline">MEDLINE</option>
+                                <option value="pubmed">PubMed</option>
+                                <option disabled>Cochrane Library</option>
+                                <option disabled>EMBASE</option>
+                            </select>
+                        </label>
+                    </div>
                 </div>
                 <div class="form-group">
                     <input class="btn btn-primary" type="submit"/>
-                    <button class="btn btn-link" id="edit" type="button">Edit <i class="icon icon-arrow-right"></i></button>
+                    <button class="btn btn-link" id="edit" type="button">Edit <i class="icon icon-arrow-right"></i>
+                    </button>
 
                 </div>
             </form>
@@ -64,9 +75,9 @@
             <p><b>{{ .TotalHits }}</b> results in {{ .TookInMillis }}ms</p>
             <small><em>Showing only {{ len .Documents }} results.</em></small>
         {{ range .Documents }}
-            <div id="{{ .Id }}">
-                <h3><span class="label"><a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.Id}}/"
-                                           target="_blank">{{ .Id }}</a></span> {{ .Title }}</h3>
+            <div id="{{ .ID }}">
+                <h3><span class="label"><a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.ID}}/"
+                                           target="_blank">{{ .ID }}</a></span> {{ .Title }}</h3>
                 <p>{{ .Text }}</p>
             </div>
         {{end}}

@@ -11,17 +11,14 @@ import (
 	"github.com/hscells/transmute/pipeline"
 	"github.com/xyproto/permissionbolt"
 	"github.com/xyproto/pinterface"
-	"gopkg.in/olivere/elastic.v5"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 var (
-	client      *elastic.Client
 	cqrPipeline = pipeline.NewPipeline(
 		parser.NewMedlineParser(),
 		backend.NewCQRBackend(),
@@ -61,9 +58,14 @@ type config struct {
 }
 
 type server struct {
-	UserState pinterface.IUserState
-	Perm      pinterface.IPermissions
-	Config    config
+	UserState     pinterface.IUserState
+	Perm          pinterface.IPermissions
+	Config        config
+}
+
+type errorpage struct {
+	Error    string
+	BackLink string
 }
 
 func main() {
@@ -73,11 +75,6 @@ func main() {
 	}
 	var c config
 	err = json.NewDecoder(f).Decode(&c)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	client, err = elastic.NewClient(elastic.SetURL(c.Elasticsearch), elastic.SetSniff(false), elastic.SetHealthcheck(false), elastic.SetHealthcheckTimeout(time.Hour))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -108,13 +105,14 @@ func main() {
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
 	perm.AddPublicPath("/help")
+	perm.AddPublicPath("/error")
 
 	perm.AddAdminPath("/admin")
 
 	s := server{
-		UserState: perm.UserState(),
-		Perm:      perm,
-		Config:    c,
+		UserState:     perm.UserState(),
+		Perm:          perm,
+		Config:        c,
 	}
 
 	permissionHandler := func(c *gin.Context) {
@@ -138,7 +136,7 @@ func main() {
 		// Views.
 		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
-		"web/help.html",
+		"web/help.html", "web/error.html",
 		// Components.
 		"components/sidebar.tmpl.html", "components/util.tmpl.html",
 		"components/login.template.html",
@@ -161,7 +159,7 @@ func main() {
 	// Main query interface.
 	router.GET("/", s.handleIndex)
 	router.GET("/clear", handleClear)
-	router.POST("/query", handleQuery)
+	router.POST("/query", s.handleQuery)
 
 	// Editor interface.
 	router.GET("/transform", handleTransform)

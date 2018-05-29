@@ -11,28 +11,44 @@ import (
 	"github.com/hscells/groove/stats"
 	"gopkg.in/olivere/elastic.v5"
 	"net/http"
+	"github.com/hscells/transmute"
+	"github.com/hscells/transmute/pipeline"
+	"log"
 )
 
 func handleTree(c *gin.Context) {
 	c.HTML(http.StatusOK, "tree.html", nil)
 }
 
-func handleQuery(c *gin.Context) {
+func (s server) handleQuery(c *gin.Context) {
 	rawQuery := c.PostForm("query")
+	lang := c.PostForm("lang")
 
-	cq, err := cqrPipeline.Execute(rawQuery)
+	t := make(map[string]pipeline.TransmutePipeline)
+	t["medline"] = transmute.Medline2Cqr
+	t["pubmed"] = transmute.Pubmed2Cqr
+
+	compiler := t["medline"]
+	if v, ok := t[lang]; ok {
+		compiler = v
+	}
+
+	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
 
 	ss, err := stats.NewElasticsearchStatisticsSource(stats.ElasticsearchAnalysedField("stemmed"))
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
 	repr, err := cq.Representation()
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
@@ -40,25 +56,29 @@ func handleQuery(c *gin.Context) {
 
 	b, err := json.Marshal(analysed)
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
 
 	q, err := elasticPipeline.Execute(string(b))
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
 
 	// After that, we need to unmarshal it to get the underlying structure.
 	var tmpQuery map[string]interface{}
-	s, err := q.String()
+	x, err := q.String()
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
-	err = json.Unmarshal(bytes.NewBufferString(s).Bytes(), &tmpQuery)
+	err = json.Unmarshal(bytes.NewBufferString(x).Bytes(), &tmpQuery)
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
@@ -66,27 +86,35 @@ func handleQuery(c *gin.Context) {
 
 	b, err = json.Marshal(result)
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
 	elasticQuery := bytes.NewBuffer(b).String()
 
+	client, err := elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	// Scroll search.
 	resp, err := client.Search("med_stem_sim2").
-		Index("med_stem_sim2").
 		Type("doc").
 		Query(elastic.NewRawStringQuery(elasticQuery)).
 		Do(context.Background())
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
 
 	sp, err := q.StringPretty()
 	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
+
 	sr := searchResponse{
 		TotalHits:          resp.Hits.TotalHits,
 		TookInMillis:       resp.TookInMillis,
@@ -99,6 +127,7 @@ func handleQuery(c *gin.Context) {
 		var doc map[string]interface{}
 		err = json.Unmarshal(*hit.Source, &doc)
 		if err != nil {
+			c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 			c.AbortWithError(500, err)
 			return
 		}

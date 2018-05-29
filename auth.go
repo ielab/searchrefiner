@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 )
 
@@ -19,6 +18,7 @@ func (s server) apiAccountLogin(c *gin.Context) {
 	if v, ok := c.GetPostForm("email"); ok {
 		username = v
 	} else {
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "no username supplied", BackLink: "/account/login"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -26,6 +26,7 @@ func (s server) apiAccountLogin(c *gin.Context) {
 	if v, ok := c.GetPostForm("password"); ok {
 		password = v
 	} else {
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "no password supplied", BackLink: "/account/login"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -33,12 +34,14 @@ func (s server) apiAccountLogin(c *gin.Context) {
 	if s.UserState.CorrectPassword(username, password) {
 		err := s.UserState.Login(c.Writer, username)
 		if err != nil {
+			c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: err.Error(), BackLink: "/account/login"})
 			c.AbortWithError(http.StatusUnauthorized, err)
 			return
 		}
 		c.Redirect(http.StatusFound, "/")
 		return
 	}
+	c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "invalid login credentials", BackLink: "/account/login"})
 	c.Status(http.StatusUnauthorized)
 	return
 }
@@ -48,6 +51,7 @@ func (s server) apiAccountCreate(c *gin.Context) {
 	if v, ok := c.GetPostForm("email"); ok {
 		username = v
 	} else {
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "no username supplied", BackLink: "/account/create"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -55,6 +59,7 @@ func (s server) apiAccountCreate(c *gin.Context) {
 	if v, ok := c.GetPostForm("password"); ok {
 		password = v
 	} else {
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "passwords do not match", BackLink: "/account/create"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -62,18 +67,19 @@ func (s server) apiAccountCreate(c *gin.Context) {
 	if v, ok := c.GetPostForm("password2"); ok {
 		password2 = v
 	} else {
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "passwords do not match", BackLink: "/account/create"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
 	if password != password2 {
-		log.Println("passwords do not match")
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "passwords do not match", BackLink: "/account/create"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
 	if s.UserState.HasUser(username) {
-		log.Println("user already exists")
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "a user with that name already exists", BackLink: "/account/create"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -96,6 +102,7 @@ func (s server) apiAccountCreate(c *gin.Context) {
 
 	err := s.UserState.Login(c.Writer, username)
 	if err != nil {
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: err.Error(), BackLink: "/account/create"})
 		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
@@ -116,6 +123,7 @@ func (s server) apiAccountLogout(c *gin.Context) {
 func (s server) handleAdmin(c *gin.Context) {
 	u, err := s.UserState.AllUnconfirmedUsernames()
 	if err != nil {
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -131,7 +139,8 @@ func (s server) apiAdminConfirm(c *gin.Context) {
 	if v, ok := c.GetPostForm("username"); ok {
 		s.UserState.Confirm(v)
 	} else {
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "invalid credentials", BackLink: "/"})
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 

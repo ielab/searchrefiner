@@ -20,7 +20,8 @@
 </head>
 <body>
 <h1>CiteMed Help</h1>
-<strong>Contents</strong>
+<p><a href="/">home</a></p>
+<p><strong>Contents</strong></p>
 <ol>
     <li><a href="#WritingQueries">Writing Queries</a></li>
     <li><a href="#StructuredEditor">Using the Structured Editor</a></li>
@@ -40,7 +41,7 @@
 5. (stabilise$ or stabilize$).mp.
 6. (fraenectom$ or frenectom$).mp.
 7. (fiberotom$ or fibreotom$).mp.
-8. "interproximal stripping".mp.
+8. interproximal stripping.mp.
 9. pericision.mp.
 10. reproximat$.mp.
 11. ((gingiv$ or periodont$).mp. adj4 surg$).mp.
@@ -58,12 +59,19 @@
     restricts the keyword to the title, abstract, and MeSH headings). MeSH only keywords are specified with / and can be
     exploded with exp (e.g. line 1). Keywords can also be explicitly stemmed or expanded with the $ and * modifiers.</p>
 
+<p>For more information about building MEDLINE queries, see <a href="http://ospguides.ovid.com/OSPguides/medline.htm">http://ospguides.ovid.com/OSPguides/medline.htm</a>
+</p>
+
 <p>In the PubMed query language, queries look like this:</p>
 
 <pre>((ORTHODONTICS[Mesh] OR orthodontic~[All Fields]) AND (((surg~[All Fields] ADJ4 (gingiv~[All Fields] OR periodont~[All Fields])) AND (retain[All Fields] OR retention[All Fields])) OR (reproximat~[All Fields] OR "interproximal stripping"[All Fields] OR pericision[All Fields] OR (retention[All Fields] OR retain~[All Fields]) OR (stabilise~[All Fields] OR stabilize~[All Fields]) OR (fraenectom~[All Fields] OR frenectom~[All Fields]) OR (fiberotom~[All Fields] OR fibreotom~[All Fields]))))</pre>
 
 <p>In PubMed query syntax, the query is contained on a single line, fields are indicated by square brackets and keywords
     are grouped with infix logical operators.</p>
+
+<p>For more information about building PubMed queries, see <a
+        href="https://www.nlm.nih.gov/bsd/disted/pubmedtutorial/cover.html">https://www.nlm.nih.gov/bsd/disted/pubmedtutorial/cover.html</a>
+</p>
 
 <h2 id="StructuredEditor">Using the Structured Editor</h2>
 
@@ -88,7 +96,8 @@
 
 <h2 id="Elasticsearch">How Retrieval Works</h2>
 
-Elasticsearch is used in the query SERP page and the tree visualisation to retrieve clauses. Eventually PubMed will be
-used to retrieve clauses. The Elasticsearch query may be viewed at the bottom of the SERP page after issuing a query.
+<p>Elasticsearch is used in the query SERP page and the tree visualisation to retrieve clauses. Eventually PubMed will
+    be used to retrieve clauses. The Elasticsearch query may be viewed at the bottom of the SERP page after issuing a
+    query.</p>
 </body>
 </html>

@@ -1,7 +1,7 @@
 {
   "AdminEmail": "admin@example.com",
   "Admins": [
-    "admin"
+    "hscells"
   ],
-  "Elasticsearch": "http://localhost:9200"
+  "Elasticsearch": "http://sef-is-017660:8200/"
 }
