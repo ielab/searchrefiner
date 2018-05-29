@@ -5,9 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"github.com/hscells/cqr"
-	"github.com/hscells/groove/preprocess"
-	"github.com/hscells/groove/stats"
 	"gopkg.in/olivere/elastic.v5"
 	"net/http"
 	"github.com/hscells/transmute"
@@ -42,21 +39,14 @@ func (s server) handleQuery(c *gin.Context) {
 		return
 	}
 
-	ss, err := stats.NewElasticsearchStatisticsSource(stats.ElasticsearchAnalysedField("stemmed"))
-	if err != nil {
-		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(500, err)
-		return
-	}
 	repr, err := cq.Representation()
 	if err != nil {
 		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)
 		return
 	}
-	analysed := preprocess.SetAnalyseField(repr.(cqr.CommonQueryRepresentation), ss)()
 
-	b, err := json.Marshal(analysed)
+	b, err := json.Marshal(repr)
 	if err != nil {
 		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(500, err)

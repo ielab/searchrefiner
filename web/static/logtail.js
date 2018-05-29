@@ -1,6 +1,8 @@
 /* Copyright (c) 2012: Daniel Richman. License: GNU GPL 3 */
 /* Additional features: Priyesh Patel                     */
-
+var ConsolePoll = 1000;
+var ConsoleInitial;
+var GetLog;
 (function () {
 
     var dataelem = "#console";
@@ -11,7 +13,7 @@
     var fix_rn = true;
     var load = 30 * 1024;
     /* 30KB */
-    var poll = 1000;
+    var poll = ConsolePoll;
     /* 1s */
 
     var kill = false;
@@ -109,7 +111,7 @@
 
                 if (added)
                     show_log(added);
-                setTimeout(get_log, poll);
+                ConsoleInitial = setTimeout(get_log, poll);
             },
             error: function (xhr, s, t) {
                 loading = false;
@@ -122,13 +124,15 @@
                     log_data = "";
                     show_log();
 
-                    setTimeout(get_log, poll);
+                    ConsoleInitial = setTimeout(get_log, poll);
                 } else {
                     throw "Unknown AJAX Error (status " + xhr.status + ")";
                 }
             }
         });
     }
+
+    GetLog = get_log;
 
     function scroll(where) {
         for (var i = 0; i < scrollelems.length; i++) {

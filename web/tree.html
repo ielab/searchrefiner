@@ -48,8 +48,6 @@
             padding-left: 12px !important;
         }
 
-
-
         .venntooltip {
             position: absolute;
             top: 0;
@@ -425,22 +423,7 @@
         data: {
             tabEditor: 0,
             tabVisualise: 0,
-            textQuery: "1. exp ORTHODONTICS/\n" +
-            "2. orthodontic~.mp.\n" +
-            "3. or/1-2\n" +
-            "4. (retention or retain~).mp.\n" +
-            "5. (stabilise~ or stabilize~).mp.\n" +
-            "6. (fraenectom~ or frenectom~).mp.\n" +
-            "7. (fiberotom~ or fibreotom~).mp.\n" +
-            "8. \"interproximal stripping\".mp.\n" +
-            "9. pericision.mp.\n" +
-            "10. reproximat~.mp.\n" +
-            "11. ((gingiv~ or periodont~).mp. and surg~).mp.\n" +
-            "12. (retain or retention).mp.\n" +
-            "13. 11 and 12\n" +
-            "14. or/4-10\n" +
-            "15. 13 or 14\n" +
-            "16. 3 and 15",
+            textQuery: "",
             cqrQuery: {},
             vennSelected: vennSelected,
             sets: [{sets: ['fraenectom~.mp.'], size: 5012},
@@ -482,6 +465,14 @@
         watch: {
             vennSelected: function () {
                 console.log(this.vennSelected)
+            },
+            // Do not continue to update the log when we are not in the console tab.
+            tabVisualise: function (val) {
+                if (val === 2) {
+                    ConsoleInitial = setTimeout(GetLog, ConsolePoll)
+                } else {
+                    clearTimeout(ConsoleInitial)
+                }
             }
         }
     })
@@ -508,7 +499,7 @@
         physics: {
             enabled: true,
             hierarchicalRepulsion: {
-                nodeDistance: 300
+                nodeDistance: 200
             }
         },
         edges: {
@@ -518,6 +509,13 @@
             smooth: {
                 enabled: true,
                 type: "dynamic"
+            },
+            scaling: {
+                label: {
+                    enabled: true,
+                    min: 25,
+                    max: 30
+                }
             }
         },
         nodes: {
@@ -530,12 +528,12 @@
                 customScalingFunction: function (min, max, total, value) {
                     return value / total;
                 },
-                min: 10,
-                max: 80,
+                min: 60,
+                max: 100,
                 label: {
                     enabled: true,
-                    min: 20,
-                    max: 100
+                    min: 25,
+                    max: 30
                 }
             },
             widthConstraint: true
@@ -544,10 +542,10 @@
             hierarchical: {
                 enabled: true,
                 blockShifting: false,
-                edgeMinimization: false,
-                parentCentralization: false,
-                nodeSpacing: 150,
-                levelSeparation: 300
+                edgeMinimization: true,
+                parentCentralization: true,
+                nodeSpacing: 10,
+                levelSeparation: 250
             }
         }
     };

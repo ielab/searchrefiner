@@ -30,10 +30,11 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 			}
 			combDocs[i] = combinator.Document(id)
 		}
-		switch q := query.(type) {
+
+		// Cache results for this keyword query.
+		switch query.(type) {
 		case cqr.Keyword:
-			//seen[combinator.HashCQR(query)] = combinator.NewAtom(q, combDocs)
-			err := seen.Set(query, combinator.NewAtom(q).Documents(seen))
+			err := seen.Set(query, combDocs)
 			if err != nil {
 				panic(err)
 			}
@@ -45,6 +46,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 		t.Nodes = append(t.Nodes, node{id, docs, level, q.StringPretty(), "box"})
 		t.Edges = append(t.Edges, edge{parent, id, docs, strconv.Itoa(docs)})
 		id++
+		log.Printf("combined [atom] %v (id %v - %v docs) with parent %v at level %v\n", q.QueryString, id, docs, parent, level)
 	case cqr.BooleanQuery:
 		t.Nodes = append(t.Nodes, node{id, docs, level, q.StringPretty(), "circle"})
 		if parent > 0 {
@@ -58,6 +60,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 			t.Nodes = append(t.Nodes, nt.Nodes...)
 			t.Edges = append(t.Edges, nt.Edges...)
 		}
+		log.Printf("combined [clause] %v (id %v - %v docs) with parent %v at level %v\n", q.Operator, id, docs, parent, level)
 	}
 	nid += id
 	return
@@ -68,7 +71,6 @@ func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss
 		log.Printf("treeNode %v was nil (top treeNode?) (id %v) with parent %v at level %v\n", treeNode, id, parent, level)
 		return
 	}
-	log.Printf("combined %v (id %v) with parent %v at level %v\n", treeNode, id, parent, level)
 	docs := treeNode.Documents(seen)
 	switch n := treeNode.(type) {
 	case combinator.Combinator:
@@ -88,12 +90,15 @@ func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss
 			t.Nodes = append(t.Nodes, nt.Nodes...)
 			t.Edges = append(t.Edges, nt.Edges...)
 		}
+		log.Printf("combined [clause] %v (id %v - %v docs) with parent %v at level %v\n", treeNode, id, len(docs), parent, level)
 	case combinator.Atom:
 		t.Nodes = append(t.Nodes, node{id, len(docs), level, n.String(), "box"})
 		t.Edges = append(t.Edges, edge{parent, id, len(docs), strconv.Itoa(len(docs))})
 		id++
+		log.Printf("combined [atom] %v (id %v - %v docs) with parent %v at level %v\n", treeNode, id, len(docs), parent, level)
 	case combinator.AdjAtom:
 		id, t = buildAdjTree(n.Query(), id, parent, level, ss)
+		log.Printf("combined [adj] %v (id %v - %v docs) with parent %v at level %v\n", treeNode, id, len(docs), parent, level)
 	}
 	nid += id
 	return
