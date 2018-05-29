@@ -92,7 +92,7 @@ func (s server) handleQuery(c *gin.Context) {
 	}
 	elasticQuery := bytes.NewBuffer(b).String()
 
-	client, err := elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch))
+	client, err := elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch), elastic.SetSniff(false), elastic.SetHealthcheck(false))
 	if err != nil {
 		log.Fatalln(err)
 	}
