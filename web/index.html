@@ -53,9 +53,9 @@
                 <h3>Previous Queries</h3>
             {{ range . }}
                 <form action="/query" method="post" accept-charset="UTF-8">
-                    <input type="hidden" name="query" value="{{ . }}">
-                    <div class="code">
-                        <pre>{{ . }}</pre>
+                    <input type="hidden" name="query" value="{{ .QueryString }}">
+                    <div>
+                        <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
                         <div class="form-group">
                             <input class="btn btn-primary" type="submit"/>
                         </div>

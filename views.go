@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove/preprocess"
@@ -14,6 +13,7 @@ import (
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/pipeline"
 	"log"
+	"strings"
 )
 
 func handleTree(c *gin.Context) {
@@ -31,6 +31,8 @@ func (s server) handleQuery(c *gin.Context) {
 	compiler := t["medline"]
 	if v, ok := t[lang]; ok {
 		compiler = v
+	} else {
+		lang = "medline"
 	}
 
 	cq, err := compiler.Execute(rawQuery)
@@ -92,9 +94,17 @@ func (s server) handleQuery(c *gin.Context) {
 	}
 	elasticQuery := bytes.NewBuffer(b).String()
 
-	client, err := elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch), elastic.SetSniff(false), elastic.SetHealthcheck(false))
-	if err != nil {
-		log.Fatalln(err)
+	var client *elastic.Client
+	if strings.Contains(s.Config.Elasticsearch, "localhost") {
+		client, err = elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch), elastic.SetSniff(false))
+		if err != nil {
+			log.Fatalln(err)
+		}
+	} else {
+		client, err = elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch))
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	// Scroll search.
@@ -139,7 +149,8 @@ func (s server) handleQuery(c *gin.Context) {
 		}
 	}
 
-	previousQueries = append(previousQueries, rawQuery)
+	username := s.UserState.Username(c.Request)
+	s.Queries[username] = append(s.Queries[username], citemedQuery{QueryString: rawQuery, Language: lang})
 	c.HTML(http.StatusOK, "query.html", sr)
 }
 
@@ -147,11 +158,12 @@ func (s server) handleIndex(c *gin.Context) {
 	if !s.UserState.IsLoggedIn(s.UserState.Username(c.Request)) {
 		c.Redirect(http.StatusTemporaryRedirect, "/account/login")
 	}
+	username := s.UserState.Username(c.Request)
 	// reverse the list
-	q := make([]string, len(previousQueries))
+	q := make([]citemedQuery, len(s.Queries[username]))
 	j := 0
-	for i := len(previousQueries) - 1; i >= 0; i-- {
-		q[j] = previousQueries[i]
+	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
+		q[j] = s.Queries[username][i]
 		j++
 	}
 	c.HTML(http.StatusOK, "index.html", q)
@@ -167,7 +179,6 @@ func handleTransform(c *gin.Context) {
 			return
 		}
 
-		fmt.Println(cq)
 		s, err := cq.StringPretty()
 		if err != nil {
 			c.AbortWithError(500, err)
@@ -179,8 +190,10 @@ func handleTransform(c *gin.Context) {
 	c.HTML(http.StatusOK, "transform.html", struct{ Query string }{q})
 }
 
-func handleClear(c *gin.Context) {
-	previousQueries = []string{}
+func (s server) handleClear(c *gin.Context) {
+	username := s.UserState.Username(c.Request)
+
+	s.Queries[username] = []citemedQuery{}
 	c.Redirect(http.StatusPermanentRedirect, "/")
 	return
 }

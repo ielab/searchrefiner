@@ -46,8 +46,7 @@ var (
 			},
 			RequiresLexing: false,
 		})
-	previousQueries []string
-	seen            = combinator.NewFileQueryCache("file_cache")
+	seen = combinator.NewFileQueryCache("file_cache")
 )
 
 type config struct {
@@ -57,12 +56,19 @@ type config struct {
 	Elasticsearch    string
 }
 
-type server struct {
-	UserState     pinterface.IUserState
-	Perm          pinterface.IPermissions
-	Config        config
+type citemedQuery struct {
+	QueryString string
+	Language    string
 }
 
+type server struct {
+	UserState pinterface.IUserState
+	Perm      pinterface.IPermissions
+	Queries   map[string][]citemedQuery
+	Config    config
+}
+
+//noinspection SpellCheckingInspection
 type errorpage struct {
 	Error    string
 	BackLink string
@@ -89,7 +95,7 @@ func main() {
 
 	dbPath := "citemed.db"
 
-	router := gin.Default()
+	g := gin.Default()
 
 	perm, err := permissionbolt.NewWithConf(dbPath)
 	if err != nil {
@@ -110,14 +116,15 @@ func main() {
 	perm.AddAdminPath("/admin")
 
 	s := server{
-		UserState:     perm.UserState(),
-		Perm:          perm,
-		Config:        c,
+		UserState: perm.UserState(),
+		Perm:      perm,
+		Config:    c,
+		Queries:   make(map[string][]citemedQuery),
 	}
 
 	permissionHandler := func(c *gin.Context) {
 		if perm.Rejected(c.Writer, c.Request) {
-			log.Println("unauthorised user")
+			c.HTML(500, "error.html", errorpage{Error: "unauthorised user", BackLink: "/"})
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		} else if len(perm.UserState().Username(c.Request)) > 0 && !perm.UserState().IsConfirmed(perm.UserState().Username(c.Request)) {
@@ -130,9 +137,9 @@ func main() {
 		c.Next()
 	}
 
-	router.Use(permissionHandler)
+	g.Use(permissionHandler)
 
-	router.LoadHTMLFiles(
+	g.LoadHTMLFiles(
 		// Views.
 		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
@@ -141,42 +148,56 @@ func main() {
 		"components/sidebar.tmpl.html", "components/util.tmpl.html",
 		"components/login.template.html",
 	)
-	router.Static("/static/", "./web/static")
+	g.Static("/static/", "./web/static")
 
 	// Administration.
-	router.GET("/admin", s.handleAdmin)
-	router.POST("/admin/api/confirm", s.apiAdminConfirm)
+	g.GET("/admin", s.handleAdmin)
+	g.POST("/admin/api/confirm", s.apiAdminConfirm)
 
 	// Authentication views.
-	router.GET("/account/login", handleAccountLogin)
-	router.GET("/account/create", handleAccountCreate)
+	g.GET("/account/login", handleAccountLogin)
+	g.GET("/account/create", handleAccountCreate)
 
 	// Authentication API.
-	router.POST("/account/api/login", s.apiAccountLogin)
-	router.POST("/account/api/create", s.apiAccountCreate)
-	router.GET("/account/api/logout", s.apiAccountLogout)
+	g.POST("/account/api/login", s.apiAccountLogin)
+	g.POST("/account/api/create", s.apiAccountCreate)
+	g.GET("/account/api/logout", s.apiAccountLogout)
 
 	// Main query interface.
-	router.GET("/", s.handleIndex)
-	router.GET("/clear", handleClear)
-	router.POST("/query", s.handleQuery)
+	g.GET("/", s.handleIndex)
+	g.GET("/clear", s.handleClear)
+	g.POST("/query", s.handleQuery)
 
 	// Editor interface.
-	router.GET("/transform", handleTransform)
-	router.POST("/transform", handleTransform)
-	router.POST("/api/transform", apiTransform)
-	router.POST("/api/cqr2medline", apiTransform)
-	router.POST("/api/medline2cqr", apiTransformMedline2CQR)
+	g.GET("/transform", handleTransform)
+	g.POST("/transform", handleTransform)
+	g.POST("/api/transform", apiTransform)
+	g.POST("/api/cqr2medline", apiTransform)
+	g.POST("/api/medline2cqr", apiTransformMedline2CQR)
 
 	// Visualisation interface.
-	router.GET("/tree", handleTree)
-	router.POST("/api/tree", s.apiTree)
+	g.GET("/tree", handleTree)
+	g.POST("/api/tree", s.apiTree)
 
 	// Other utility pages.
-	router.GET("/help", func(c *gin.Context) {
+	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
 	})
 
-	log.Println("let's go!")
-	router.Run("0.0.0.0:4853")
+	fmt.Print(`
+ .d8888b.  d8b 888            888b     d888               888 
+d88P  Y88b Y8P 888            8888b   d8888               888 
+888    888     888            88888b.d88888               888 
+888        888 888888 .d88b.  888Y88888P888  .d88b.   .d88888 
+888        888 888   d8P  Y8b 888 Y888P 888 d8P  Y8b d88" 888 
+888    888 888 888   88888888 888  Y8P  888 88888888 888  888 
+Y88b  d88P 888 Y88b. Y8b.     888   "   888 Y8b.     Y88b 888 
+ "Y8888P"  888  "Y888 "Y8888  888       888  "Y8888   "Y88888 
+
+ Harry Scells 2018
+ harrisen.scells@hdr.qut.edu.au
+ https://ielab.io/citemed
+
+`)
+	g.Run("0.0.0.0:4853")
 }

@@ -1,14 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove"
 	"github.com/hscells/groove/combinator"
 	"github.com/hscells/groove/preprocess"
 	"github.com/hscells/groove/stats"
-	"log"
 )
 
 type document struct {
@@ -48,15 +46,11 @@ type tree struct {
 func (s server) apiTree(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 
-	log.Println(rawQuery)
-
 	cq, err := cqrPipeline.Execute(rawQuery)
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
 	}
-
-	log.Println(cq)
 
 	ss, err := stats.NewElasticsearchStatisticsSource(stats.ElasticsearchAnalysedField("stemmed"),
 		stats.ElasticsearchScroll(true),
@@ -97,15 +91,11 @@ func apiTransform(c *gin.Context) {
 		return
 	}
 
-	log.Println(string(b))
-
 	q, err := apiPipeline.Execute(string(b))
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
 	}
-
-	fmt.Println(q)
 
 	s, err := q.StringPretty()
 	if err != nil {
@@ -123,15 +113,11 @@ func apiTransformMedline2CQR(c *gin.Context) {
 		return
 	}
 
-	log.Println(string(b))
-
 	q, err := cqrPipeline.Execute(string(b))
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
 	}
-
-	fmt.Println(q)
 
 	s, err := q.StringPretty()
 	if err != nil {
