@@ -8,80 +8,83 @@
     <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
     <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="static/citemed.css" type="text/css">
-    <style>
-        body {
-            background: none;
-        }
-    </style>
 </head>
 <body>
-<div class="container mt-2">
+<div class="container">
+    <header class="navbar bg-secondary nav-height mb-2">
+        <section class="navbar-section">
+        {{template "sidebar"}}
+        </section>
+        <section class="navbar-section">
+        </section>
+    </header>
     <div class="columns">
         <div class="column col-1"></div>
-        <div class="column col-2">
-            <ul class="nav fixed">
-                <li><h1>CiteMed</h1></li>
-                <li class="nav-item active">
-                    <a href="/">Back</a>
-                </li>
-                <li class="nav-item">
-                    <a href="#results">Results</a>
-                    <ul class="nav">
-                    {{ range .Documents }}
-                        <li class="nav-item">
-                            <a href="#{{ .ID }}">{{ .ID }}</a>
-                        </li>
-                    {{ end }}
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <a href="#queries">Queries</a>
-                    <ul class="nav">
-                        <li class="nav-item">
-                            <a href="#original">Original</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#elasticsearch">Elasticsearch</a>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-        <div class="column col-8">
-            <form action="/query" method="post" accept-charset="UTF-8">
-                <div class="form-group">
+        <div class="column col-10">
+            <div class="columns">
+                <div class="column col-6">
+                    <h3>Reformulate Query</h3>
+                    <form action="/query" method="post" accept-charset="UTF-8">
+                        <div class="form-group">
                     <textarea name="query" id="query" class="form-input" id="search-box" placeholder="Enter query here."
                               rows="20" required>{{ .OriginalQuery }}</textarea>
-                    <div class="form-group">
-                        <label>Query Language
-                            <small><a href="/help#WritingQueries">help?</a></small>
-                            <select class="form-select" name="lang">
-                                <option value="medline">MEDLINE</option>
-                                <option value="pubmed">PubMed</option>
-                                <option disabled>Cochrane Library</option>
-                                <option disabled>EMBASE</option>
-                            </select>
-                        </label>
-                    </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Query Language
+                                <small><a href="/help#WritingQueries">help?</a></small>
+                                <select id="lang" class="form-select" name="lang">
+                                    <option value="medline" {{if eq .Language "medline"}} selected {{end}}>MEDLINE</option>
+                                    <option value="pubmed" {{if eq .Language "pubmed"}} selected {{end}}>PubMed</option>
+                                    <option disabled>Cochrane Library</option>
+                                    <option disabled>EMBASE</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <input class="btn btn-primary" type="submit"/>
+                            <button class="btn btn-link" id="vis" type="button">
+                                QueryVis <i class="icon icon-arrow-right"></i>
+                            </button>
+                            <button class="btn btn-link" id="edit" type="button">
+                                Edit <i class="icon icon-arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <input class="btn btn-primary" type="submit"/>
-                    <button class="btn btn-link" id="edit" type="button">Edit <i class="icon icon-arrow-right"></i>
+                <div class="divider-vert"></div>
+                <div class="column col-5">
+                    <h3>Results</h3>
+                    <ul>
+                        <li><b>{{ .TotalHits }}</b> results</li>
+                    </ul>
+                    <p>
+                        <small>completed in {{ .TookInMillis }}ms</small>
+                    </p>
+                    <button class="btn btn-link" id="results" type="button">
+                        Explore Results <i class="icon icon-arrow-right"></i>
                     </button>
-
                 </div>
-            </form>
-            <h1 id="results">Results</h1>
-            <p><b>{{ .TotalHits }}</b> results in {{ .TookInMillis }}ms</p>
-            <small><em>Showing only {{ len .Documents }} results.</em></small>
-        {{ range .Documents }}
-            <div id="{{ .ID }}">
-                <h3><span class="label"><a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.ID}}/"
-                                           target="_blank">{{ .ID }}</a></span> {{ .Title }}</h3>
-                <p>{{ .Text }}</p>
             </div>
-        {{end}}
-            <h1 id="queries">Queries</h1>
+            <div>
+            {{ if .PreviousQueries  }}
+                <div class="divider"></div>
+                <h3>Previous Queries</h3>
+            {{ range .PreviousQueries }}
+                <form action="/query" method="post" accept-charset="UTF-8">
+                    <input type="hidden" name="query" value="{{ .QueryString }}">
+                    <div>
+                        <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
+                        <div class="form-group">
+                            <input class="btn btn-primary" type="submit"/>
+                        </div>
+                    </div>
+                </form>
+            {{ end }}
+                <a href="/clear" class="btn btn-link">Clear</a>
+            {{ end }}
+            </div>
+            <div class="divider"></div>
+            <h3 id="queries">Queries</h3>
             <pre id="original" class="code" data-lang="Original">{{ .OriginalQuery }}</pre>
             <pre id="elasticsearch" class="code" data-lang="Elasticsearch">{{ .ElasticsearchQuery }}</pre>
         </div>
@@ -91,7 +94,57 @@
 <script>
 
     var editEl = document.getElementById("edit");
+    var visEl = document.getElementById("vis");
+    var resultsEl = document.getElementById("results");
     var searchEl = document.getElementById("query");
+    var langEl = document.getElementById("lang");
+
+    visEl.addEventListener("click", function () {
+        var form = document.createElement("form");
+        form.target = "_self";
+        form.method = "POST";
+        form.action = "/tree";
+        form.style.display = "none";
+
+        var queryInput = document.createElement("input");
+        queryInput.type = "hidden";
+        queryInput.name = "query";
+        queryInput.value = searchEl.value;
+        form.appendChild(queryInput);
+
+        var langInput = document.createElement("input");
+        langInput.type = "hidden";
+        langInput.name = "lang";
+        langInput.value = langEl.value;
+        form.appendChild(langInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    });
+
+    resultsEl.addEventListener("click", function () {
+        var form = document.createElement("form");
+        form.target = "_self";
+        form.method = "POST";
+        form.action = "/results";
+        form.style.display = "none";
+
+        var queryInput = document.createElement("input");
+        queryInput.type = "hidden";
+        queryInput.name = "query";
+        queryInput.value = searchEl.value;
+        form.appendChild(queryInput);
+
+        var langInput = document.createElement("input");
+        langInput.type = "hidden";
+        langInput.name = "lang";
+        langInput.value = langEl.value;
+        form.appendChild(langInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    });
+
 
     editEl.addEventListener("click", function () {
         openWindowWithPost("/transform", searchEl.value)
@@ -99,7 +152,7 @@
 
     function openWindowWithPost(url, data) {
         var form = document.createElement("form");
-        form.target = "_blank";
+        form.target = "_self";
         form.method = "POST";
         form.action = url;
         form.style.display = "none";
@@ -112,7 +165,6 @@
 
         document.body.appendChild(form);
         form.submit();
-        document.body.removeChild(form);
     }
 </script>
 </body>

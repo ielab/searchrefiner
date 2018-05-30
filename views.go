@@ -11,10 +11,149 @@ import (
 	"github.com/hscells/transmute/pipeline"
 	"log"
 	"strings"
+	"github.com/hscells/groove/analysis"
+	"github.com/hscells/cqr"
 )
 
 func handleTree(c *gin.Context) {
-	c.HTML(http.StatusOK, "tree.html", nil)
+	rawQuery := c.PostForm("query")
+	lang := c.PostForm("lang")
+	c.HTML(http.StatusOK, "tree.html", citemedQuery{QueryString: rawQuery, Language: lang})
+}
+
+func (s server) handleResults(c *gin.Context) {
+	rawQuery := c.PostForm("query")
+	lang := c.PostForm("lang")
+
+	t := make(map[string]pipeline.TransmutePipeline)
+	t["medline"] = transmute.Medline2Cqr
+	t["pubmed"] = transmute.Pubmed2Cqr
+
+	compiler := t["medline"]
+	if v, ok := t[lang]; ok {
+		compiler = v
+	} else {
+		lang = "medline"
+	}
+
+	cq, err := compiler.Execute(rawQuery)
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+
+	repr, err := cq.Representation()
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+
+	b, err := json.Marshal(repr)
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+
+	q, err := elasticPipeline.Execute(string(b))
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+
+	// After that, we need to unmarshal it to get the underlying structure.
+	var tmpQuery map[string]interface{}
+	x, err := q.String()
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+	err = json.Unmarshal(bytes.NewBufferString(x).Bytes(), &tmpQuery)
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+	result := tmpQuery["query"].(map[string]interface{})
+
+	b, err = json.Marshal(result)
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+	elasticQuery := bytes.NewBuffer(b).String()
+
+	var client *elastic.Client
+	if strings.Contains(s.Config.Elasticsearch, "localhost") {
+		client, err = elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch), elastic.SetSniff(false))
+		if err != nil {
+			log.Fatalln(err)
+		}
+	} else {
+		client, err = elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch))
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+
+	// Scroll search.
+	resp, err := client.Scroll(s.Config.Index).
+		Type("doc").
+		Query(elastic.NewRawStringQuery(elasticQuery)).
+		Size(10).
+		Do(context.Background())
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+
+	sp, err := q.StringPretty()
+	if err != nil {
+		c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
+		c.AbortWithError(500, err)
+		return
+	}
+
+	// We send through the fist couple of hits before infinity scrolling on the results page.
+	docs := make([]document, len(resp.Hits.Hits))
+	for i, hit := range resp.Hits.Hits {
+		var doc map[string]interface{}
+		err = json.Unmarshal(*hit.Source, &doc)
+		if err != nil {
+			c.AbortWithError(500, err)
+			return
+		}
+
+		docs[i] = document{
+			ID:    hit.Id,
+			Title: doc["title"].(string),
+			Text:  doc["text"].(string),
+		}
+	}
+
+	terms := analysis.QueryTerms(repr.(cqr.CommonQueryRepresentation))
+
+	for i, term := range terms {
+		terms[i] = strings.ToLower(strings.Replace(term, "*", "", -1))
+	}
+
+	sr := searchResponse{
+		TotalHits:          resp.Hits.TotalHits,
+		TookInMillis:       resp.TookInMillis,
+		OriginalQuery:      rawQuery,
+		ElasticsearchQuery: sp,
+		ScrollID:           resp.ScrollId,
+		Documents:          docs,
+		Language:           lang,
+	}
+
+	c.HTML(http.StatusOK, "results.html", sr)
 }
 
 func (s server) handleQuery(c *gin.Context) {
@@ -98,7 +237,7 @@ func (s server) handleQuery(c *gin.Context) {
 	}
 
 	// Scroll search.
-	resp, err := client.Search("med_stem_sim2").
+	resp, err := client.Search(s.Config.Index).
 		Type("doc").
 		Query(elastic.NewRawStringQuery(elasticQuery)).
 		Do(context.Background())
@@ -120,26 +259,11 @@ func (s server) handleQuery(c *gin.Context) {
 		TookInMillis:       resp.TookInMillis,
 		OriginalQuery:      rawQuery,
 		ElasticsearchQuery: sp,
-		Documents:          make([]document, len(resp.Hits.Hits)),
-	}
-
-	for i, hit := range resp.Hits.Hits {
-		var doc map[string]interface{}
-		err = json.Unmarshal(*hit.Source, &doc)
-		if err != nil {
-			c.HTML(500, "error.html", errorpage{Error: err.Error(), BackLink: "/"})
-			c.AbortWithError(500, err)
-			return
-		}
-
-		sr.Documents[i] = document{
-			ID:    hit.Id,
-			Title: doc["title"].(string),
-			Text:  doc["text"].(string),
-		}
+		Language:           lang,
 	}
 
 	username := s.UserState.Username(c.Request)
+	sr.PreviousQueries = s.Queries[username]
 	s.Queries[username] = append(s.Queries[username], citemedQuery{QueryString: rawQuery, Language: lang})
 	c.HTML(http.StatusOK, "query.html", sr)
 }
@@ -182,8 +306,8 @@ func handleTransform(c *gin.Context) {
 
 func (s server) handleClear(c *gin.Context) {
 	username := s.UserState.Username(c.Request)
-
+	log.Println(username)
 	s.Queries[username] = []citemedQuery{}
-	c.Redirect(http.StatusPermanentRedirect, "/")
+	c.Redirect(http.StatusFound, "/")
 	return
 }

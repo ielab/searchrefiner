@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!--suppress ALL -->
 <html lang="en" xmlns:v-on="http://www.w3.org/1999/xhtml" xmlns:v-bind="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
@@ -71,6 +72,16 @@
             color: #f9f9f9;
             font-size: 12px;
         }
+
+        #tree-stats {
+            position: absolute;
+            top: 100px;
+            right: 32px;
+            background-color: #ffffff;
+            padding: 8px;
+            z-index: 99999999999;
+            border: 1px solid #1c1c1c;
+        }
     </style>
 </head>
 <body>
@@ -100,6 +111,25 @@
                 <div class="form-group">
                     <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here."
                               rows="20" required v-model="textQuery" v-on:change="updateText"></textarea>
+                    <div class="form-group">
+                        <label>Query Language
+                            <small><a href="/help#WritingQueries">help?</a></small>
+                            <select id="lang" class="form-select" name="lang">
+                                <option value="medline" {{if eq .Language "medline"}} selected {{end}}>MEDLINE</option>
+                                <option value="pubmed" {{if eq .Language "pubmed"}} selected {{end}}>PubMed</option>
+                                <option disabled>Cochrane Library</option>
+                                <option disabled>EMBASE</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-link" onclick="resultsView()" type="button">
+                            Results <i class="icon icon-arrow-right"></i>
+                        </button>
+                        <button class="btn btn-link" onclick="editView()" type="button">
+                            Edit <i class="icon icon-arrow-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div style="clear: both;"></div>
@@ -129,6 +159,9 @@
                 </li>
             </ul>
             <div id="tree-wrapper" v-show="tabVisualise===0">
+                <div id="tree-stats" v-if="numRet">
+                    <p><strong>[[ numRet ]]</strong> citations retrieved</p>
+                </div>
                 <div id="tree" class="c-move"></div>
             </div>
             <div id="tree-wrapper" v-show="tabVisualise===1">
@@ -138,28 +171,6 @@
                 <pre id="console">Loading...</pre>
                 <a href="#" id="console-pause" class="btn btn-primary"
                    style="position: absolute;bottom: 32px;right: 32px;">Pause</a>
-            </div>
-        </div>
-    </div>
-    <div class="modal" id="modal-id">
-        <a href="#close" class="modal-overlay" aria-label="Close"></a>
-        <div class="modal-container" role="document">
-            <div class="modal-header">
-                <a href="#close" class="btn btn-clear float-right" aria-label="Close"></a>
-                <div class="modal-title h5">QueryVis Settings</div>
-            </div>
-            <div class="modal-body">
-                <div class="content">
-                    <div class="form-group">
-                        <label> Validation PMIDs
-                            <small>(comma separated)</small>
-                            <textarea class="form-input"></textarea>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <a href="#" class="btn btn-link">Close</a>
             </div>
         </div>
     </div>
@@ -263,11 +274,10 @@
                 vm.$data.textQuery = ev.currentTarget.responseText
             }
         });
-        request.open("POST", "/api/transform");
-        request.setRequestHeader("Content-Type", "text/plain");
-        request.send(data);
+        request.open("POST", "/api/cqr2query");
+        request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        request.send("query=" + data + "&lang=" + vm.$data.queryLanguage);
     };
-
 
     var structuredID = 0;
     var vennSelected = {};
@@ -423,7 +433,9 @@
         data: {
             tabEditor: 0,
             tabVisualise: 0,
-            textQuery: "",
+            numRet: null,
+            textQuery: "{{.QueryString}}",
+            queryLanguage: "{{.Language}}",
             cqrQuery: {},
             vennSelected: vennSelected,
             sets: [{sets: ['fraenectom~.mp.'], size: 5012},
@@ -435,16 +447,23 @@
         },
         methods: {
             updateTree: function (ev) {
+                var self = this
                 var el = ev.srcElement;
                 el.classList.add("loading");
                 var request = new XMLHttpRequest();
                 request.addEventListener("load", function (ev) {
-                    network.setData(JSON.parse(ev.target.responseText));
+                    var resp = JSON.parse(ev.target.responseText);
+                    network.setData(resp);
+                    for (var i = 0; i < resp.nodes.length; i++) {
+                        if (resp.nodes[i].id == 1) {
+                            self.numRet = resp.nodes[i].value
+                        }
+                    }
                     el.classList.remove("loading");
                 });
                 request.open("POST", "/api/tree", true);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                request.send("query=" + this.textQuery);
+                request.send("query=" + this.textQuery + "&lang=" + this.queryLanguage);
             },
             updateText: _.debounce(function () {
                 var self = this;
@@ -454,9 +473,9 @@
                         self.cqrQuery = JSON.parse(ev.currentTarget.responseText)
                     }
                 });
-                request.open("POST", "/api/medline2cqr");
-                request.setRequestHeader("Content-Type", "text/plain");
-                request.send(self.textQuery);
+                request.open("POST", "/api/query2cqr");
+                request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                request.send("query=" + self.textQuery + "&lang=" + self.queryLanguage);
             }, 300)
         },
         mounted: function () {
@@ -557,5 +576,53 @@
 <!-- Console view. -->
 <script src="static/jquery.min.js" type="text/javascript"></script>
 <script src="static/logtail.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+    var editView = function () {
+        var form = document.createElement("form");
+        form.target = "_self";
+        form.method = "POST";
+        form.action = "/transform";
+        form.style.display = "none";
+
+        var queryInput = document.createElement("input");
+        queryInput.type = "hidden";
+        queryInput.name = "query";
+        queryInput.value = document.getElementById("search-box").value;
+        form.appendChild(queryInput);
+
+        var langInput = document.createElement("input");
+        langInput.type = "hidden";
+        langInput.name = "lang";
+        langInput.value = document.getElementById("lang").value;
+        form.appendChild(langInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    };
+
+    var resultsView = function () {
+        var form = document.createElement("form");
+        form.target = "_self";
+        form.method = "POST";
+        form.action = "/query";
+        form.style.display = "none";
+
+        var queryInput = document.createElement("input");
+        queryInput.type = "hidden";
+        queryInput.name = "query";
+        queryInput.value = document.getElementById("search-box").value;
+        form.appendChild(queryInput);
+
+        var langInput = document.createElement("input");
+        langInput.type = "hidden";
+        langInput.name = "lang";
+        langInput.value = document.getElementById("lang").value;
+        form.appendChild(langInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    };
+</script>
 </body>
 </html>

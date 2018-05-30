@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>CiteMed - Search Results</title>
+    <link rel="icon" href="static/favicon.png" type="image/x-png">
+    <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
+    <link rel="stylesheet" href="static/citemed.css" type="text/css">
+</head>
+<body>
+<div class="container" id="app">
+    <header class="navbar bg-secondary nav-height mb-2">
+        <section class="navbar-section">
+        {{template "sidebar"}}
+        </section>
+        <section class="navbar-section">
+        </section>
+    </header>
+    <div class="columns">
+        <div class="column col-1"></div>
+        <div class="column col-10">
+            <strong>Submitted Query:</strong>
+            <pre class="code" data-lang="{{.Language}}">{{.OriginalQuery}}</pre>
+            <form method="POST" action="/query">
+                <input type="hidden" value="{{.OriginalQuery}}" name="query">
+                <input type="hidden" value="{{.Language}}" name="lang">
+                <button type="submit" class="btn btn-link"><i class="icon icon-arrow-left"></i>Reformulate</button>
+            </form>
+            <strong>Results:</strong>
+            <p>
+                <small><em>Retrieved <b>{{ .TotalHits }}</b> citations in {{ .TookInMillis }}ms</em></small>
+            </p>
+            <div>
+                <ol v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="100">
+                {{ range .Documents }}
+                    <li>
+                        <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.ID}}">
+                            <span class="label">{{.ID}}</span> {{.Title}}
+                        </a>
+                        <p>{{.Text}}</p>
+                    </li>
+                {{ end }}
+                    <li v-for="c in data">
+                        <a v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/' + c.ID">
+                            <span class="label">[[c.ID]]</span> [[c.Title]]
+                        </a>
+                        <p>[[c.Text]]</p>
+                    </li>
+                </ol>
+                <div v-if="busy" class="loading loading-lg"></div>
+            </div>
+        </div>
+        <div class="column col-1"></div>
+    </div>
+    <!--suppress JSUnresolvedFunction -->
+    <button style="position:fixed;bottom: 1em; right: 1em;" class="btn btn-primary btn-lg" onclick="window.scrollTo(window.top)">
+        <i class="icon icon-arrow-up"></i>
+    </button>
+</div>
+<script src="static/vue.js" type="text/javascript"></script>
+<script src="static/vue-infinite-scroll.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var count = 0;
+
+    var vm = new Vue({
+        delimiters: ["[[", "]]"],
+        el: '#app',
+        data: {
+            data: [],
+            busy: false,
+            finished: false,
+            scroll: "{{.ScrollID}}"
+        },
+        methods: {
+            loadMore: function () {
+                var self = this;
+                if (!self.finished && !self.busy) {
+                    self.busy = true;
+                    var request = new XMLHttpRequest();
+                    request.addEventListener("load", function (ev) {
+                        if (ev.currentTarget.status === 200) {
+                            var resp = JSON.parse(ev.currentTarget.responseText);
+                            if (resp.Finished) {
+                                self.busy = false;
+                                self.finished = true;
+                                return
+                            }
+                            for (var i = 0; i < resp.Documents.length; i++) {
+                                self.data.push(resp.Documents[i]);
+                            }
+                            self.scroll = resp.ScrollID;
+                            self.busy = false;
+                        }
+                    });
+                    request.open("POST", "/api/scroll");
+                    request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    request.send("scroll=" + self.scroll);
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

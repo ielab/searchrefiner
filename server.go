@@ -54,11 +54,13 @@ type config struct {
 	AdminEmail       string
 	Admins           []string
 	Elasticsearch    string
+	Index            string
 }
 
 type citemedQuery struct {
-	QueryString string
-	Language    string
+	QueryString     string
+	Language        string
+	PreviousQueries []citemedQuery
 }
 
 type server struct {
@@ -143,7 +145,7 @@ func main() {
 		// Views.
 		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
-		"web/help.html", "web/error.html",
+		"web/help.html", "web/error.html", "web/results.html",
 		// Components.
 		"components/sidebar.tmpl.html", "components/util.tmpl.html",
 		"components/login.template.html",
@@ -167,16 +169,19 @@ func main() {
 	g.GET("/", s.handleIndex)
 	g.GET("/clear", s.handleClear)
 	g.POST("/query", s.handleQuery)
+	g.POST("/results", s.handleResults)
+	g.POST("/api/scroll", s.apiScroll)
 
 	// Editor interface.
 	g.GET("/transform", handleTransform)
 	g.POST("/transform", handleTransform)
 	g.POST("/api/transform", apiTransform)
-	g.POST("/api/cqr2medline", apiTransform)
-	g.POST("/api/medline2cqr", apiTransformMedline2CQR)
+	g.POST("/api/cqr2query", apiCQR2Query)
+	g.POST("/api/query2cqr", apiQuery2CQR)
 
 	// Visualisation interface.
 	g.GET("/tree", handleTree)
+	g.POST("/tree", handleTree)
 	g.POST("/api/tree", s.apiTree)
 
 	// Other utility pages.
