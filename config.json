@@ -3,5 +3,6 @@
   "Admins": [
     "admin"
   ],
-  "Elasticsearch": "http://localhost:9200"
+  "Elasticsearch": "http://localhost:9200",
+  "Index": "pubmed"
 }
