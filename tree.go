@@ -14,7 +14,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 	if documents, err := seen.Get(query); err == nil {
 		docs = len(documents)
 	} else {
-		d, err := ss.Execute(groove.NewPipelineQuery("adj", "0", query), ss.SearchOptions())
+		d, err := ss.ExecuteFast(groove.NewPipelineQuery("adj", "0", query), ss.SearchOptions())
 		if err != nil {
 			log.Println("something bad happened")
 			log.Fatalln(err)
@@ -22,13 +22,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 		}
 		combDocs := make(combinator.Documents, len(d))
 		for i, doc := range d {
-			id, err := strconv.ParseInt(doc.DocId, 10, 32)
-			if err != nil {
-				log.Println("something bad happened")
-				log.Fatalln(err)
-				panic(err)
-			}
-			combDocs[i] = combinator.Document(id)
+			combDocs[i] = combinator.Document(doc)
 		}
 
 		// Cache results for this keyword query.
