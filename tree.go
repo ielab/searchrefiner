@@ -25,14 +25,9 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 			combDocs[i] = combinator.Document(doc)
 		}
 
-		// Cache results for this keyword query.
-		switch query.(type) {
-		case cqr.Keyword:
-			err := seen.Set(query, combDocs)
-			if err != nil {
-				panic(err)
-			}
-		}
+		// Cache results for this query.
+		seen.Set(query, combDocs)
+
 		docs = len(d)
 	}
 	switch q := query.(type) {
