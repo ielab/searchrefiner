@@ -8,9 +8,18 @@
 </head>
 <body>
 <div class="container m-2 p-2">
-    <h1>Error</h1>
-    <p>{{ .Error }}</p>
-    <a href="/help">help</a> | <a href="{{ .BackLink }}">back</a>
+    <div class="empty" style="max-width: 50%; margin: auto">
+        <div class="empty-icon">
+            <i class="icon icon-flag"></i>
+        </div>
+        <div class="empty-title h5">Error</div>
+        <div class="empty-subtitle">{{ .Error }}</div>
+        <div class="empty-action">
+            <p>Can this error be resolved? <a href="/help">&rarr; Help</a>.</p>
+            <p>Think this is a bug? <a href="https://github.com/ielab/citemed/issues">&rarr; Submit an issue</a>.</p>
+            <a class="btn btn-primary" href="{{ .BackLink }}">Back</a>
+        </div>
+    </div>
 </div>
 </body>
 </html>

@@ -169,6 +169,7 @@ func main() {
 	g.POST("/query", s.handleQuery)
 	g.GET("/query", s.handleQuery)
 	g.POST("/results", s.handleResults)
+	g.GET("/results", s.handleResults)
 	g.POST("/api/scroll", s.apiScroll)
 
 	// Editor interface.
