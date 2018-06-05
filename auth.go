@@ -15,7 +15,7 @@ func handleAccountCreate(c *gin.Context) {
 
 func (s server) apiAccountLogin(c *gin.Context) {
 	var username, password string
-	if v, ok := c.GetPostForm("email"); ok {
+	if v, ok := c.GetPostForm("username"); ok {
 		username = v
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "no username supplied", BackLink: "/account/login"})
@@ -48,7 +48,7 @@ func (s server) apiAccountLogin(c *gin.Context) {
 
 func (s server) apiAccountCreate(c *gin.Context) {
 	var username, password, password2 string
-	if v, ok := c.GetPostForm("email"); ok {
+	if v, ok := c.GetPostForm("username"); ok {
 		username = v
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", errorpage{Error: "no username supplied", BackLink: "/account/create"})
