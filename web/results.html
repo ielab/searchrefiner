@@ -8,6 +8,40 @@
     <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
     <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="static/citemed.css" type="text/css">
+    <style>
+        .text-sm {
+            line-height: 0.9rem;
+        }
+
+        .span-sm,
+        .a-sm {
+            font-size: 10px;
+            line-height: 0.0rem;
+        }
+
+        .author-sm {
+            line-height: 0.0rem;
+            font-size: 12px;
+            margin: 0 0 0 0;
+            padding: 0;
+            text-align: left;
+        }
+
+        .author-sm:after {
+            content: ",";
+            margin-right: 6px;
+        }
+
+        .a-sm:after {
+            content: ';';
+            margin-right: 6px;
+        }
+
+        .author-sm:last-child:after,
+        .a-sm:last-child:after {
+            content: none;
+        }
+    </style>
 </head>
 <body>
 <div class="container" id="app">
@@ -35,18 +69,45 @@
             <div>
                 <ol v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="100">
                 {{ range .Documents }}
-                    <li>
-                        <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.ID}}">
-                            <span class="label">{{.ID}}</span> {{.Title}}
-                        </a>
-                        <p>{{.Text}}</p>
+                    <li class="pb-2">
+                        <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.ID}}">{{.Title}}</a>
+                        <div class="text-left text-sm">
+                        {{range .Authors}}<a class="text-success author-sm" href='https://www.ncbi.nlm.nih.gov/pubmed/?term="{{ . }}"[Author]'>{{.}}</a>{{end}}
+                        </div>
+                        <div class="text-left text-sm">{{.Text}}</div>
+                        <div class="text-left text-sm text-gray">
+                            <span class="span-sm"><strong>PMID</strong>: {{.ID}}</span>
+                        </div>
+                        <div class="text-left text-sm text-gray">
+                            <span class="span-sm"><strong>Publication Types</strong>:</span>
+                        {{range .PublicationTypes}}<a class="text-gray a-sm" href="https://www.ncbi.nlm.nih.gov/pubmed/?term={{ . }}[Publication Type]">{{ . }}</a>{{end}}
+                        </div>
+                        <div class="text-left text-sm text-gray">
+                            <span class="span-sm"><strong>MeSH headings</strong>:</span>
+                        {{range .MeSHHeadings}}<a class="text-gray a-sm" href="https://www.ncbi.nlm.nih.gov/mesh/?term={{ . }}">{{ . }}</a>{{end}}
+                        </div>
                     </li>
                 {{ end }}
-                    <li v-for="c in data">
-                        <a v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/' + c.ID">
-                            <span class="label">[[c.ID]]</span> [[c.Title]]
-                        </a>
-                        <p>[[c.Text]]</p>
+                    <li v-for="c in data" class="pb-2">
+                        <a v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/' + c.ID">[[c.Title]]</a>
+                        <div class="text-left text-sm">
+                            <a v-for="author in c.Authors" class="text-success author-sm"
+                               v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=%22' + author + '%22[Author]'">[[author]]</a>
+                        </div>
+                        <div class="text-left text-sm">[[c.Text]]</div>
+                        <div class="text-left text-sm text-gray">
+                            <span class="span-sm"><strong>PMID</strong>: [[ c.ID ]]</span>
+                        </div>
+                        <div class="text-left text-sm text-gray">
+                            <span class="span-sm"><strong>Publication Types</strong>:</span>
+                            <a v-for="pubtype in c.PublicationTypes" class="text-gray a-sm"
+                               v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=' + pubtype + '[Publication Type]'">[[pubtype]]</a>
+                        </div>
+                        <div class="text-left text-sm text-gray">
+                            <span class="span-sm"><strong>MeSH headings</strong>:</span>
+                            <a v-for="heading in c.MeSHHeadings" class="text-gray a-sm"
+                               v-bind:href="'https://www.ncbi.nlm.nih.gov/mesh/?term=' + heading">[[heading]]</a>
+                        </div>
                     </li>
                 </ol>
                 <div v-if="busy" class="loading loading-lg"></div>
@@ -55,7 +116,8 @@
         <div class="column col-1"></div>
     </div>
     <!--suppress JSUnresolvedFunction -->
-    <button style="position:fixed;bottom: 1em; right: 1em;" class="btn btn-primary btn-lg" onclick="window.scrollTo(window.top)">
+    <button style="position:fixed;bottom: 1em; right: 1em;" class="btn btn-primary btn-lg"
+            onclick="window.scrollTo(window.top)">
         <i class="icon icon-arrow-up"></i>
     </button>
 </div>

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"github.com/hscells/groove/analysis"
 	"github.com/hscells/cqr"
+	"fmt"
 )
 
 func handleTree(c *gin.Context) {
@@ -139,6 +140,22 @@ func (s server) handleResults(c *gin.Context) {
 			ID:    hit.Id,
 			Title: doc["title"].(string),
 			Text:  doc["text"].(string),
+		}
+
+		docs[i].PublicationTypes = make([]string, len(doc["publication_types"].([]interface{})))
+		for j, pubType := range doc["publication_types"].([]interface{}) {
+			docs[i].PublicationTypes[j] = pubType.(string)
+		}
+
+		docs[i].MeSHHeadings = make([]string, len(doc["mesh_headings"].([]interface{})))
+		for j, heading := range doc["mesh_headings"].([]interface{}) {
+			docs[i].MeSHHeadings[j] = heading.(string)
+		}
+
+		docs[i].Authors = make([]string, len(doc["authors"].([]interface{})))
+		for j, author := range doc["authors"].([]interface{}) {
+			a := author.(map[string]interface{})
+			docs[i].Authors[j] = fmt.Sprintf("%v %v", a["last_name"], a["first_name"])
 		}
 	}
 

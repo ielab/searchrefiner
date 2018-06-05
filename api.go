@@ -14,12 +14,16 @@ import (
 	"io"
 	"github.com/hscells/transmute/pipeline"
 	"github.com/hscells/transmute"
+	"fmt"
 )
 
 type document struct {
-	ID    string
-	Title string
-	Text  string
+	ID               string
+	Title            string
+	Text             string
+	Authors          []string
+	PublicationTypes []string
+	MeSHHeadings     []string
 }
 
 type searchResponse struct {
@@ -154,6 +158,22 @@ func (s server) apiScroll(c *gin.Context) {
 			ID:    hit.Id,
 			Title: doc["title"].(string),
 			Text:  doc["text"].(string),
+		}
+
+		docs[i].PublicationTypes = make([]string, len(doc["publication_types"].([]interface{})))
+		for j, pubType := range doc["publication_types"].([]interface{}) {
+			docs[i].PublicationTypes[j] = pubType.(string)
+		}
+
+		docs[i].MeSHHeadings = make([]string, len(doc["mesh_headings"].([]interface{})))
+		for j, heading := range doc["mesh_headings"].([]interface{}) {
+			docs[i].MeSHHeadings[j] = heading.(string)
+		}
+
+		docs[i].Authors = make([]string, len(doc["authors"].([]interface{})))
+		for j, author := range doc["authors"].([]interface{}) {
+			a := author.(map[string]interface{})
+			docs[i].Authors[j] = fmt.Sprintf("%v %v", a["last_name"], a["first_name"])
 		}
 	}
 
