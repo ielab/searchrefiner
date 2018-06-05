@@ -11,11 +11,11 @@ import (
 	"github.com/hscells/transmute/pipeline"
 	"github.com/xyproto/permissionbolt"
 	"github.com/xyproto/pinterface"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"io"
 )
 
 var (
@@ -92,8 +92,6 @@ func main() {
 		log.Fatalln(err)
 	}
 	lf.Truncate(0)
-	mw := io.MultiWriter(lf, os.Stdout)
-	log.SetOutput(mw)
 
 	dbPath := "citemed.db"
 
@@ -169,6 +167,7 @@ func main() {
 	g.GET("/", s.handleIndex)
 	g.GET("/clear", s.handleClear)
 	g.POST("/query", s.handleQuery)
+	g.GET("/query", s.handleQuery)
 	g.POST("/results", s.handleResults)
 	g.POST("/api/scroll", s.apiScroll)
 
@@ -188,6 +187,9 @@ func main() {
 	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
 	})
+
+	mw := io.MultiWriter(lf, os.Stdout)
+	log.SetOutput(mw)
 
 	fmt.Print(`
  .d8888b.  d8b 888            888b     d888               888 

@@ -160,6 +160,11 @@ func (s server) handleQuery(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
+	if len(rawQuery) == 0 {
+		c.HTML(http.StatusOK, "query.html", searchResponse{Language: "medline"})
+		return
+	}
+
 	t := make(map[string]pipeline.TransmutePipeline)
 	t["medline"] = transmute.Medline2Cqr
 	t["pubmed"] = transmute.Pubmed2Cqr
