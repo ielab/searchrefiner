@@ -12,6 +12,10 @@ the interface at this [demo link](http://43.240.96.223:4853/) (note that users m
 ## Links
 
  - Visit the [demo](http://43.240.96.223:4853/).
+ - Read how to [set-up](setup.md) a local version.
+ - Read how to [authenticate](authentication.md) programmatically.
+ - Read what [APIs](api.md) are exposed.
+ - Read what [tools](tools.md) are made available in the interface.
  - View the source on [GitHub](https://github.com/ielab/citemed).
  - Read the [documentation](http://43.240.96.223:4853/help) on using the interface.
  - Contribute to [development](https://github.com/ielab/citemed/issues).
