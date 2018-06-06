@@ -24,6 +24,7 @@
 <p><strong>Contents</strong></p>
 <ol>
     <li><a href="#WritingQueries">Writing Queries</a></li>
+    <li><a href="#LoadingPMIDs">Loading PMIDs</a></li>
     <li><a href="#StructuredEditor">Using the Structured Editor</a></li>
     <li><a href="#QueryVis">Using the QueryVis Tree View</a></li>
     <li><a href="#Elasticsearch">How Retrieval Works</a></li>
@@ -73,6 +74,15 @@
         href="https://www.nlm.nih.gov/bsd/disted/pubmedtutorial/cover.html">https://www.nlm.nih.gov/bsd/disted/pubmedtutorial/cover.html</a>
 </p>
 
+<h2 id="LoadingPMIDs">Loading Known Relevant PMIDs</h2>
+
+<p>Loading known-relevant PMIDs into CiteMed allows one to identify how effective a query is at retrieving a baseline
+    set of citations. To load PMIDs into CiteMed, visit the <a href="/settings">settings</a> page (also accessible from
+    the sidebar). Type or paste in the PMIDs of citations that the query that is being formulated should retrieve.
+    These statistics will then be visible in the QueryVis tool.
+</p>
+
+
 <h2 id="StructuredEditor">Using the Structured Editor</h2>
 
 <p>This is a two-way binding of textual query to a structured editor. This allows
@@ -99,5 +109,6 @@
 <p>Elasticsearch is used in the query SERP page and the tree visualisation to retrieve clauses. Eventually PubMed will
     be used to retrieve clauses. The Elasticsearch query may be viewed at the bottom of the SERP page after issuing a
     query.</p>
+
 </body>
 </html>

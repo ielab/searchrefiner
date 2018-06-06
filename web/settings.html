@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CiteMed - Settings</title>
+    <link rel="icon" href="static/favicon.png" type="image/x-png">
+    <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
+    <link rel="stylesheet" href="static/citemed.css" type="text/css">
+</head>
+<body>
+<div class="container">
+    <header class="navbar bg-secondary nav-height mb-2">
+        <section class="navbar-section">
+        {{template "sidebar"}}
+        </section>
+        <section class="navbar-section">
+        </section>
+    </header>
+    <div class="columns">
+        <div class="column col-1"></div>
+        <div class="column col-10">
+            <h1>CiteMed Settings</h1>
+            <p>Here you may configure parts of CiteMed to assist with query formulation.</p>
+            <div class="divider"></div>
+            <div>
+                <label class="form-label" for="rel">Known Relevant PMIDs (separated by a new-line):</label>
+                <textarea class="form-input" id="rel" name="rel"
+                          rows="10">{{ range .Relevant }}{{ . }}
+{{ end }}</textarea>
+                <button id="btn-rel" class="btn btn-primary form-input">Load</button>
+            {{ if not .Relevant }}
+                <p>No known relevant PMIDs have been loaded.</p>
+            {{end}}
+            </div>
+        </div>
+        <div class="column col-1"></div>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+    let rel = document.getElementById("rel");
+    let relBtn = document.getElementById("btn-rel");
+    relBtn.addEventListener("click", function () {
+        let v = rel.value.split("\n");
+        let d = [];
+        for (let i = 0; i < v.length; i++) {
+            if (v[i].length === 0) {
+                continue
+            }
+            let val = parseInt(v[i]);
+            if (isNaN(val)) {
+                alert("PMIDs must be numbers!");
+                return
+            }
+            d.push(val)
+        }
+        let request = new XMLHttpRequest();
+        request.addEventListener("load", function () {
+            window.location.reload();
+        });
+        request.open("POST", "/api/settings/relevant");
+        request.setRequestHeader("Content-Type", "application/json");
+        request.send(JSON.stringify(d));
+    })
+</script>
+</html>

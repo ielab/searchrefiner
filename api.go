@@ -53,8 +53,11 @@ type edge struct {
 }
 
 type tree struct {
-	Nodes []node `json:"nodes"`
-	Edges []edge `json:"edges"`
+	Nodes     []node `json:"nodes"`
+	Edges     []edge `json:"edges"`
+	relevant  map[combinator.Document]struct{}
+	NumRelRet int
+	NumRel    int
 }
 
 func (s server) apiTree(c *gin.Context) {
@@ -103,7 +106,11 @@ func (s server) apiTree(c *gin.Context) {
 		return
 	}
 
-	t := buildTree(root.Root, ss)
+	t := buildTree(root.Root, ss, getSettings(s, c).Relevant...)
+
+	username := s.UserState.Username(c.Request)
+	t.NumRel = len(s.Settings[username].Relevant)
+	t.NumRelRet = len(t.relevant)
 
 	c.JSON(200, t)
 }

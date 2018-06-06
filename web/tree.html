@@ -160,7 +160,10 @@
             </ul>
             <div id="tree-wrapper" v-show="tabVisualise===0">
                 <div id="tree-stats" v-if="numRet">
-                    <p><strong>[[ numRet ]]</strong> citations retrieved</p>
+                    <div><strong>[[ numRet ]]</strong> citations retrieved</div>
+                    <div><strong>[[ numRel ]]</strong> citations relevant</div>
+                    <div><strong>[[ numRelRet ]]</strong> citations relevant retrieved</div>
+                    <a href="/help#LoadingPMIDs"><small>help?</small></a>
                 </div>
                 <div id="tree" class="c-move"></div>
             </div>
@@ -434,6 +437,8 @@
             tabEditor: 0,
             tabVisualise: 0,
             numRet: null,
+            numRel: null,
+            numRelRet: null,
             textQuery: "{{.QueryString}}",
             queryLanguage: "{{.Language}}",
             cqrQuery: {},
@@ -459,6 +464,8 @@
                             self.numRet = resp.nodes[i].value
                         }
                     }
+                    self.numRel = resp.NumRel;
+                    self.numRelRet = resp.NumRelRet;
                     el.classList.remove("loading");
                 });
                 request.open("POST", "/api/tree", true);

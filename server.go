@@ -61,12 +61,14 @@ type citemedQuery struct {
 	QueryString     string
 	Language        string
 	PreviousQueries []citemedQuery
+	Relevant        []string
 }
 
 type server struct {
 	UserState pinterface.IUserState
 	Perm      pinterface.IPermissions
 	Queries   map[string][]citemedQuery
+	Settings  map[string]settings
 	Config    config
 }
 
@@ -106,6 +108,7 @@ func main() {
 	perm.AddUserPath("/tree")
 	perm.AddUserPath("/query")
 	perm.AddUserPath("/transform")
+	perm.AddUserPath("/settings")
 	perm.AddUserPath("/api")
 
 	perm.AddPublicPath("/account")
@@ -120,6 +123,7 @@ func main() {
 		Perm:      perm,
 		Config:    c,
 		Queries:   make(map[string][]citemedQuery),
+		Settings:  make(map[string]settings),
 	}
 
 	permissionHandler := func(c *gin.Context) {
@@ -143,7 +147,7 @@ func main() {
 		// Views.
 		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
-		"web/help.html", "web/error.html", "web/results.html",
+		"web/help.html", "web/error.html", "web/results.html", "web/settings.html",
 		// Components.
 		"components/sidebar.tmpl.html", "components/util.tmpl.html",
 		"components/login.template.html",
@@ -183,6 +187,9 @@ func main() {
 	g.GET("/tree", handleTree)
 	g.POST("/tree", handleTree)
 	g.POST("/api/tree", s.apiTree)
+
+	g.GET("/settings", s.handleSettings)
+	g.POST("/api/settings/relevant", s.apiSettingsRelevantSet)
 
 	// Other utility pages.
 	g.GET("/help", func(c *gin.Context) {
