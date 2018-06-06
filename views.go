@@ -290,8 +290,17 @@ func (s server) handleQuery(c *gin.Context) {
 	}
 
 	username := s.UserState.Username(c.Request)
-	sr.PreviousQueries = s.Queries[username]
-	s.Queries[username] = append(s.Queries[username], citemedQuery{QueryString: rawQuery, Language: lang})
+
+	// Reverse the list of previous queries.
+	rev := make([]citemedQuery, len(s.Queries[username]))
+	j := 0
+	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
+		rev[j] = s.Queries[username][i]
+		j++
+	}
+	sr.PreviousQueries = rev
+
+	s.Queries[username] = append(s.Queries[username], citemedQuery{QueryString: rawQuery, Language: lang, NumRet: sr.TotalHits})
 	c.HTML(http.StatusOK, "query.html", sr)
 }
 

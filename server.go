@@ -60,6 +60,7 @@ type config struct {
 type citemedQuery struct {
 	QueryString     string
 	Language        string
+	NumRet          int64
 	PreviousQueries []citemedQuery
 	Relevant        []string
 }

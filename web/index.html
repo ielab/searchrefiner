@@ -52,15 +52,30 @@
             {{ if .  }}
                 <h3>Previous Queries</h3>
             {{ range . }}
-                <form action="/query" method="post" accept-charset="UTF-8">
-                    <input type="hidden" name="query" value="{{ .QueryString }}">
-                    <div>
-                        <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
-                        <div class="form-group">
-                            <input class="btn btn-primary" type="submit" value="Resubmit"/>
-                        </div>
+                <div class="columns">
+                    <div class="column col-10">
+                        <form action="/query" method="post" accept-charset="UTF-8">
+                            <input type="hidden" name="query" value="{{ .QueryString }}">
+                            <input type="hidden" name="lang" value="{{ .Language }}">
+                            <div>
+                                <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
+                                <div class="form-group">
+                                    <input class="btn btn-primary" type="submit" value="Resubmit"/>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                    <div class="column col-2">
+                        <form action="/results" method="post">
+                            <div class="ml-2 mt-2">
+                                <small><b>{{ .NumRet }}</b> results</small>
+                            </div>
+                            <input type="hidden" name="query" value="{{ .QueryString }}">
+                            <input type="hidden" name="lang" value="{{ .Language }}">
+                            <input class="btn btn-link btn-sm" type="submit" value="Explore Results">
+                        </form>
+                    </div>
+                </div>
             {{ end }}
                 <a href="/clear" class="btn btn-link">Clear</a>
             {{ end }}

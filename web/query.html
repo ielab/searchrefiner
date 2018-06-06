@@ -33,7 +33,8 @@
                             <label>Query Language
                                 <small><a href="/help#WritingQueries">help?</a></small>
                                 <select id="lang" class="form-select" name="lang">
-                                    <option value="medline" {{if eq .Language "medline"}} selected {{end}}>MEDLINE</option>
+                                    <option value="medline" {{if eq .Language "medline"}} selected {{end}}>MEDLINE
+                                    </option>
                                     <option value="pubmed" {{if eq .Language "pubmed"}} selected {{end}}>PubMed</option>
                                     <option disabled>Cochrane Library</option>
                                     <option disabled>EMBASE</option>
@@ -70,15 +71,30 @@
                 <div class="divider"></div>
                 <h3>Previous Queries</h3>
             {{ range .PreviousQueries }}
-                <form action="/query" method="post" accept-charset="UTF-8">
-                    <input type="hidden" name="query" value="{{ .QueryString }}">
-                    <div>
-                        <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
-                        <div class="form-group">
-                            <input class="btn btn-primary" type="submit" value="Resubmit"/>
+                <div class="columns">
+                    <div class="column col-9">
+                        <form action="/query" method="post" accept-charset="UTF-8">
+                            <input type="hidden" name="query" value="{{ .QueryString }}">
+                            <input type="hidden" name="lang" value="{{ .Language }}">
+                            <div>
+                                <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
+                                <div class="form-group">
+                                    <input class="btn btn-primary" type="submit" value="Resubmit"/>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-3">
+                        <div class="column col-5">
+                            <form action="/results" method="post">
+                                <div class="ml-2 mt-2"><small><b>{{ .NumRet }}</b> results</small></div>
+                                <input type="hidden" name="query" value="{{ .QueryString }}">
+                                <input type="hidden" name="lang" value="{{ .Language }}">
+                                <input class="btn btn-link btn-sm" type="submit" value="Explore Results">
+                            </form>
                         </div>
                     </div>
-                </form>
+                </div>
             {{ end }}
                 <a href="/clear" class="btn btn-link">Clear</a>
             {{ end }}
