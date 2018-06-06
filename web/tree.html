@@ -89,7 +89,7 @@
     <header class="navbar bg-secondary nav-height">
     {{template "sidebar"}}
         <section class="navbar-section">
-            <button class="btn btn-link btn-sm text-error nav-height" v-on:click="updateTree">
+            <button class="btn btn-link btn-sm text-error nav-height" id="btn-update-tree" v-on:click="updateTree">
                 <i class="icon icon-refresh"></i> Update Tree
             </button>
             <button class="btn btn-link btn-sm text-error nav-height">
@@ -163,7 +163,9 @@
                     <div><strong>[[ numRet ]]</strong> citations retrieved</div>
                     <div><strong>[[ numRel ]]</strong> citations relevant</div>
                     <div><strong>[[ numRelRet ]]</strong> citations relevant retrieved</div>
-                    <a href="/help#LoadingPMIDs"><small>help?</small></a>
+                    <a href="/help#LoadingPMIDs">
+                        <small>help?</small>
+                    </a>
                 </div>
                 <div id="tree" class="c-move"></div>
             </div>
@@ -261,6 +263,10 @@
     </div>
 </script>
 
+
+<!-- Console view. -->
+<script src="static/jquery.min.js" type="text/javascript"></script>
+<script src="static/logtail.js" type="text/javascript"></script>
 
 <!-- Main app code. -->
 <script src="static/vue.js" type="text/javascript"></script>
@@ -451,9 +457,9 @@
             ]
         },
         methods: {
-            updateTree: function (ev) {
+            updateTree: function () {
                 var self = this
-                var el = ev.srcElement;
+                var el = document.getElementById("btn-update-tree");
                 el.classList.add("loading");
                 var request = new XMLHttpRequest();
                 request.addEventListener("load", function (ev) {
@@ -486,6 +492,9 @@
             }, 300)
         },
         mounted: function () {
+            if (this.textQuery.length > 0) {
+                this.updateTree();
+            }
             this.updateText();
         },
         watch: {
@@ -579,10 +588,6 @@
     // initialize your network!
     var network = new vis.Network(container, data, options);
 </script>
-
-<!-- Console view. -->
-<script src="static/jquery.min.js" type="text/javascript"></script>
-<script src="static/logtail.js" type="text/javascript"></script>
 
 <script type="text/javascript">
     var editView = function () {

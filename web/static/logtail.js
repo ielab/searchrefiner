@@ -191,8 +191,6 @@ var GetLog;
             show_log();
             e.preventDefault();
         });
-
-        get_log();
     });
 
 })();
