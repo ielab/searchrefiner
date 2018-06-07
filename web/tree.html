@@ -194,11 +194,36 @@
     <div class="panel mb-1">
         <div class="panel-header">
             <span class="text-uppercase text-bold">[[query.operator]]</span>
+            <span class="tile-action">
+                <button class="btn btn-link btn-sm" v-on:click="removeSelf">
+                    <i class="icon icon-cross text-error"></i>
+                </button>
+            </span>
         </div>
         <div class="panel-body">
             <draggable v-model="query.children" :options="{group: 'children'}" style="min-height: 16px"
                        @change="updateText">
-                <ied v-bind:query="child" v-for="child in query.children" class="c-move"></ied>
+            {{/*<ied v-bind:query="child" v-for="child in query.children" ></ied>*/}}
+                <div v-bind:query="child" v-for="child in query.children">
+                    <div v-if="child.operator">
+                        <bool-query v-bind:query="child" v-on:remove-child="removeChild" :key="child.id"
+                                    class="c-move"></bool-query>
+                    </div>
+                    <div v-else-if="child.fields">
+                        <keyword-query v-bind:query="child" v-on:remove-child="removeChild" :key="child.id"
+                                       class="c-move"></keyword-query>
+                    </div>
+                    <div v-else>
+                        <div class="empty">
+                            <div class="empty-icon">
+                                <i class="icon icon-flag"></i>
+                            </div>
+                            <p class="empty-title h5">Error</p>
+                            <p class="empty-subtitle">There is an error with the query. Use the text editor to
+                                resolve.</p>
+                        </div>
+                    </div>
+                </div>
             </draggable>
         </div>
         <div class="panel-footer">
@@ -218,28 +243,27 @@
         </div>
         <div class="tile-content">
             <div class="tile-title">
-                <!--suppress HtmlUnknownAttribute -->
                 <input title="Query string" class="form-input input-sm" type="text" v-model="query.query"
                        ref="query" v-on:change="updateText">
             </div>
             <div class="btn-group btn-group-block">
-                <label v-for="field in fields" class="small btn btn-sm" v-bind:class="{ 'btn-primary' : field.checked }"
-                       v-bind:for="[[ id + field.fancy ]]">[[field.fancy]]
-                    <input v-bind:id="[[ id + field.name ]]" type="checkbox" v-bind:value="[[field.name]]"
-                           v-model="field.checked" v-bind:title="[[field.name]]" style="display:none;">
-                </label>
+                <div v-for="field in fields" class="small btn btn-sm" v-bind:class="{ 'btn-primary' : field.checked }"
+                     v-bind:for="[[ id + field.fancy ]]" v-on:click="[[ field.checked = !field.checked ]]">
+                    [[field.fancy]]
+                </div>
             </div>
             <div class="btn-group">
                 <span class="structured-check btn-group btn-group-block">
                     <label v-bind:for="[[ id ]]">exploded?
                         <input v-bind:id="[[ id ]]" type="checkbox" v-bind:value="exploded"
-                               v-model="query.options.exploded" v-bind:title="exploded">
+                               v-model="query.options.exploded" v-bind:title="exploded"
+                               v-on:click="[[exploded = !exploded]]">
                     </label>
                 </span>
             </div>
         </div>
         <div class="tile-action">
-            <button class="btn btn-link btn-sm ">
+            <button class="btn btn-link btn-sm" v-on:click="removeSelf">
                 <i class="icon icon-cross text-error"></i>
             </button>
         </div>
@@ -300,7 +324,17 @@
             }
         },
         methods: {
-            updateText: updateText
+            updateText: updateText,
+            removeChild: function (queryID) {
+                console.log("got a request to remove a child")
+                console.log(this.$props.query, queryID);
+                for (var i = 0; i < this.$props.query.children.length; i++) {
+                    if (this.$props.children.id === queryID) {
+                        this.$props.children.splice(this.$props.children.indexOf(i), 1);
+                        break;
+                    }
+                }
+            },
         }
     });
     Vue.component("bool-query", {
@@ -311,6 +345,9 @@
             return {
                 id: structuredID++
             }
+        },
+        beforeMount: function () {
+            this.$props.query.options.id = this.id;
         },
         methods: {
             updateText: updateText,
@@ -327,6 +364,22 @@
                     fields: [],
                     options: {}
                 })
+            },
+            removeChild: function (queryID) {
+                console.log("got a request to remove a child")
+                for (var i = 0; i < this.$props.query.children.length; i++) {
+                    console.log(this.$props.query.children[i].options.id, queryID)
+                    if (this.$props.query.children[i].options.id === queryID) {
+                        console.log("found", queryID);
+                        this.$props.query.children.splice(i, 1);
+                        updateText();
+                        break;
+                    }
+                }
+            },
+            removeSelf: function () {
+                console.log("trying to remove self", this.id)
+                this.$emit("remove-child", this.id)
             }
         }
     });
@@ -349,9 +402,17 @@
             }
         },
         methods: {
-            updateText: updateText
+            updateText: updateText,
+            removeSelf: function () {
+                console.log("trying to remove self");
+                this.$emit("remove-child", this.id);
+            },
+            removeChild: function (queryID) {
+                console.log("got a request to remove self");
+            }
         },
-        mounted: function () {
+        beforeMount: function () {
+            this.$props.query.options.id = this.id;
             if (!("exploded" in this.$props.query.options)) {
                 this.$props.query.options.exploded = false;
             }
@@ -363,21 +424,28 @@
                     }
                 }
             }
-            this.$refs.query.focus();
         },
         watch: {
-            exploded: function () {
-                this.$props.query.options.exploded = this.exploded;
+            exploded: {
+                handler: function () {
+                    this.$props.query.options.exploded = this.exploded;
+                    updateText();
+                },
+                deep: true
             },
             fields: {
                 handler: function () {
+                    var oldFields = this.$props.query.fields.length;
                     this.$props.query.fields = [];
                     for (var i = 0; i < this.fields.length; i++) {
                         if (this.fields[i].checked) {
                             this.$props.query.fields.push(this.fields[i].name);
                         }
                     }
-                    updateText();
+                    // Only request an update when fields are changed.
+                    if (oldFields != this.$props.query.fields.length) {
+                        updateText();
+                    }
                 },
                 deep: true
             },
@@ -399,7 +467,6 @@
             }
         },
         mounted: function () {
-            // console.log(this.sets)
             var div = d3.select(this.$el);
             div.datum(this.sets).call(this.chart);
             var tooltip = d3.select("body").append("div")
@@ -463,6 +530,7 @@
                 el.classList.add("loading");
                 var request = new XMLHttpRequest();
                 request.addEventListener("load", function (ev) {
+                    el.classList.remove("loading");
                     var resp = JSON.parse(ev.target.responseText);
                     network.setData(resp);
                     for (var i = 0; i < resp.nodes.length; i++) {
@@ -472,7 +540,6 @@
                     }
                     self.numRel = resp.NumRel;
                     self.numRelRet = resp.NumRelRet;
-                    el.classList.remove("loading");
                 });
                 request.open("POST", "/api/tree", true);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
