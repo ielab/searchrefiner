@@ -1,0 +1,16 @@
+{{ define "bigbro" }}
+<script type="text/javascript" src="/static/bigbro.js"></script>
+<script type="text/javascript">
+    let bb;
+    let request = new XMLHttpRequest();
+    request.addEventListener("load", function (ev) {
+        if (ev.currentTarget.status !== 200) {
+            bb = BigBro.init("anonymous", "localhost:1984");
+        } else {
+            bb = BigBro.init(ev.target.responseText, "localhost:1984");
+        }
+    });
+    request.open("GET", "/api/username", true);
+    request.send();
+</script>
+{{end}}

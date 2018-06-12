@@ -120,6 +120,12 @@ func (s server) apiAccountLogout(c *gin.Context) {
 	return
 }
 
+func (s server) apiAccountUsername(c *gin.Context) {
+	username := s.UserState.Username(c.Request)
+	c.String(http.StatusOK, username)
+	return
+}
+
 func (s server) handleAdmin(c *gin.Context) {
 	u, err := s.UserState.AllUnconfirmedUsernames()
 	if err != nil {

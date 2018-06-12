@@ -151,7 +151,7 @@ func main() {
 		"web/help.html", "web/error.html", "web/results.html", "web/settings.html",
 		// Components.
 		"components/sidebar.tmpl.html", "components/util.tmpl.html",
-		"components/login.template.html",
+		"components/login.template.html", "components/bigbro.tmpl.html",
 	)
 	g.Static("/static/", "./web/static")
 
@@ -167,6 +167,7 @@ func main() {
 	g.POST("/account/api/login", s.apiAccountLogin)
 	g.POST("/account/api/create", s.apiAccountCreate)
 	g.GET("/account/api/logout", s.apiAccountLogout)
+	g.GET("/api/username", s.apiAccountUsername)
 
 	// Main query interface.
 	g.GET("/", s.handleIndex)
