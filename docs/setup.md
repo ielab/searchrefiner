@@ -14,16 +14,13 @@ To run the software, either use `go build` to create a compiled binary and run `
 CiteMed is configured via a configuration file named `config.json`. Upon startup, the software will look for this file.
 The configuration items are used as follows:
 
+ - `Host`: The URL and port to run CiteMed.
  - `AdminEmail`: The administrator who should be contacted for any problems with the software.
  - `Admins`: A list of usernames that are able to access the `/admin` endpoint to approve new users. Note that this list
  must be configured prior to accounts being added (as it is checked before a new user is added).
- - `Elasticsearch`: The URL (containing protocol) of the Elasticsearch instance (refer to the 
- [README](https://github.com/ielab/citemed/blob/master/README.md) for more information on why and how Elasticsearch 
- must be configured).
- - `Index`: The Elasticsearch index to use.
- 
-**Note**: Future releases will not solely rely on Elasticsearch and in fact will hook into the PubMed retrieval API. 
- 
+ - `Entrez.Email`: The email to report to eutils. 
+ - `Entrez.APIKey`: The API key to report to eutils. 
+  
 ## Databases
 
 CiteMed uses BoltDB for storing user information. This file will be created when the software is run for the first time
