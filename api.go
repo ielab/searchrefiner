@@ -5,36 +5,22 @@ import (
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove"
 	"github.com/hscells/groove/combinator"
-	"github.com/hscells/groove/stats"
-	"gopkg.in/olivere/elastic.v5"
-	"strings"
-	"context"
 	"net/http"
-	"encoding/json"
-	"io"
 	"github.com/hscells/transmute/pipeline"
 	"github.com/hscells/transmute"
-	"fmt"
+	"strconv"
+	"github.com/hscells/groove/stats"
 )
 
-type document struct {
-	ID               string
-	Title            string
-	Text             string
-	Authors          []string
-	PublicationTypes []string
-	MeSHHeadings     []string
-}
-
 type searchResponse struct {
-	TotalHits          int64
-	TookInMillis       int64
-	OriginalQuery      string
-	ElasticsearchQuery string
-	PreviousQueries    []citemedQuery
-	Documents          []document
-	Language           string
-	ScrollID           string
+	Start            int
+	TotalHits        int64
+	TookInMillis     float64
+	OriginalQuery    string
+	TransformedQuery string
+	PreviousQueries  []citemedQuery
+	Documents        []stats.EntrezDocument
+	Language         string
 }
 
 type node struct {
@@ -81,14 +67,6 @@ func (s server) apiTree(c *gin.Context) {
 		return
 	}
 
-	ss, err := stats.NewElasticsearchStatisticsSource(
-		stats.ElasticsearchScroll(true),
-		stats.ElasticsearchIndex(s.Config.Index),
-		stats.ElasticsearchDocumentType("doc"),
-		stats.ElasticsearchHosts(s.Config.Elasticsearch),
-		stats.ElasticsearchField("text"),
-		stats.ElasticsearchSearchOptions(stats.SearchOptions{Size: 800, RunName: "citemed"}),
-	)
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
@@ -100,13 +78,13 @@ func (s server) apiTree(c *gin.Context) {
 	}
 
 	var root combinator.LogicalTree
-	root, _, err = combinator.NewLogicalTree(groove.NewPipelineQuery("citemed", "0", repr.(cqr.CommonQueryRepresentation)), ss, seen)
+	root, _, err = combinator.NewLogicalTree(groove.NewPipelineQuery("citemed", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, seen)
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
 	}
 
-	t := buildTree(root.Root, ss, getSettings(s, c).Relevant...)
+	t := buildTree(root.Root, s.Entrez, getSettings(s, c).Relevant...)
 
 	username := s.UserState.Username(c.Request)
 	t.NumRel = len(s.Settings[username].Relevant)
@@ -116,97 +94,109 @@ func (s server) apiTree(c *gin.Context) {
 }
 
 func (s server) apiScroll(c *gin.Context) {
-	scrollID := c.PostForm("scroll")
+	rawQuery := c.PostForm("query")
+	lang := c.PostForm("lang")
 
-	type scrollResponse struct {
-		Documents []document
-		ScrollID  string
-		Finished  bool
-	}
-
-	var client *elastic.Client
-	var err error
-	if strings.Contains(s.Config.Elasticsearch, "localhost") {
-		client, err = elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch), elastic.SetSniff(false))
-		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-	} else {
-		client, err = elastic.NewClient(elastic.SetURL(s.Config.Elasticsearch))
-		if err != nil {
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-	}
-
-	finished := false
-	resp, err := client.Scroll(s.Config.Index).ScrollId(scrollID).Size(1).Scroll("1h").Do(context.Background())
-	if err == io.EOF {
-		finished = true
-		c.JSON(http.StatusOK, scrollResponse{Finished: finished})
+	if len(rawQuery) == 0 {
+		c.Redirect(http.StatusFound, "/")
 		return
-	} else if err != nil {
+	}
+
+	t := make(map[string]pipeline.TransmutePipeline)
+	t["medline"] = transmute.Medline2Cqr
+	t["pubmed"] = transmute.Pubmed2Cqr
+
+	startString := c.PostForm("start")
+	scroll, err := strconv.ParseInt(startString, 10, 64)
+	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	docs := make([]document, len(resp.Hits.Hits))
-
-	for i, hit := range resp.Hits.Hits {
-		var doc map[string]interface{}
-		err = json.Unmarshal(*hit.Source, &doc)
-		if err != nil {
-			c.AbortWithError(500, err)
-			return
-		}
-
-		docs[i] = document{
-			ID:    hit.Id,
-			Title: doc["title"].(string),
-			Text:  doc["text"].(string),
-		}
-
-		docs[i].PublicationTypes = make([]string, len(doc["publication_types"].([]interface{})))
-		for j, pubType := range doc["publication_types"].([]interface{}) {
-			docs[i].PublicationTypes[j] = pubType.(string)
-		}
-
-		docs[i].MeSHHeadings = make([]string, len(doc["mesh_headings"].([]interface{})))
-		for j, heading := range doc["mesh_headings"].([]interface{}) {
-			docs[i].MeSHHeadings[j] = heading.(string)
-		}
-
-		docs[i].Authors = make([]string, len(doc["authors"].([]interface{})))
-		for j, author := range doc["authors"].([]interface{}) {
-			a := author.(map[string]interface{})
-			docs[i].Authors[j] = fmt.Sprintf("%v %v", a["last_name"], a["first_name"])
-		}
+	type scrollResponse struct {
+		Documents []stats.EntrezDocument
+		Start     int
+		Finished  bool
 	}
 
-	c.JSON(http.StatusOK, scrollResponse{Documents: docs, ScrollID: resp.ScrollId, Finished: finished})
+	compiler := t["medline"]
+	if v, ok := t[lang]; ok {
+		compiler = v
+	} else {
+		lang = "medline"
+	}
+
+	cq, err := compiler.Execute(rawQuery)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	cqString, err := cq.String()
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	pubmedQuery, err := transmute.Cqr2Pubmed.Execute(cqString)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	q, err := pubmedQuery.String()
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	pmids, err := s.Entrez.Search(q, s.Entrez.SearchStart(int(scroll)), s.Entrez.SearchSize(10))
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	docs, err := s.Entrez.Fetch(pmids)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	finished := false
+	if len(docs) == 0 {
+		finished = true
+	}
+
+	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished})
 }
 
 func apiTransform(c *gin.Context) {
-	b, err := c.GetRawData()
+	rawQuery := c.PostForm("query")
+	lang := c.PostForm("lang")
+
+	t := make(map[string]pipeline.TransmutePipeline)
+	t["pubmed"] = transmute.Cqr2Pubmed
+	t["medline"] = transmute.Cqr2Medline
+
+	compiler := t["medline"]
+	if v, ok := t[lang]; ok {
+		compiler = v
+	} else {
+		lang = "medline"
+	}
+
+	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
-		c.AbortWithError(500, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	q, err := apiPipeline.Execute(string(b))
+	q, err := cq.StringPretty()
 	if err != nil {
-		c.AbortWithError(500, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-
-	s, err := q.StringPretty()
-	if err != nil {
-		c.AbortWithError(500, err)
-		return
-	}
-
-	c.Data(200, "text/plain", []byte(s))
+	c.Data(200, "text/plain", []byte(q))
 }
 
 func apiCQR2Query(c *gin.Context) {

@@ -103,33 +103,33 @@
             <div class="divider"></div>
             <h3 id="queries">Queries</h3>
             <pre id="original" class="code" data-lang="Original">{{ .OriginalQuery }}</pre>
-            <pre id="elasticsearch" class="code" data-lang="Elasticsearch">{{ .ElasticsearchQuery }}</pre>
+            <pre id="elasticsearch" class="code" data-lang="Transformed">{{ .TransformedQuery }}</pre>
         </div>
         <div class="column col-1"></div>
     </div>
 </div>
 <script>
 
-    var editEl = document.getElementById("edit");
-    var visEl = document.getElementById("vis");
-    var resultsEl = document.getElementById("results");
-    var searchEl = document.getElementById("query");
-    var langEl = document.getElementById("lang");
+    let editEl = document.getElementById("edit");
+    let visEl = document.getElementById("vis");
+    let resultsEl = document.getElementById("results");
+    let searchEl = document.getElementById("query");
+    let langEl = document.getElementById("lang");
 
     visEl.addEventListener("click", function () {
-        var form = document.createElement("form");
+        let form = document.createElement("form");
         form.target = "_self";
         form.method = "POST";
         form.action = "/tree";
         form.style.display = "none";
 
-        var queryInput = document.createElement("input");
+        let queryInput = document.createElement("input");
         queryInput.type = "hidden";
         queryInput.name = "query";
         queryInput.value = searchEl.value;
         form.appendChild(queryInput);
 
-        var langInput = document.createElement("input");
+        let langInput = document.createElement("input");
         langInput.type = "hidden";
         langInput.name = "lang";
         langInput.value = langEl.value;
@@ -140,19 +140,19 @@
     });
 
     resultsEl.addEventListener("click", function () {
-        var form = document.createElement("form");
+        let form = document.createElement("form");
         form.target = "_self";
         form.method = "POST";
         form.action = "/results";
         form.style.display = "none";
 
-        var queryInput = document.createElement("input");
+        let queryInput = document.createElement("input");
         queryInput.type = "hidden";
         queryInput.name = "query";
         queryInput.value = searchEl.value;
         form.appendChild(queryInput);
 
-        var langInput = document.createElement("input");
+        let langInput = document.createElement("input");
         langInput.type = "hidden";
         langInput.name = "lang";
         langInput.value = langEl.value;
@@ -168,17 +168,23 @@
     });
 
     function openWindowWithPost(url, data) {
-        var form = document.createElement("form");
+        let form = document.createElement("form");
         form.target = "_self";
         form.method = "POST";
         form.action = url;
         form.style.display = "none";
 
-        var input = document.createElement("input");
+        let input = document.createElement("input");
         input.type = "hidden";
         input.name = "query";
         input.value = data;
         form.appendChild(input);
+
+        let langInput = document.createElement("input");
+        langInput.type = "hidden";
+        langInput.name = "lang";
+        langInput.value = langEl.value;
+        form.appendChild(langInput);
 
         document.body.appendChild(form);
         form.submit();

@@ -13,7 +13,7 @@ func fmtLabel(retrieved int, relret int) string {
 	return fmt.Sprintf("%v (%v)", retrieved, relret)
 }
 
-func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss *stats.ElasticsearchStatisticsSource, relevant ...combinator.Document) (nid int, t tree) {
+func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss stats.StatisticsSource, relevant ...combinator.Document) (nid int, t tree) {
 	if t.relevant == nil {
 		t.relevant = make(map[combinator.Document]struct{})
 	}
@@ -30,7 +30,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 			}
 		}
 	} else {
-		d, err := ss.ExecuteFast(groove.NewPipelineQuery("adj", "0", query), ss.SearchOptions())
+		d, err := stats.GetDocumentIDs(groove.NewPipelineQuery("adj", "0", query), ss)
 		if err != nil {
 			log.Println("something bad happened")
 			log.Fatalln(err)
@@ -79,7 +79,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 	return
 }
 
-func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss *stats.ElasticsearchStatisticsSource, relevant ...combinator.Document) (nid int, t tree) {
+func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss stats.StatisticsSource, relevant ...combinator.Document) (nid int, t tree) {
 	if t.relevant == nil {
 		t.relevant = make(map[combinator.Document]struct{})
 	}
@@ -129,7 +129,7 @@ func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss
 	return
 }
 
-func buildTree(node combinator.LogicalTreeNode, ss *stats.ElasticsearchStatisticsSource, relevant ...combinator.Document) (t tree) {
+func buildTree(node combinator.LogicalTreeNode, ss stats.StatisticsSource, relevant ...combinator.Document) (t tree) {
 	_, t = buildTreeRec(node, 1, 0, 0, ss, relevant...)
 	log.Println("finished processing query, tree has been constructed")
 	return

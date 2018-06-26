@@ -73,7 +73,8 @@
                     <li class="pb-2">
                         <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.ID}}">{{.Title}}</a>
                         <div class="text-left text-sm">
-                        {{range .Authors}}<a class="text-success author-sm" href='https://www.ncbi.nlm.nih.gov/pubmed/?term="{{ . }}"[Author]'>{{.}}</a>{{end}}
+                        {{range .Authors}}<a class="text-success author-sm"
+                                             href='https://www.ncbi.nlm.nih.gov/pubmed/?term="{{ . }}"[Author]'>{{.}}</a>{{end}}
                         </div>
                         <div class="text-left text-sm">{{.Text}}</div>
                         <div class="text-left text-sm text-gray">
@@ -81,11 +82,13 @@
                         </div>
                         <div class="text-left text-sm text-gray">
                             <span class="span-sm"><strong>Publication Types</strong>:</span>
-                        {{range .PublicationTypes}}<a class="text-gray a-sm" href="https://www.ncbi.nlm.nih.gov/pubmed/?term={{ . }}[Publication Type]">{{ . }}</a>{{end}}
+                        {{range .PublicationTypes}}<a class="text-gray a-sm"
+                                                      href="https://www.ncbi.nlm.nih.gov/pubmed/?term={{ . }}[Publication Type]">{{ . }}</a>{{end}}
                         </div>
                         <div class="text-left text-sm text-gray">
                             <span class="span-sm"><strong>MeSH headings</strong>:</span>
-                        {{range .MeSHHeadings}}<a class="text-gray a-sm" href="https://www.ncbi.nlm.nih.gov/mesh/?term={{ . }}">{{ . }}</a>{{end}}
+                        {{range .MeSHHeadings}}<a class="text-gray a-sm"
+                                                  href="https://www.ncbi.nlm.nih.gov/mesh/?term={{ . }}">{{ . }}</a>{{end}}
                         </div>
                     </li>
                 {{ end }}
@@ -134,32 +137,35 @@
             data: [],
             busy: false,
             finished: false,
-            scroll: "{{.ScrollID}}"
+            start: {{.Start}},
+            query: "{{.OriginalQuery}}",
+            lang: "{{.Language}}"
         },
         methods: {
             loadMore: function () {
-                var self = this;
+                let self = this;
                 if (!self.finished && !self.busy) {
                     self.busy = true;
-                    var request = new XMLHttpRequest();
+                    let request = new XMLHttpRequest();
                     request.addEventListener("load", function (ev) {
                         if (ev.currentTarget.status === 200) {
-                            var resp = JSON.parse(ev.currentTarget.responseText);
+                            let resp = JSON.parse(ev.currentTarget.responseText);
+                            console.log(resp)
                             if (resp.Finished) {
                                 self.busy = false;
                                 self.finished = true;
                                 return
                             }
-                            for (var i = 0; i < resp.Documents.length; i++) {
+                            for (let i = 0; i < resp.Documents.length; i++) {
                                 self.data.push(resp.Documents[i]);
                             }
-                            self.scroll = resp.ScrollID;
+                            self.start = self.start + resp.Documents.length;
                             self.busy = false;
                         }
                     });
                     request.open("POST", "/api/scroll");
                     request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                    request.send("scroll=" + self.scroll);
+                    request.send("start=" + self.start + "&query=" + self.query + "&lang=" + self.lang);
                 }
             }
         }

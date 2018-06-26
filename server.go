@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/groove/combinator"
-	"github.com/hscells/transmute/backend"
-	"github.com/hscells/transmute/lexer"
-	"github.com/hscells/transmute/parser"
-	"github.com/hscells/transmute/pipeline"
 	"github.com/xyproto/permissionbolt"
 	"github.com/xyproto/pinterface"
 	"log"
@@ -16,45 +12,21 @@ import (
 	"os"
 	"strings"
 	"io"
+	"github.com/hscells/groove/stats"
 )
 
-var (
-	cqrPipeline = pipeline.NewPipeline(
-		parser.NewMedlineParser(),
-		backend.NewCQRBackend(),
-		pipeline.TransmutePipelineOptions{
-			LexOptions: lexer.LexOptions{
-				FormatParenthesis: false,
-			},
-			RequiresLexing: true,
-		})
-	elasticPipeline = pipeline.NewPipeline(
-		parser.NewCQRParser(),
-		backend.NewElasticsearchCompiler(),
-		pipeline.TransmutePipelineOptions{
-			LexOptions: lexer.LexOptions{
-				FormatParenthesis: false,
-			},
-			RequiresLexing: false,
-		})
-	apiPipeline = pipeline.NewPipeline(
-		parser.NewCQRParser(),
-		backend.NewMedlineBackend(),
-		pipeline.TransmutePipelineOptions{
-			LexOptions: lexer.LexOptions{
-				FormatParenthesis: false,
-			},
-			RequiresLexing: false,
-		})
-	seen = combinator.NewFileQueryCache("file_cache")
-)
+var seen = combinator.NewFileQueryCache("file_cache")
+
+type entrezConfig struct {
+	Email  string
+	APIKey string
+}
 
 type config struct {
-	NoAuthentication string
-	AdminEmail       string
-	Admins           []string
-	Elasticsearch    string
-	Index            string
+	Host       string
+	AdminEmail string
+	Admins     []string
+	Entrez     entrezConfig
 }
 
 type citemedQuery struct {
@@ -65,18 +37,18 @@ type citemedQuery struct {
 	Relevant        []string
 }
 
+type errorPage struct {
+	Error    string
+	BackLink string
+}
+
 type server struct {
 	UserState pinterface.IUserState
 	Perm      pinterface.IPermissions
 	Queries   map[string][]citemedQuery
 	Settings  map[string]settings
 	Config    config
-}
-
-//noinspection SpellCheckingInspection
-type errorpage struct {
-	Error    string
-	BackLink string
+	Entrez    stats.EntrezStatisticsSource
 }
 
 func main() {
@@ -119,17 +91,24 @@ func main() {
 
 	perm.AddAdminPath("/admin")
 
+	ss := stats.NewEntrezStatisticsSource(
+		stats.EntrezOptions(stats.SearchOptions{Size: 100000, RunName: "citemed"}),
+		stats.EntrezTool("citemed"),
+		stats.EntrezEmail(c.Entrez.Email),
+		stats.EntrezAPIKey(c.Entrez.APIKey), )
+
 	s := server{
 		UserState: perm.UserState(),
 		Perm:      perm,
 		Config:    c,
 		Queries:   make(map[string][]citemedQuery),
 		Settings:  make(map[string]settings),
+		Entrez:    ss,
 	}
 
 	permissionHandler := func(c *gin.Context) {
 		if perm.Rejected(c.Writer, c.Request) {
-			c.HTML(500, "error.html", errorpage{Error: "unauthorised user", BackLink: "/"})
+			c.HTML(500, "error.html", errorPage{Error: "unauthorised user", BackLink: "/"})
 			c.AbortWithStatus(http.StatusForbidden)
 			return
 		} else if len(perm.UserState().Username(c.Request)) > 0 && !perm.UserState().IsConfirmed(perm.UserState().Username(c.Request)) {
@@ -216,5 +195,5 @@ Y88b  d88P 888 Y88b. Y8b.     888   "   888 Y8b.     Y88b 888
  https://ielab.io/citemed
 
 `)
-	g.Run("0.0.0.0:4853")
+	g.Run(c.Host)
 }

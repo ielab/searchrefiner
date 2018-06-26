@@ -46,15 +46,21 @@
 </head>
 <body>
 {{template "bigbro"}}
-<div class="container">
+<div id="vue" class="container">
     <header class="navbar bg-secondary nav-height">
         <section class="navbar-section">
         {{template "sidebar"}}
         </section>
         <section class="navbar-section">
+            <select id="lang" class="form-select" name="lang" :value="lang" v-model="lang">
+                <option value="medline" {{if eq .Language "medline"}} selected {{end}}>MEDLINE</option>
+                <option value="pubmed" {{if eq .Language "pubmed"}} selected {{end}}>PubMed</option>
+                <option disabled>Cochrane Library</option>
+                <option disabled>EMBASE</option>
+            </select>
         </section>
     </header>
-    <div class="columns" id="vue">
+    <div class="columns">
         <div class="column col-6">
             <editor editor-id="query" :content="input" v-on:change-content="updateInput"></editor>
         </div>
@@ -91,7 +97,7 @@
             this.editor.setValue(this.content, 1);
             this.editor.session.setMode("ace/mode/json");
 
-            var self = this;
+            let self = this;
             this.editor.on('change', function () {
                 self.beforeContent = self.editor.getValue();
                 self.$emit('change-content', self.editor.getValue());
@@ -101,29 +107,35 @@
         }
     });
 
-    var trans = document.getElementById("transformation");
-    var vm = new Vue({
+    let trans = document.getElementById("transformation");
+    let vm = new Vue({
         el: "#vue",
         data: {
             input: "{{ .Query }}",
+            lang: "{{ .Language }}",
             output: ""
+        },
+        watch: {
+            'lang': function (e) {
+                console.log(e);
+                this.transform()
+            }
         },
         methods: {
             transform: _.debounce(function () {
-                var request = new XMLHttpRequest();
-                var self = this;
+                let request = new XMLHttpRequest();
+                let self = this;
                 request.addEventListener("load", function (ev) {
                     if (ev.currentTarget.status === 200) {
                         self.output = ev.currentTarget.responseText
                     }
                 });
                 request.open("POST", "/api/transform");
-                console.log(this.input);
-                request.setRequestHeader("Content-Type", "text/plain");
-                request.send(this.input);
+                request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                request.send("query=" + this.input + "&lang=" + this.lang);
             }, 300),
             updateInput: function (val) {
-                var self = this;
+                let self = this;
                 // _.debounce(function (e) {
                 console.log(val);
                 self.input = val;
