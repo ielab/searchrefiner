@@ -1,8 +1,11 @@
 {
+  "Host": "http://localhost:4853",
   "AdminEmail": "admin@example.com",
   "Admins": [
     "admin"
   ],
-  "Elasticsearch": "http://localhost:9200",
-  "Index": "pubmed"
+  "Entrez": {
+    "Email": "admin@example.com",
+    "APIKey": "1234"
+  }
 }
