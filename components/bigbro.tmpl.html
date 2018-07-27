@@ -5,9 +5,9 @@
     let request = new XMLHttpRequest();
     request.addEventListener("load", function (ev) {
         if (ev.currentTarget.status !== 200) {
-            bb = BigBro.init("anonymous", "localhost:1984");
+            bb = BigBro.init("anonymous", window.location.hostname + ":1984");
         } else {
-            bb = BigBro.init(ev.target.responseText, "localhost:1984");
+            bb = BigBro.init(ev.target.responseText, window.location.hostname + ":1984");
         }
     });
     request.open("GET", "/api/username", true);
