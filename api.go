@@ -21,6 +21,13 @@ type searchResponse struct {
 	PreviousQueries  []citemedQuery
 	Documents        []stats.EntrezDocument
 	Language         string
+	BooleanClauses   float64
+	BooleanKeywords  float64
+	BooleanFields    float64
+	MeshKeywords     float64
+	MeshExploded     float64
+	MeshAvgDepth     float64
+	MeshMaxDepth     float64
 }
 
 type node struct {

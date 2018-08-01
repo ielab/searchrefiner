@@ -7,8 +7,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 
  + Placed a footer on most pages where appropriate to some hopefully handy links
+ + Included query statistics to the query page. 
+ + Included statistics about the submitted query on the query page. 
  + [[transmute](https://github.com/hscells/transmute)] Redundant parenthesis are now added automatically where appropriate
- + [[transmute](https://github.com/hscells/transmute)] Queries will now recognise floating subheading, major mesh terms, journals and a couple of other fields  
+ + [[transmute](https://github.com/hscells/transmute)] Queries will now recognise floating subheading, major mesh terms, journals and a couple of other fields
 
 ### Changed
 

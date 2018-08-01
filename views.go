@@ -7,6 +7,8 @@ import (
 	"github.com/hscells/transmute/pipeline"
 	"github.com/hscells/cqr"
 	"time"
+	"github.com/hscells/groove"
+	"github.com/hscells/groove/analysis"
 )
 
 func handleTree(c *gin.Context) {
@@ -162,6 +164,15 @@ func (s server) handleQuery(c *gin.Context) {
 		TransformedQuery: transformed,
 		Language:         lang,
 	}
+
+	gq := groove.NewPipelineQuery("citemed", "0", repr.(cqr.CommonQueryRepresentation))
+	sr.BooleanClauses, err = analysis.BooleanClauses.Execute(gq, s.Entrez)
+	sr.BooleanFields, _ = analysis.BooleanFields.Execute(gq, s.Entrez)
+	sr.BooleanKeywords, _ = analysis.BooleanKeywords.Execute(gq, s.Entrez)
+	sr.MeshKeywords, _ = analysis.MeshKeywordCount.Execute(gq, s.Entrez)
+	sr.MeshExploded, _ = analysis.MeshExplodedCount.Execute(gq, s.Entrez)
+	sr.MeshAvgDepth, _ = analysis.MeshAvgDepth.Execute(gq, s.Entrez)
+	sr.MeshMaxDepth, _ = analysis.MeshMaxDepth.Execute(gq, s.Entrez)
 
 	username := s.UserState.Username(c.Request)
 

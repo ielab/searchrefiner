@@ -47,6 +47,9 @@
                             <button class="btn btn-link" id="vis" type="button">
                                 QueryVis <i class="icon icon-arrow-right"></i>
                             </button>
+                            <button class="btn btn-link" id="results" type="button">
+                                Results <i class="icon icon-arrow-right"></i>
+                            </button>
                             <button class="btn btn-link" id="edit" type="button">
                                 Edit <i class="icon icon-arrow-right"></i>
                             </button>
@@ -56,15 +59,20 @@
                 <div class="divider-vert"></div>
                 <div class="column col-5">
                     <h3>Results</h3>
-                    <ul>
-                        <li><b>{{ .TotalHits }}</b> results</li>
-                    </ul>
                     <p>
                         <small>completed in {{ .TookInMillis }}ms</small>
                     </p>
-                    <button class="btn btn-link" id="results" type="button">
-                        Explore Results <i class="icon icon-arrow-right"></i>
-                    </button>
+                    <ul>
+                        <li><b>{{ .TotalHits }}</b> results.</li>
+                        <li><b>{{ .BooleanClauses }}</b> clauses.</li>
+                        <li><b>{{ .BooleanKeywords }}</b> keywords.</li>
+                        <li><b>{{ .BooleanFields }}</b> fields.</li>
+                        <li><b>{{ .MeshKeywords }}</b> MeSH Term keywords.</li>
+                        <li><b>{{ .MeshExploded }}</b> MeSH Term keywords (exploded).</li>
+                        <li><b>{{ .MeshAvgDepth }}</b> MeSH Term average depth.</li>
+                        <li><b>{{ .MeshMaxDepth }}</b> MeSH Term maximum depth.</li>
+                    </ul>
+
                 </div>
             </div>
             <div class="divider"></div>
@@ -91,10 +99,10 @@
                         </div>
                         <div class="col-3">
                             <div class="column col-5">
+                                <div class="ml-2 mt-2">
+                                    <small><b>{{ .NumRet }}</b> results retrieved.</small>
+                                </div>
                                 <form action="/results" method="post">
-                                    <div class="ml-2 mt-2">
-                                        <small><b>{{ .NumRet }}</b> results retrieved.</small>
-                                    </div>
                                     <input type="hidden" name="query" value="{{ .QueryString }}">
                                     <input type="hidden" name="lang" value="{{ .Language }}">
                                     <input class="btn btn-link btn-sm" type="submit" value="Explore Results">
