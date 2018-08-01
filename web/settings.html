@@ -32,9 +32,12 @@
 {{ end }}</textarea>
                 <button id="btn-rel" class="btn btn-primary form-input">Load</button>
             {{ if not .Relevant }}
-                <p>No known relevant PMIDs have been loaded.</p>
-            {{end}}
+                <p><span class="text-error">No known relevant PMIDs have been loaded.</span></p>
+            {{ else }}
+                <p><span class="text-success">Loaded {{ len .Relevant }} Relevant PMIDs.</span></p>
+            {{ end }}
             </div>
+        {{template "footer"}}
         </div>
         <div class="column col-1"></div>
     </div>

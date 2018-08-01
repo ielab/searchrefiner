@@ -31,7 +31,7 @@
 </ol>
 <h2 id="WritingQueries">Writing Queries</h2>
 
-<p>Currently queries can be submitted to CiteMed in two query languages. The first query language is MEDLINE. these
+<p>Currently queries can be submitted to CiteMed in two query languages. The first query language is Ovid MEDLINE. these
     queries look like this:</p>
 
 <pre>
@@ -53,10 +53,10 @@
 16. 3 and 15
 </pre>
 
-<p>In the MEDLINE query language, keywords of the query can be expressed individually on lines (e.g. line 1 or 2), or
-    grouped together (e.g. line 4). These keyword clauses can be combined with infix logical operators if grouped on a
-    single line or by stating which lines to combine (e.g. line 15 combines the clauses specified on line 13 and 14 with
-    the OR operator). Keywords are restricted to fields by the two letter identifier at the end (e.g. .mp., which
+<p>In the Ovid MEDLINE query language, keywords of the query can be expressed individually on lines (e.g. line 1 or 2),
+    or grouped together (e.g. line 4). These keyword clauses can be combined with infix logical operators if grouped on
+    a single line or by stating which lines to combine (e.g. line 15 combines the clauses specified on line 13 and 14
+    with the OR operator). Keywords are restricted to fields by the two letter identifier at the end (e.g. .mp., which
     restricts the keyword to the title, abstract, and MeSH headings). MeSH only keywords are specified with / and can be
     exploded with exp (e.g. line 1). Keywords can also be explicitly stemmed or expanded with the $ and * modifiers.</p>
 
@@ -104,5 +104,6 @@
     NOT, etc.). This visualisation can be augmented with relevance assessments in order to ensure a monitor the
     retrieval of number of known relevant citations, or for training purposes.</p>
 
+{{template "footer"}}
 </body>
 </html>

@@ -116,7 +116,7 @@
                         <label>Query Language
                             <small><a href="/help#WritingQueries">help?</a></small>
                             <select id="lang" class="form-select" name="lang">
-                                <option value="medline" {{if eq .Language "medline"}} selected {{end}}>MEDLINE</option>
+                                <option value="medline" {{if eq .Language "medline"}} selected {{end}}>Ovid MEDLINE</option>
                                 <option value="pubmed" {{if eq .Language "pubmed"}} selected {{end}}>PubMed</option>
                                 <option disabled>Cochrane Library</option>
                                 <option disabled>EMBASE</option>
@@ -152,9 +152,9 @@
                 <li class="tab-item" v-bind:class="{active: tabVisualise===0}" v-on:click="tabVisualise=0">
                     <a href="#">Tree View</a>
                 </li>
-                <li class="tab-item" v-bind:class="{active: tabVisualise===1}" v-on:click="tabVisualise=1">
-                    <a href="#">Overlap Visualisation</a>
-                </li>
+                {{/*<li class="tab-item" v-bind:class="{active: tabVisualise===1}" v-on:click="tabVisualise=1">*/}}
+                    {{/*<a href="#">Overlap Visualisation</a>*/}}
+                {{/*</li>*/}}
                 <li class="tab-item" v-bind:class="{active: tabVisualise===2}" v-on:click="tabVisualise=2">
                     <a href="#">Console</a>
                 </li>
@@ -170,9 +170,9 @@
                 </div>
                 <div id="tree" class="c-move"></div>
             </div>
-            <div id="tree-wrapper" v-show="tabVisualise===1">
-                <venn-diagram v-bind:sets="sets" v-model="sets"></venn-diagram>
-            </div>
+            {{/*<div id="tree-wrapper" v-show="tabVisualise===1">*/}}
+                {{/*<venn-diagram v-bind:sets="sets" v-model="sets"></venn-diagram>*/}}
+            {{/*</div>*/}}
             <div id="tree-wrapper" v-show="tabVisualise===2">
                 <pre id="console">Loading...</pre>
                 <a href="#" id="console-pause" class="btn btn-primary"
@@ -183,8 +183,8 @@
 </div>
 
 <!-- Venn diagram components.  -->
-<script src="static/d3.v4.min.js" type="text/javascript"></script>
-<script src="static/venn.min.js" type="text/javascript"></script>
+{{/*<script src="static/d3.v4.min.js" type="text/javascript"></script>*/}}
+{{/*<script src="static/venn.min.js" type="text/javascript"></script>*/}}
 
 <script type="text/x-template" id="venn-diagram">
     <div></div>
@@ -459,50 +459,50 @@
             }
         }
     });
-    Vue.component("venn-diagram", {
-        template: "#venn-diagram",
-        props: ["sets"],
-        data: function () {
-            return {
-                chart: venn.VennDiagram()
-            }
-        },
-        mounted: function () {
-            var div = d3.select(this.$el);
-            div.datum(this.sets).call(this.chart);
-            var tooltip = d3.select("body").append("div")
-                    .attr("class", "venntooltip");
-            div.selectAll("path")
-                    .style("stroke-opacity", 0)
-                    .style("stroke", "#333")
-                    .style("stroke-width", 3);
-            d3.select(this.$el).selectAll("g").on("mouseover", function (d, i) {
-                // sort all the areas relative to the current item
-                venn.sortAreas(div, d);
-
-                // Display a tooltip with the current size
-                tooltip.transition().duration(400).style("opacity", .9);
-                tooltip.text(d.size + " citations");
-
-                // highlight the current path
-                var selection = d3.select(this).transition("tooltip").duration(400);
-                selection.select("path")
-                        .style("stroke-width", 3)
-                        .style("fill-opacity", d.sets.length === 1 ? .4 : .1)
-                        .style("stroke-opacity", 1);
-            }).on("mousemove", function () {
-                tooltip.style("left", (d3.event.pageX) + "px")
-                        .style("top", (d3.event.pageY - 28) + "px");
-            }).on("mouseout", function (d, i) {
-                tooltip.transition().duration(400).style("opacity", 0);
-                var selection = d3.select(this).transition("tooltip").duration(400);
-                selection.select("path")
-                        .style("stroke-width", 0)
-                        .style("fill-opacity", d.sets.length === 1 ? .25 : .0)
-                        .style("stroke-opacity", 0);
-            });
-        }
-    });
+    // Vue.component("venn-diagram", {
+    //     template: "#venn-diagram",
+    //     props: ["sets"],
+    //     data: function () {
+    //         return {
+    //             chart: venn.VennDiagram()
+    //         }
+    //     },
+    //     mounted: function () {
+    //         var div = d3.select(this.$el);
+    //         div.datum(this.sets).call(this.chart);
+    //         var tooltip = d3.select("body").append("div")
+    //                 .attr("class", "venntooltip");
+    //         div.selectAll("path")
+    //                 .style("stroke-opacity", 0)
+    //                 .style("stroke", "#333")
+    //                 .style("stroke-width", 3);
+    //         d3.select(this.$el).selectAll("g").on("mouseover", function (d, i) {
+    //             // sort all the areas relative to the current item
+    //             venn.sortAreas(div, d);
+    //
+    //             // Display a tooltip with the current size
+    //             tooltip.transition().duration(400).style("opacity", .9);
+    //             tooltip.text(d.size + " citations");
+    //
+    //             // highlight the current path
+    //             var selection = d3.select(this).transition("tooltip").duration(400);
+    //             selection.select("path")
+    //                     .style("stroke-width", 3)
+    //                     .style("fill-opacity", d.sets.length === 1 ? .4 : .1)
+    //                     .style("stroke-opacity", 1);
+    //         }).on("mousemove", function () {
+    //             tooltip.style("left", (d3.event.pageX) + "px")
+    //                     .style("top", (d3.event.pageY - 28) + "px");
+    //         }).on("mouseout", function (d, i) {
+    //             tooltip.transition().duration(400).style("opacity", 0);
+    //             var selection = d3.select(this).transition("tooltip").duration(400);
+    //             selection.select("path")
+    //                     .style("stroke-width", 0)
+    //                     .style("fill-opacity", d.sets.length === 1 ? .25 : .0)
+    //                     .style("stroke-opacity", 0);
+    //         });
+    //     }
+    // });
 
     var vm = new Vue({
         delimiters: ["[[", "]]"],

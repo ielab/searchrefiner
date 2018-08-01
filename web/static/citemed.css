@@ -33,3 +33,7 @@ textarea {
     font-family: "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Courier, monospace;
     font-size: 12px !important;
 }
+
+.accordion input:checked~.accordion-body, .accordion[open] .accordion-body {
+    max-height: 100% !important;
+}

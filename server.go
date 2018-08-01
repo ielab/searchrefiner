@@ -91,11 +91,14 @@ func main() {
 
 	perm.AddAdminPath("/admin")
 
-	ss := stats.NewEntrezStatisticsSource(
+	ss, err := stats.NewEntrezStatisticsSource(
 		stats.EntrezOptions(stats.SearchOptions{Size: 100000, RunName: "citemed"}),
 		stats.EntrezTool("citemed"),
 		stats.EntrezEmail(c.Entrez.Email),
-		stats.EntrezAPIKey(c.Entrez.APIKey), )
+		stats.EntrezAPIKey(c.Entrez.APIKey))
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	s := server{
 		UserState: perm.UserState(),

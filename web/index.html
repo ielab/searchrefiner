@@ -37,7 +37,7 @@
                     <label>Query Language
                         <small><a href="/help#WritingQueries">help?</a></small>
                         <select class="form-select" name="lang">
-                            <option value="medline">MEDLINE</option>
+                            <option value="medline">Ovid MEDLINE</option>
                             <option value="pubmed">PubMed</option>
                             <option disabled>Cochrane Library</option>
                             <option disabled>EMBASE</option>
@@ -121,8 +121,6 @@
         </div>
     </div>
 </div>
-<footer>
-    <small>Version {{template "version"}}</small>
-</footer>
+{{template "footer"}}
 </body>
 </html>
