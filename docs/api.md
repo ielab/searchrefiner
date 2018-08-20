@@ -1,9 +1,9 @@
-# CiteMed API
+# searchrefiner API
 
-CiteMed, once logged in, exposes the following application programming interfaces. These can be used to integrate or 
-augment CiteMed into other tools.
+searchrefiner, once logged in, exposes the following application programming interfaces. These can be used to integrate or 
+augment searchrefiner into other tools.
 
-For information on authenticating to CiteMed, see the article on [authentication](authentication.md).
+For information on authenticating to searchrefiner, see the article on [authentication](authentication.md).
 
 ## Authentication APIs
 
@@ -16,7 +16,7 @@ Before using the general APIs, a user must be authenticated. The authentication 
  - `/account/api/logout`: For logging out of an account. A cookie token must be passed to the endpoint. This endpoint
  will unset the cookie and revoke the authentication token server side.
  
-## CiteMed APIs
+## searchrefiner APIs
 
 Once authenticated, the following APIs can be used:
 

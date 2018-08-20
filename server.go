@@ -29,11 +29,11 @@ type config struct {
 	Entrez     entrezConfig
 }
 
-type citemedQuery struct {
+type searchrefinerQuery struct {
 	QueryString     string
 	Language        string
 	NumRet          int64
-	PreviousQueries []citemedQuery
+	PreviousQueries []searchrefinerQuery
 	Relevant        []string
 }
 
@@ -45,7 +45,7 @@ type errorPage struct {
 type server struct {
 	UserState pinterface.IUserState
 	Perm      pinterface.IPermissions
-	Queries   map[string][]citemedQuery
+	Queries   map[string][]searchrefinerQuery
 	Settings  map[string]settings
 	Config    config
 	Entrez    stats.EntrezStatisticsSource
@@ -92,8 +92,8 @@ func main() {
 	perm.AddAdminPath("/admin")
 
 	ss, err := stats.NewEntrezStatisticsSource(
-		stats.EntrezOptions(stats.SearchOptions{Size: 100000, RunName: "citemed"}),
-		stats.EntrezTool("citemed"),
+		stats.EntrezOptions(stats.SearchOptions{Size: 100000, RunName: "searchrefiner"}),
+		stats.EntrezTool("searchrefiner"),
 		stats.EntrezEmail(c.Entrez.Email),
 		stats.EntrezAPIKey(c.Entrez.APIKey))
 	if err != nil {
@@ -104,7 +104,7 @@ func main() {
 		UserState: perm.UserState(),
 		Perm:      perm,
 		Config:    c,
-		Queries:   make(map[string][]citemedQuery),
+		Queries:   make(map[string][]searchrefinerQuery),
 		Settings:  make(map[string]settings),
 		Entrez:    ss,
 	}
@@ -195,7 +195,7 @@ Y88b  d88P 888 Y88b. Y8b.     888   "   888 Y8b.     Y88b 888
 
  Harry Scells 2018
  harrisen.scells@hdr.qut.edu.au
- https://ielab.io/citemed
+ https://ielab.io/searchrefiner
 
 `)
 	g.Run(c.Host)

@@ -1,4 +1,4 @@
-repository: ielab/citemed
+repository: ielab/searchrefiner
 timezone: AEST
 # Dependencies
 markdown:       kramdown

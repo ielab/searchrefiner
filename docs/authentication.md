@@ -1,13 +1,13 @@
 # Authentication
 
-Users must be authenticated to CiteMed before using the tools and APIs. Configuration of administrators can be done via
+Users must be authenticated to searchrefiner before using the tools and APIs. Configuration of administrators can be done via
 editing the configuration items in `config.json`, as explained in [setup instructions](setup.md).
 
 For command-line and programmatic API usage, a cookie authentication token must be acquired. An example of this token 
 acquisition using curl can be performed as follows:
 
 ```bash
-curl -X POST -v citemed.url/account/api/login -F 'username=example' -F 'password=12345'
+curl -X POST -v searchrefiner.url/account/api/login -F 'username=example' -F 'password=12345'
 ```
 
 The authentication cookie token will be set in the response header if the username and password are correct:

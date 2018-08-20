@@ -14,7 +14,7 @@ import (
 func handleTree(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
-	c.HTML(http.StatusOK, "tree.html", citemedQuery{QueryString: rawQuery, Language: lang})
+	c.HTML(http.StatusOK, "tree.html", searchrefinerQuery{QueryString: rawQuery, Language: lang})
 }
 
 func (s server) handleResults(c *gin.Context) {
@@ -165,7 +165,7 @@ func (s server) handleQuery(c *gin.Context) {
 		Language:         lang,
 	}
 
-	gq := groove.NewPipelineQuery("citemed", "0", repr.(cqr.CommonQueryRepresentation))
+	gq := groove.NewPipelineQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation))
 	sr.BooleanClauses, err = analysis.BooleanClauses.Execute(gq, s.Entrez)
 	sr.BooleanFields, _ = analysis.BooleanFields.Execute(gq, s.Entrez)
 	sr.BooleanKeywords, _ = analysis.BooleanKeywords.Execute(gq, s.Entrez)
@@ -177,7 +177,7 @@ func (s server) handleQuery(c *gin.Context) {
 	username := s.UserState.Username(c.Request)
 
 	// Reverse the list of previous queries.
-	rev := make([]citemedQuery, len(s.Queries[username]))
+	rev := make([]searchrefinerQuery, len(s.Queries[username]))
 	j := 0
 	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
 		rev[j] = s.Queries[username][i]
@@ -185,7 +185,7 @@ func (s server) handleQuery(c *gin.Context) {
 	}
 	sr.PreviousQueries = rev
 
-	s.Queries[username] = append(s.Queries[username], citemedQuery{QueryString: rawQuery, Language: lang, NumRet: sr.TotalHits})
+	s.Queries[username] = append(s.Queries[username], searchrefinerQuery{QueryString: rawQuery, Language: lang, NumRet: sr.TotalHits})
 	c.HTML(http.StatusOK, "query.html", sr)
 }
 
@@ -195,7 +195,7 @@ func (s server) handleIndex(c *gin.Context) {
 	}
 	username := s.UserState.Username(c.Request)
 	// reverse the list
-	q := make([]citemedQuery, len(s.Queries[username]))
+	q := make([]searchrefinerQuery, len(s.Queries[username]))
 	j := 0
 	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
 		q[j] = s.Queries[username][i]
@@ -241,7 +241,7 @@ func handleTransform(c *gin.Context) {
 
 func (s server) handleClear(c *gin.Context) {
 	username := s.UserState.Username(c.Request)
-	s.Queries[username] = []citemedQuery{}
+	s.Queries[username] = []searchrefinerQuery{}
 	c.Redirect(http.StatusFound, "/")
 	return
 }

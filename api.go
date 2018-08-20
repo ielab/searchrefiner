@@ -18,7 +18,7 @@ type searchResponse struct {
 	TookInMillis     float64
 	OriginalQuery    string
 	TransformedQuery string
-	PreviousQueries  []citemedQuery
+	PreviousQueries  []searchrefinerQuery
 	Documents        []stats.EntrezDocument
 	Language         string
 	BooleanClauses   float64
@@ -85,7 +85,7 @@ func (s server) apiTree(c *gin.Context) {
 	}
 
 	var root combinator.LogicalTree
-	root, _, err = combinator.NewLogicalTree(groove.NewPipelineQuery("citemed", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, seen)
+	root, _, err = combinator.NewLogicalTree(groove.NewPipelineQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, seen)
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
