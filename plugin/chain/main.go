@@ -26,7 +26,7 @@ type ChainPlugin struct{}
 var (
 	quickrank string
 	quickumls quickumlsrest.Client
-	vector    cui2vec.CompressedEmbeddings
+	vector    cui2vec.Embeddings
 	mapping   cui2vec.Mapping
 	mu        sync.Mutex
 	queries   = make(map[string]learning.CandidateQuery)
@@ -88,37 +88,27 @@ func initiate() error {
 	}
 
 	log.Println("loading model")
-	v, err := cui2vec.LoadModel(f, true)
+	vector, err = cui2vec.LoadModel(f, true)
 	if err != nil {
 		return err
 	}
-
-	log.Println("compressing model")
-	vector, err = v.Compress()
-	if err != nil {
-		return err
-	}
-	v = nil
 
 	return nil
 }
 
 func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
-	//fmt.Println(vector == nil, mapping == nil)
-	//// Load cui2vec components.
-	//if vector == nil || mapping == nil {
-	//	err := initiate()
-	//	if err != nil {
-	//		// Return a 500 error for now.
-	//		log.Println(errors.New("could not initiate cui2vec"))
-	//		c.Status(http.StatusInternalServerError)
-	//		return
-	//	}
-	//}
-	//fmt.Println(vector == nil, mapping == nil)
-
-	quickrank = searchrefiner.ServerConfiguration.Config.Options["QuicklearnBinary"].(string)
-	quickumls = quickumlsrest.NewClient(searchrefiner.ServerConfiguration.Config.Options["QuickUMLSURL"].(string))
+	fmt.Println(vector == nil, mapping == nil)
+	// Load cui2vec components.
+	if vector == nil || mapping == nil {
+		err := initiate()
+		if err != nil {
+			// Return a 500 error for now.
+			log.Println(errors.New("could not initiate cui2vec"))
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}
+	fmt.Println(vector == nil, mapping == nil)
 
 	// Grab the username of the logged in user.
 	u := s.UserState.Username(c.Request)
@@ -232,7 +222,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			analysis.MeshMaxDepth,
 		},
 		learning.NewClauseRemovalTransformer(),
-		//learning.Newcui2vecExpansionTransformer(vector, mapping, quickumls),
+		learning.Newcui2vecExpansionTransformer(vector, mapping, quickumls),
 		learning.NewMeshParentTransformer(),
 		learning.NewMeSHExplosionTransformer(),
 		learning.NewFieldRestrictionsTransformer(),
@@ -257,6 +247,13 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
+	// This ensures we only even look at 5 features in the past maximum.
+	// This prevents quickrank from being overloaded with features and crashing.
+	if len(nq.Chain) > 5 {
+		nq.Chain = nq.Chain[1:]
+	}
+	fmt.Println(len(nq.Chain))
 	queries[u] = nq
 
 	var q string
