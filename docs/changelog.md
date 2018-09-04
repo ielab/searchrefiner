@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [04.Sep.2018]
+
+### Added
+
+ + Integrate the ability for plugins to be developed and loaded into interface.
+ + Create a "chain" plugin based off recent query transformation research.
+
+### Changed
+
+ + Exported several fields and methods for plugin access
+
 ## [20.Aug.2018]
 
 ### Changed
