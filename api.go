@@ -1,4 +1,4 @@
-package main
+package searchrefiner
 
 import (
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,7 @@ type searchResponse struct {
 	TookInMillis     float64
 	OriginalQuery    string
 	TransformedQuery string
-	PreviousQueries  []searchrefinerQuery
+	PreviousQueries  []Query
 	Documents        []stats.EntrezDocument
 	Language         string
 	BooleanClauses   float64
@@ -53,7 +53,7 @@ type tree struct {
 	NumRel    int
 }
 
-func (s server) apiTree(c *gin.Context) {
+func (s Server) ApiTree(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
@@ -100,7 +100,7 @@ func (s server) apiTree(c *gin.Context) {
 	c.JSON(200, t)
 }
 
-func (s server) apiScroll(c *gin.Context) {
+func (s Server) ApiScroll(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
@@ -177,7 +177,7 @@ func (s server) apiScroll(c *gin.Context) {
 	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished})
 }
 
-func apiTransform(c *gin.Context) {
+func ApiTransform(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
@@ -206,7 +206,7 @@ func apiTransform(c *gin.Context) {
 	c.Data(200, "text/plain", []byte(q))
 }
 
-func apiCQR2Query(c *gin.Context) {
+func ApiCQR2Query(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
@@ -236,7 +236,7 @@ func apiCQR2Query(c *gin.Context) {
 	c.Data(200, "application/json", []byte(s))
 }
 
-func apiQuery2CQR(c *gin.Context) {
+func ApiQuery2CQR(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 

@@ -1,4 +1,4 @@
-package main
+package searchrefiner
 
 import (
 	"github.com/gin-gonic/gin"
@@ -6,29 +6,25 @@ import (
 	"github.com/hscells/groove/combinator"
 )
 
-type settings struct {
-	Relevant combinator.Documents
-}
-
-func getSettings(s server, c *gin.Context) settings {
+func getSettings(s Server, c *gin.Context) Settings {
 	username := s.UserState.Username(c.Request)
 
-	var us settings
+	var us Settings
 	if v, ok := s.Settings[username]; ok {
 		us = v
 	} else {
-		// Configure initial values for settings struct.
+		// Configure initial values for Settings struct.
 	}
 
 	return us
 }
 
-func (s server) handleSettings(c *gin.Context) {
+func (s Server) HandleSettings(c *gin.Context) {
 	c.HTML(http.StatusOK, "settings.html", getSettings(s, c))
 	return
 }
 
-func (s server) apiSettingsRelevantSet(c *gin.Context) {
+func (s Server) ApiSettingsRelevantSet(c *gin.Context) {
 	sets := getSettings(s, c)
 
 	var rel []int64

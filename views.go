@@ -1,4 +1,4 @@
-package main
+package searchrefiner
 
 import (
 	"github.com/gin-gonic/gin"
@@ -11,13 +11,13 @@ import (
 	"github.com/hscells/groove/analysis"
 )
 
-func handleTree(c *gin.Context) {
+func HandleTree(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
-	c.HTML(http.StatusOK, "tree.html", searchrefinerQuery{QueryString: rawQuery, Language: lang})
+	c.HTML(http.StatusOK, "tree.html", Query{QueryString: rawQuery, Language: lang})
 }
 
-func (s server) handleResults(c *gin.Context) {
+func (s Server) HandleResults(c *gin.Context) {
 	start := time.Now()
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
@@ -40,56 +40,56 @@ func (s server) handleResults(c *gin.Context) {
 
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	cqString, err := cq.String()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	pubmedQuery, err := transmute.Cqr2Pubmed.Execute(cqString)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	q, err := pubmedQuery.String()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	pmids, err := s.Entrez.Search(q, s.Entrez.SearchSize(10))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	docs, err := s.Entrez.Fetch(pmids)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	repr, err := cq.Representation()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	size, err := s.Entrez.RetrievalSize(repr.(cqr.CommonQueryRepresentation))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -107,7 +107,7 @@ func (s server) handleResults(c *gin.Context) {
 	c.HTML(http.StatusOK, "results.html", sr)
 }
 
-func (s server) handleQuery(c *gin.Context) {
+func (s Server) HandleQuery(c *gin.Context) {
 	start := time.Now()
 
 	rawQuery := c.PostForm("query")
@@ -131,28 +131,28 @@ func (s server) handleQuery(c *gin.Context) {
 
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	repr, err := cq.Representation()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	transformed, err := cq.StringPretty()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	size, err := s.Entrez.RetrievalSize(repr.(cqr.CommonQueryRepresentation))
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -177,7 +177,7 @@ func (s server) handleQuery(c *gin.Context) {
 	username := s.UserState.Username(c.Request)
 
 	// Reverse the list of previous queries.
-	rev := make([]searchrefinerQuery, len(s.Queries[username]))
+	rev := make([]Query, len(s.Queries[username]))
 	j := 0
 	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
 		rev[j] = s.Queries[username][i]
@@ -185,17 +185,17 @@ func (s server) handleQuery(c *gin.Context) {
 	}
 	sr.PreviousQueries = rev
 
-	s.Queries[username] = append(s.Queries[username], searchrefinerQuery{QueryString: rawQuery, Language: lang, NumRet: sr.TotalHits})
+	s.Queries[username] = append(s.Queries[username], Query{QueryString: rawQuery, Language: lang, NumRet: sr.TotalHits})
 	c.HTML(http.StatusOK, "query.html", sr)
 }
 
-func (s server) handleIndex(c *gin.Context) {
+func (s Server) HandleIndex(c *gin.Context) {
 	if !s.UserState.IsLoggedIn(s.UserState.Username(c.Request)) {
 		c.Redirect(http.StatusTemporaryRedirect, "/account/login")
 	}
 	username := s.UserState.Username(c.Request)
 	// reverse the list
-	q := make([]searchrefinerQuery, len(s.Queries[username]))
+	q := make([]Query, len(s.Queries[username]))
 	j := 0
 	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
 		q[j] = s.Queries[username][i]
@@ -204,7 +204,7 @@ func (s server) handleIndex(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", q)
 }
 
-func handleTransform(c *gin.Context) {
+func HandleTransform(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
@@ -221,14 +221,14 @@ func handleTransform(c *gin.Context) {
 
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	q, err := cq.StringPretty()
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "error.html", errorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
@@ -239,9 +239,9 @@ func handleTransform(c *gin.Context) {
 	}{Query: q, Language: lang})
 }
 
-func (s server) handleClear(c *gin.Context) {
+func (s Server) HandleClear(c *gin.Context) {
 	username := s.UserState.Username(c.Request)
-	s.Queries[username] = []searchrefinerQuery{}
+	s.Queries[username] = []Query{}
 	c.Redirect(http.StatusFound, "/")
 	return
 }

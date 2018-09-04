@@ -1,0 +1,206 @@
+{{ define "select_optimisation" }}
+<div class="form-group">
+    <label>Optimisation
+        <select class="form-select" name="model">
+            <option value="dart_precision.xml">Precision</option>
+            <option value="dart_recall.xml">Recall</option>
+            <option value="dart_f1.xml">F1</option>
+        </select>
+    </label>
+</div>
+{{ end }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>searchrefiner chain</title>
+{{template "style_includes"}}
+    <link rel="stylesheet" href="static/vis.min.css" type="text/css">
+    <style>
+        .panel {
+            margin: 24px;
+        }
+
+        form {
+            width: 50%;
+            float: left;
+        }
+
+        pre {
+            font-size: 12px;
+            background-color: #eee;
+            white-space: pre-wrap;       /* css-3 */
+            white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+            white-space: -o-pre-wrap;    /* Opera 7 */
+            word-wrap: break-word;       /* Internet Explorer 5.5+ */
+        }
+
+        footer {
+            padding: 32px;
+        }
+
+        h4 {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+{{ template "nav" }}
+{{ $lang := .Language }}
+{{ if .Chain }}
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title"><h3>Query Transformation</h3></div>
+        </div>
+        <div class="panel-body">
+            <form action="/chain" method="post" accept-charset="UTF-8">
+                <input type="hidden" name="lang" value="{{ $lang }}">
+                <div id="ret-graph"></div>
+            {{ template "select_optimisation" }}
+                <input class="btn btn-primary" type="submit">
+            </form>
+            <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
+                <h4>Current Query</h4>
+                <pre>{{ .RawQuery }}</pre>
+            </div>
+        </div>
+        <div class="panel-footer">
+        </div>
+    </div>
+{{ end }}
+{{ if .Chain }}
+    <h4 class="text-center">Previous Queries</h4>
+{{ end }}
+{{ range .Chain }}
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <h4>Retrieved: {{ .NumRet }}, Relevant Retrieved: {{ .RelRet }}</h4>
+            </div>
+        </div>
+        <div class="panel-body">
+            <pre>{{.Query}}</pre>
+        </div>
+        <div class="panel-footer">
+            <form action="/chain" method="post" accept-charset="UTF-8">
+            {{ template "select_optimisation" }}
+                <input type="hidden" name="query" value="{{ .Query }}">
+                <input type="hidden" name="lang" value="{{ $lang }}">
+                <div class="form-group">
+                    <input class="btn btn-primary" type="submit"/>
+                </div>
+            </form>
+        </div>
+    </div>
+{{end}}
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title"><h4>New Query</h4></div>
+        </div>
+        <div class="panel-body">
+            <form action="/chain" method="post" accept-charset="UTF-8">
+                <input type="hidden" name="model" value="dart_precision.xml">
+                <div class="form-group">
+                    <textarea class="form-input" placeholder="Enter query here." name="query" rows="20"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Query Language
+                        <small><a href="/help#WritingQueries">help?</a></small>
+                        <select id="lang" class="form-select" name="lang">
+                            <option value="medline" {{if eq .Language "medline"}} selected {{end}}>Ovid MEDLINE</option>
+                            <option value="pubmed" {{if eq .Language "pubmed"}} selected {{end}}>PubMed</option>
+                            <option disabled>Cochrane Library</option>
+                            <option disabled>EMBASE</option>
+                        </select>
+                    </label>
+                </div>
+            {{ template "select_optimisation" }}
+                <div class="form-group">
+                    <input class="btn btn-primary" type="submit"/>
+                </div>
+            </form>
+        </div>
+        <div class="panel-footer"></div>
+    </div>
+{{ template "footer" }}
+</div>
+{{ if .Chain }}
+<script src="/static/vis.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var container = document.getElementById('ret-graph');
+
+    var groups = new vis.DataSet();
+    groups.add({
+        id: 0,
+        content: 'Retrieved Documents',
+        options: {
+            style: "bar",
+            drawPoints: {
+                style: 'circle' // square, circle
+            },
+        }
+    });
+    groups.add({
+        id: 1,
+        content: "Relevant Retrieved Documents",
+        options: {
+            yAxisOrientation: "right",
+            drawPoints: {
+                style: 'circle' // square, circle
+            },
+            interpolation: false,
+        }
+    });
+
+    var items = [
+    {{ range $i, $link := .Chain }}{
+        x: {{ $i }},
+        y: {{ $link.NumRet }},
+        group: 0,
+    },
+    {{ end }}
+    {{ range $i, $link := .Chain }}{
+        x: {{ $i }},
+        y: {{ $link.RelRet }},
+        group: 1,
+    },
+    {{ end }}
+    ];
+
+    var dataset = new vis.DataSet(items);
+    var options = {
+        drawPoints: false,
+        dataAxis: {
+            icons: false,
+            right: {
+                range: {
+                    min: 0,
+                }
+            },
+            left: {
+                range: {
+                    min: 0,
+                }
+            }
+        },
+        orientation: 'top',
+        legend: {
+            left: {
+                position: "top-left",
+            },
+            right: {
+                position: "bottom-right",
+            }
+        },
+        // start: 0,
+        moveable: false,
+        showCurrentTime: false,
+        showMajorLabels: false,
+        showMinorLabels: false,
+    };
+    var graph2d = new vis.Graph2d(container, items, groups, options);
+</script>
+{{ end }}
+</body>
+</html>

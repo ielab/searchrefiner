@@ -1,4 +1,4 @@
-package main
+package searchrefiner
 
 import (
 	"github.com/hscells/cqr"
