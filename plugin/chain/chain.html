@@ -54,7 +54,7 @@
             <div class="panel-title"><h3>Query Transformation</h3></div>
         </div>
         <div class="panel-body">
-            <form action="/chain" method="post" accept-charset="UTF-8">
+            <form action="/plugin/chain" method="post" accept-charset="UTF-8">
                 <input type="hidden" name="lang" value="{{ $lang }}">
                 <div id="ret-graph"></div>
             {{ template "select_optimisation" }}
@@ -83,7 +83,7 @@
             <pre>{{.Query}}</pre>
         </div>
         <div class="panel-footer">
-            <form action="/chain" method="post" accept-charset="UTF-8">
+            <form action="/plugin/chain" method="post" accept-charset="UTF-8">
             {{ template "select_optimisation" }}
                 <input type="hidden" name="query" value="{{ .Query }}">
                 <input type="hidden" name="lang" value="{{ $lang }}">
@@ -99,7 +99,7 @@
             <div class="panel-title"><h4>New Query</h4></div>
         </div>
         <div class="panel-body">
-            <form action="/chain" method="post" accept-charset="UTF-8">
+            <form action="/plugin/chain" method="post" accept-charset="UTF-8">
                 <input type="hidden" name="model" value="dart_precision.xml">
                 <div class="form-group">
                     <textarea class="form-input" placeholder="Enter query here." name="query" rows="20"></textarea>
