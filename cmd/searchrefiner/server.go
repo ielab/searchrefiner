@@ -49,12 +49,13 @@ func main() {
 	perm.AddUserPath("/transform")
 	perm.AddUserPath("/settings")
 	perm.AddUserPath("/api")
-	perm.AddUserPath("/plugin")
+	perm.AddUserPath("/plugins")
 
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
 	perm.AddPublicPath("/help")
 	perm.AddPublicPath("/error")
+	perm.AddPublicPath("/api/username")
 
 	perm.AddAdminPath("/admin")
 
@@ -75,9 +76,6 @@ func main() {
 		Settings:  make(map[string]searchrefiner.Settings),
 		Entrez:    ss,
 	}
-
-	// Set a global server configuration variable so plugins have access to it.
-	searchrefiner.ServerConfiguration = s
 
 	permissionHandler := func(c *gin.Context) {
 		if perm.Rejected(c.Writer, c.Request) {
@@ -100,8 +98,66 @@ func main() {
 		// Views.
 		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
-		"web/help.html", "web/error.html", "web/results.html", "web/settings.html"}, searchrefiner.Components...)...)
+		"web/help.html", "web/error.html", "web/results.html", "web/settings.html", "web/plugins.html",
+	}, searchrefiner.Components...)...)
+
 	g.Static("/static/", "./web/static")
+
+	// Handle plugins.
+	files, err := ioutil.ReadDir("plugin")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			// Open the shared object file that will become the plugin.
+			p := file.Name()
+			plug, err := plugin.Open(path.Join("plugin", p, "plugin.so"))
+			if err != nil {
+				panic(err)
+			}
+
+			// Grab the exported type.
+			sym, err := plug.Lookup(strings.Title(p))
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			// Ensure the type implements the plugin.
+			var handle searchrefiner.Plugin
+			var ok bool
+			if handle, ok = sym.(searchrefiner.Plugin); !ok {
+				log.Fatalln("could not cast", p, "to plugin")
+			}
+
+			// Configure the permissions for this plugin.
+			p = path.Join("/", p)
+			switch handle.PermissionType() {
+			case searchrefiner.PluginAdmin:
+				perm.AddAdminPath(p)
+			case searchrefiner.PluginPublic:
+				perm.AddPublicPath(p)
+			case searchrefiner.PluginUser:
+				perm.AddUserPath(p)
+			default:
+				perm.AddPublicPath(p)
+			}
+			p = path.Join("/plugin/", p)
+
+			s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
+				URL:           p,
+				PluginDetails: handle.Details(),
+			})
+
+			// Register the handler with gin.
+			g.GET(p, func(c *gin.Context) {
+				handle.Serve(s, c)
+			})
+			g.POST(p, func(c *gin.Context) {
+				handle.Serve(s, c)
+			})
+		}
+	}
 
 	// Administration.
 	g.GET("/admin", s.HandleAdmin)
@@ -138,66 +194,23 @@ func main() {
 	g.POST("/tree", searchrefiner.HandleTree)
 	g.POST("/api/tree", s.ApiTree)
 
+	// Settings page.
 	g.GET("/settings", s.HandleSettings)
 	g.POST("/api/settings/relevant", s.ApiSettingsRelevantSet)
+
+	// Plugins page.
+	g.GET("/plugins", s.HandlePlugins)
 
 	// Other utility pages.
 	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
 	})
 
-	// Handle plugins.
-	files, err := ioutil.ReadDir("plugin")
-	if err != nil {
-
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			// Open the shared object file that will become the plugin.
-			p := file.Name()
-			plug, err := plugin.Open(path.Join("plugin", p, "plugin.so"))
-			if err != nil {
-				panic(err)
-			}
-
-			// Grab the exported type.
-			sym, err := plug.Lookup(strings.Title(p))
-			if err != nil {
-				log.Fatalln(err)
-			}
-
-			// Ensure the type implements the plugin.
-			var handle searchrefiner.Plugin
-			var ok bool
-			if handle, ok = sym.(searchrefiner.Plugin); !ok {
-				log.Fatalln("could not cast", p, "to plugin")
-			}
-
-			// Configure the permissions for this plugin.
-			p = path.Join("/", p)
-			switch handle.PermissionType() {
-			case searchrefiner.PluginAdmin:
-				perm.AddAdminPath(p)
-			case searchrefiner.PluginPublic:
-				perm.AddPublicPath(p)
-			case searchrefiner.PluginUser:
-				perm.AddUserPath(p)
-			default:
-				perm.AddPublicPath(p)
-			}
-
-			// Register the handler with gin.
-			g.GET(p, func(c *gin.Context) {
-				handle.Serve(s, c)
-			})
-			g.POST(p, func(c *gin.Context) {
-				handle.Serve(s, c)
-			})
-		}
-	}
-
 	mw := io.MultiWriter(lf, os.Stdout)
 	log.SetOutput(mw)
+
+	// Set a global server configuration variable so plugins have access to it.
+	searchrefiner.ServerConfiguration = s
 
 	fmt.Print(`
                       _           ___ _             

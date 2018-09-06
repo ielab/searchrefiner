@@ -1,23 +1,23 @@
 package main
 
 import (
-	"github.com/ielab/searchrefiner"
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"github.com/hscells/cqr"
-	"github.com/hscells/transmute/pipeline"
-	"github.com/hscells/groove/learning"
-	"log"
 	"github.com/go-errors/errors"
+	"github.com/hscells/cqr"
+	"github.com/hscells/cui2vec"
 	"github.com/hscells/groove/analysis"
 	"github.com/hscells/groove/analysis/preqpp"
-	"fmt"
-	"github.com/hscells/cui2vec"
-	"os"
+	"github.com/hscells/groove/combinator"
+	"github.com/hscells/groove/learning"
 	"github.com/hscells/quickumlsrest"
 	"github.com/hscells/transmute"
-	"github.com/hscells/groove/combinator"
+	"github.com/hscells/transmute/pipeline"
+	"github.com/ielab/searchrefiner"
 	"github.com/peterbourgon/diskv"
+	"log"
+	"net/http"
+	"os"
 	"sync"
 )
 
@@ -279,6 +279,16 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 
 func (ChainPlugin) PermissionType() searchrefiner.PluginPermission {
 	return searchrefiner.PluginUser
+}
+
+func (ChainPlugin) Details() searchrefiner.PluginDetails {
+	return searchrefiner.PluginDetails{
+		Title:       "Query Chain Transformer",
+		Description: "Refine Boolean queries with automatic query transformations.",
+		Author:      "ielab",
+		Version:     "06.Sep.2018",
+		ProjectURL:  "https://ielab.io/searchrefiner/",
+	}
 }
 
 var Chain ChainPlugin

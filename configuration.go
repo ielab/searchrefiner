@@ -61,18 +61,39 @@ type Server struct {
 	Settings  map[string]Settings
 	Config    Config
 	Entrez    stats.EntrezStatisticsSource
+	Plugins   []InternalPluginDetails
 }
 
+// Plugin is the interface that must be implemented in order to register an external tool.
+// See more: http://ielab.io/searchrefiner/plugins/
 type Plugin interface {
 	Serve(Server, *gin.Context)
 	PermissionType() PluginPermission
+	Details() PluginDetails
 }
 
+// PluginDetails are details about a plugin which is shown in the plugins page of searchrefiner.
+type PluginDetails struct {
+	Title       string
+	Description string
+	Author      string
+	Version     string
+	ProjectURL  string
+}
+
+// InternalPluginDetails contains details about a plugin which are vital in rendering the plugin page.
+type InternalPluginDetails struct {
+	URL string
+	PluginDetails
+}
+
+// TemplatePlugin is the template method which will include searchrefiner components.
 func TemplatePlugin(p string) template.Template {
 	_, f := path.Split(p)
 	return *template.Must(template.New(f).ParseFiles(append(Components, p)...))
 }
 
+// RenderPlugin returns a gin-compatible HTML renderer for plugins.
 func RenderPlugin(tmpl template.Template, data interface{}) render.HTML {
 	return render.HTML{
 		Template: &tmpl,
