@@ -14,27 +14,27 @@
 <div class="form-group">
     <p>Select Transformation</p>
     <label class="form-switch">
-        <input type="checkbox" name="transformations[]" value="cui2vec_expansion" checked>
+        <input type="checkbox" name="transformations" value="cui2vec_expansion" checked>
         <i class="form-icon"></i> cui2vec Expansion
     </label>
     <label class="form-switch">
-        <input type="checkbox" name="transformations[]" value="clause_removal" checked>
+        <input type="checkbox" name="transformations" value="clause_removal" checked>
         <i class="form-icon"></i> Clause Removal
     </label>
     <label class="form-switch">
-        <input type="checkbox" name="transformations[]" value="mesh_parent" checked>
+        <input type="checkbox" name="transformations" value="mesh_parent" checked>
         <i class="form-icon"></i> MeSH Parent
     </label>
     <label class="form-switch">
-        <input type="checkbox" name="transformations[]" value="mesh_explosion" checked>
+        <input type="checkbox" name="transformations" value="mesh_explosion" checked>
         <i class="form-icon"></i> MeSH Explosion
     </label>
     <label class="form-switch">
-        <input type="checkbox" name="transformations[]" value="field_restrictions" checked>
+        <input type="checkbox" name="transformations" value="field_restrictions" checked>
         <i class="form-icon"></i> Field Restrictions
     </label>
     <label class="form-switch">
-        <input type="checkbox" name="transformations[]" value="logical_operator" checked>
+        <input type="checkbox" name="transformations" value="logical_operator" checked>
         <i class="form-icon"></i> Logical Operators
     </label>
     <button class="btn btn-link" id="deselect">deselect all</button>
@@ -171,7 +171,7 @@
     let deselectBtn = document.getElementById("deselect");
     deselectBtn.addEventListener("click", function (ev) {
         ev.preventDefault();
-        let v = document.getElementsByName("transformations[]");
+        let v = document.getElementsByName("transformations");
         for (let i = 0; i < v.length; i++) {
             v[i].checked = false;
         }
