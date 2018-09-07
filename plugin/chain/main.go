@@ -41,16 +41,19 @@ var (
 )
 
 type templating struct {
-	Query    learning.CandidateQuery
-	Chain    []link
-	Language string
-	RawQuery string
+	Query       learning.CandidateQuery
+	Chain       []link
+	Language    string
+	RawQuery    string
+	Description string
 }
 
 type link struct {
-	NumRet int
-	RelRet int
-	Query  string
+	NumRet      int
+	RelRet      int
+	NumRel      int
+	Query       string
+	Description string
 }
 
 func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (int, int, error) {
@@ -97,18 +100,16 @@ func initiate() error {
 }
 
 func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
-	fmt.Println(vector == nil, mapping == nil)
 	// Load cui2vec components.
 	if vector == nil || mapping == nil {
 		err := initiate()
 		if err != nil {
-			// Return a 500 error for now.
-			log.Println(errors.New("could not initiate cui2vec"))
-			c.Status(http.StatusInternalServerError)
+			err := errors.New("could not initiate cui2vec components")
+			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 	}
-	fmt.Println(vector == nil, mapping == nil)
 
 	// Grab the username of the logged in user.
 	u := s.UserState.Username(c.Request)
@@ -176,12 +177,14 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 
 		bq, err := compiler.Execute(query)
 		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
 		rep, err := bq.Representation()
 		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
 			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
@@ -190,21 +193,65 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		cq = learning.NewCandidateQuery(q, "1", nil)
 		numret, relret, err := ret(q, s, u)
 		if err != nil {
-			log.Println(err)
-			c.Status(http.StatusInternalServerError)
+			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
+			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 		chain[u] = append(chain[u], link{Query: query, NumRet: numret, RelRet: relret})
 	}
 
+	// If no query has been sent to the server, just render the page.
 	if cq.Query == nil {
 		c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/chain.html"), templating{Query: queries[u], Language: lang}))
 		return
 	}
 
-	fmt.Println(cq.Query, lang)
+	// Get a list of transformations selected by the user.
+	t, ok := c.GetPostFormArray("transformations")
+	if !ok {
+		// If the user selected none, then just use all of them.
+		t = []string{"clause_removal", "cui2vec_expansion", "mesh_parent",
+			"field_restrictions", "logical_operator"}
+	}
+
+	log.Println(t)
+
+	// This is the mapping of selected transformations to the actual transformation implementation.
+	transformations := map[string]learning.Transformation{
+		"clause_removal":     learning.NewClauseRemovalTransformer(),
+		"cui2vec_expansion":  learning.Newcui2vecExpansionTransformer(vector, mapping, quickumls),
+		"mesh_parent":        learning.NewMeshParentTransformer(),
+		"mesh_explosion":     learning.NewMeSHExplosionTransformer(),
+		"field_restrictions": learning.NewFieldRestrictionsTransformer(),
+		"logical_operator":   learning.NewLogicalOperatorTransformer(),
+	}
+
+	// Here the transformations are filtered to just the ones that have been selected.
+	selectedTransformations := make([]learning.Transformation, len(t))
+	for i, transformation := range t {
+		if v, ok := transformations[transformation]; ok {
+			selectedTransformations[i] = v
+		} else {
+			err := errors.New(fmt.Sprintf("%s is not a valid transformation", transformation))
+			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
+			c.AbortWithError(http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	transformationType := []string{
+		"Logical Operator Replacement",
+		"Adjacency Range",
+		"MeSH Explosion",
+		"Field Restrictions",
+		"Adjacency Replacement",
+		"Clause Removal",
+		"cui2vec Expansion",
+		"MeSH Parent",
+	}
 
 	// Generate variations.
+	// Only the transformations which the user has selected will be used in the variation generation.
 	candidates, err := learning.Variations(
 		cq,
 		searchrefiner.ServerConfiguration.Entrez,
@@ -221,17 +268,12 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			analysis.MeshAvgDepth,
 			analysis.MeshMaxDepth,
 		},
-		learning.NewClauseRemovalTransformer(),
-		learning.Newcui2vecExpansionTransformer(vector, mapping, quickumls),
-		learning.NewMeshParentTransformer(),
-		learning.NewMeSHExplosionTransformer(),
-		learning.NewFieldRestrictionsTransformer(),
-		learning.NewLogicalOperatorTransformer(),
+		selectedTransformations...,
 	)
 	if err != nil && err != combinator.ErrCacheMiss {
 		// Return a 500 error for now.
-		log.Println(err)
-		c.Status(http.StatusInternalServerError)
+		c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -243,10 +285,11 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	nq, _, err := selector.Select(cq, candidates)
 	if err != nil && err != combinator.ErrCacheMiss {
 		// Return a 500 error for now.
-		log.Println(err)
-		c.Status(http.StatusInternalServerError)
+		c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	log.Println("selected using transformation", nq.TransformationID)
 
 	// This ensures we only even look at 5 features in the past maximum.
 	// This prevents quickrank from being overloaded with features and crashing.
@@ -267,13 +310,29 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	numret, relret, err := ret(nq.Query, s, u)
 	if err != nil {
 		log.Println(err)
-		c.Status(http.StatusInternalServerError)
+		c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	chain[u] = append(chain[u], link{Query: q, NumRet: numret, RelRet: relret})
+
+	description := fmt.Sprintf("This query was selected from %d variations. The transformation that was applied to this query was %s.", len(candidates), transformationType[nq.TransformationID])
+
+	chain[u] = append(chain[u], link{
+		Query:       q,
+		NumRet:      numret,
+		RelRet:      relret,
+		NumRel:      len(s.Settings[u].Relevant),
+		Description: description,
+	})
 
 	// Respond to a regular request.
-	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/chain.html"), templating{Query: nq, Language: lang, Chain: chain[u], RawQuery: q}))
+	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/chain.html"), templating{
+		Query:       nq,
+		Language:    lang,
+		Chain:       chain[u],
+		RawQuery:    q,
+		Description: description,
+	}))
 	return
 }
 
