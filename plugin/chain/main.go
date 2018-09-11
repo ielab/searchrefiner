@@ -79,6 +79,7 @@ type templating struct {
 	Language    string
 	RawQuery    string
 	Description template.HTML
+	Error       error
 }
 
 type link struct {
@@ -92,6 +93,9 @@ type link struct {
 type workRequest struct {
 	user            string
 	model           string
+	rawQuery        string
+	lang            string
+	server          searchrefiner.Server
 	cq              learning.CandidateQuery
 	selector        learning.QuickRankQueryCandidateSelector
 	transformations []learning.Transformation
@@ -103,11 +107,13 @@ type workResponse struct {
 	err        error
 	done       bool
 	request    workRequest
+	link       link
 }
 
 func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (int, int, error) {
-	t, _, err := combinator.NewLogicalTree(groove.NewPipelineQuery("", "", q), s.Entrez, searchrefiner.QueryCacher)
+	t, _, err := combinator.NewLogicalTree(groove.NewPipelineQuery("0", "0", q), s.Entrez, searchrefiner.QueryCacher)
 	if err != nil {
+		log.Println(err)
 		return 0, 0, err
 	}
 	d := t.Documents(searchrefiner.QueryCacher)
@@ -156,14 +162,75 @@ func doWork() {
 			select {
 			case w := <-workQueue:
 				log.Println("recieved work request")
+
+				// generate candidates and select the best one.
 				nq, candidates, err := transform(w.cq, w.selector, w.transformations...)
+
+				nqnumret, nqrelret, err := ret(nq.Query, w.server, w.user)
+				if err != nil {
+					log.Println(err)
+					workMap[w.user] = workResponse{
+						err:  err,
+						done: true,
+					}
+					break
+				}
+
+				numrel := len(w.server.Settings[w.user].Relevant)
+
+				description := fmt.Sprintf(`
+This query was selected from %d variations. 
+The transformation that was applied to this query was <span class="tooltip label label-rounded c-hand" data-tooltip="%s">%s</span>. 
+The optimisation that was applied was %s.`, len(candidates), transformationDescriptions[nq.TransformationID], transformationType[nq.TransformationID], w.model)
+
+				var q string
+				switch w.lang {
+				case "pubmed":
+					q, _ = transmute.CompileCqr2PubMed(nq.Query)
+				default:
+					q, _ = transmute.CompileCqr2Medline(nq.Query)
+				}
+
 				workMu.Lock()
+				queries[w.user] = nq
+				if len(chain[w.user]) == 0 {
+					cqnumret, cqrelret, err := ret(w.cq.Query, w.server, w.user)
+					if err != nil {
+						log.Println(err)
+						workMap[w.user] = workResponse{
+							err:  err,
+							done: true,
+						}
+						break
+					}
+					chain[w.user] = append(chain[w.user], link{
+						Query:       w.rawQuery,
+						NumRet:      cqnumret,
+						NumRel:      numrel,
+						RelRet:      cqrelret,
+						Description: template.HTML("This is the original query that was submitted."),
+					})
+				}
+				chain[w.user] = append(chain[w.user], link{
+					NumRet:      nqnumret,
+					NumRel:      numrel,
+					RelRet:      nqrelret,
+					Query:       q,
+					Description: template.HTML(description),
+				})
 				workMap[w.user] = workResponse{
 					nq:         nq,
 					candidates: candidates,
 					err:        err,
 					done:       true,
 					request:    w,
+					link: link{
+						NumRet:      nqnumret,
+						NumRel:      numrel,
+						RelRet:      nqrelret,
+						Query:       q,
+						Description: template.HTML(description),
+					},
 				}
 				workMu.Unlock()
 				log.Println("sending work response")
@@ -276,7 +343,8 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	)
 
 	// Respond to a request to expand a brand new query.
-	if query, ok := c.GetPostForm("query"); ok {
+	var query string
+	if query, ok = c.GetPostForm("query"); ok {
 		// Clear any existing queries.
 		queries[u] = learning.CandidateQuery{}
 		chain[u] = []link{}
@@ -307,14 +375,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		}
 
 		q := rep.(cqr.CommonQueryRepresentation)
-		cq = learning.NewCandidateQuery(q, "1", nil)
-		numret, relret, err := ret(q, s, u)
-		if err != nil {
-			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
-			c.AbortWithError(http.StatusInternalServerError, err)
-			return
-		}
-		chain[u] = append(chain[u], link{Query: query, NumRet: numret, RelRet: relret})
+		cq = learning.NewCandidateQuery(q, "", nil)
 	}
 
 	// Get a list of transformations selected by the user.
@@ -338,13 +399,13 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	}
 
 	var (
-		nq         learning.CandidateQuery
-		candidates []learning.CandidateQuery
+		nq       learning.CandidateQuery
+		response workResponse
 	)
 
 	workMu.Lock()
 	defer workMu.Unlock()
-	if response, ok := workMap[u]; !ok && cq.Query != nil && c.Request.Method == "POST" { // If no work exists, create a job.
+	if response, ok = workMap[u]; !ok && cq.Query != nil && c.Request.Method == "POST" { // If no work exists, create a job.
 		log.Println("sending work request")
 		workMap[u] = workResponse{
 			done: false,
@@ -355,6 +416,8 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			selector:        selector,
 			transformations: selectedTransformations,
 			model:           model,
+			rawQuery:        query,
+			lang:            lang,
 		}
 		workQueue <- work
 		c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))
@@ -373,9 +436,6 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 				c.AbortWithError(http.StatusInternalServerError, response.err)
 				return
 			}
-			nq = response.nq
-			candidates = response.candidates
-			model = response.request.model
 		} else if ok && cq.Query != nil {
 			log.Println("work has not been completed")
 			c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))
@@ -383,9 +443,9 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		} else {
 			log.Println("there is no work and no query has been submitted")
 			if len(chain[u]) > 0 {
-				c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Query: queries[u], Language: lang, Chain: chain[u], Description: chain[u][len(chain[u])-1].Description, RawQuery: chain[u][len(chain[u])-1].Query}))
+				c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Query: queries[u], Language: lang, Chain: chain[u], Description: chain[u][len(chain[u])-1].Description, RawQuery: chain[u][len(chain[u])-1].Query, Error: response.err}))
 			} else {
-				c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Language: lang}))
+				c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Language: lang, Error: response.err}))
 			}
 			return
 		}
@@ -399,44 +459,15 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	if len(nq.Chain) > 5 {
 		nq.Chain = nq.Chain[1:]
 	}
-	queries[u] = nq
-
-	var q string
-	switch lang {
-	case "pubmed":
-		q, _ = transmute.CompileCqr2PubMed(nq.Query)
-	default:
-		q, _ = transmute.CompileCqr2Medline(nq.Query)
-	}
-
-	numret, relret, err := ret(nq.Query, s, u)
-	if err != nil {
-		log.Println(err)
-		c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	description := fmt.Sprintf(`
-This query was selected from %d variations. 
-The transformation that was applied to this query was <span class="tooltip label label-rounded c-hand" data-tooltip="%s">%s</span>. 
-The optimisation that was applied was %s.`, len(candidates), transformationDescriptions[nq.TransformationID], transformationType[nq.TransformationID], model)
-
-	chain[u] = append(chain[u], link{
-		Query:       q,
-		NumRet:      numret,
-		RelRet:      relret,
-		NumRel:      len(s.Settings[u].Relevant),
-		Description: template.HTML(description),
-	})
 
 	// Respond to a regular request.
 	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{
 		Query:       nq,
 		Language:    lang,
 		Chain:       chain[u],
-		RawQuery:    q,
-		Description: template.HTML(description),
+		RawQuery:    response.link.Query,
+		Description: template.HTML(response.link.Description),
+		Error:       response.err,
 	}))
 	return
 }

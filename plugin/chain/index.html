@@ -67,7 +67,7 @@
         }
 
         p {
-            text-align:left;
+            text-align: left;
         }
 
         footer {
@@ -87,6 +87,11 @@
 <body>
 <div class="container">
 {{ template "nav" }}
+{{ if .Error }}
+    <div class="toast toast-primary">
+    {{ .Error }}
+    </div>
+{{ end }}
 {{ $lang := .Language }}
 {{ if .Chain }}
     <div class="panel">
