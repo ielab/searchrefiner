@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	seen                = combinator.NewFileQueryCache("file_cache")
+	QueryCacher         = combinator.NewFileQueryCache("file_cache")
 	Components          = []string{"components/sidebar.tmpl.html", "components/util.tmpl.html", "components/login.template.html", "components/bigbro.tmpl.html"}
 	ServerConfiguration = Server{}
 )

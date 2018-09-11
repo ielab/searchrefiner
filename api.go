@@ -85,7 +85,7 @@ func (s Server) ApiTree(c *gin.Context) {
 	}
 
 	var root combinator.LogicalTree
-	root, _, err = combinator.NewLogicalTree(groove.NewPipelineQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, seen)
+	root, _, err = combinator.NewLogicalTree(groove.NewPipelineQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, QueryCacher)
 	if err != nil {
 		c.AbortWithError(500, err)
 		return
