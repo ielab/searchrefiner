@@ -68,9 +68,8 @@ var (
 		"Transform a single MeSH term by rewriting it as the parent term in the ontology.",
 	}
 
-	workQueue = make(chan workRequest)
-	workMu    sync.Mutex
-	workMap   = make(map[string]workResponse)
+	workMu  sync.Mutex
+	workMap = make(map[string]workResponse)
 )
 
 type templating struct {
@@ -129,8 +128,6 @@ func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (int
 }
 
 func initiate() error {
-	doWork()
-
 	quickrank = searchrefiner.ServerConfiguration.Config.Options["QuicklearnBinary"].(string)
 	quickumls = quickumlsrest.NewClient(searchrefiner.ServerConfiguration.Config.Options["QuickUMLSURL"].(string))
 
@@ -156,86 +153,81 @@ func initiate() error {
 	return nil
 }
 
-func doWork() {
+func (w workRequest) start() {
 	go func() {
-		for {
-			select {
-			case w := <-workQueue:
-				log.Println("recieved work request")
+		log.Println("recieved work request")
 
-				// generate candidates and select the best one.
-				nq, candidates, err := transform(w.cq, w.selector, w.transformations...)
+		// generate candidates and select the best one.
+		nq, candidates, err := transform(w.cq, w.selector, w.transformations...)
 
-				nqnumret, nqrelret, err := ret(nq.Query, w.server, w.user)
-				if err != nil {
-					log.Println(err)
-					workMap[w.user] = workResponse{
-						err:  err,
-						done: true,
-					}
-					break
-				}
+		nqnumret, nqrelret, err := ret(nq.Query, w.server, w.user)
+		if err != nil {
+			log.Println(err)
+			workMap[w.user] = workResponse{
+				err:  err,
+				done: true,
+			}
+			return
+		}
 
-				numrel := len(w.server.Settings[w.user].Relevant)
+		numrel := len(w.server.Settings[w.user].Relevant)
 
-				description := fmt.Sprintf(`
+		description := fmt.Sprintf(`
 This query was selected from %d variations. 
 The transformation that was applied to this query was <span class="tooltip label label-rounded c-hand" data-tooltip="%s">%s</span>. 
 The optimisation that was applied was %s.`, len(candidates), transformationDescriptions[nq.TransformationID], transformationType[nq.TransformationID], w.model)
 
-				var q string
-				switch w.lang {
-				case "pubmed":
-					q, _ = transmute.CompileCqr2PubMed(nq.Query)
-				default:
-					q, _ = transmute.CompileCqr2Medline(nq.Query)
-				}
-
-				workMu.Lock()
-				queries[w.user] = nq
-				if len(chain[w.user]) == 0 {
-					cqnumret, cqrelret, err := ret(w.cq.Query, w.server, w.user)
-					if err != nil {
-						log.Println(err)
-						workMap[w.user] = workResponse{
-							err:  err,
-							done: true,
-						}
-						break
-					}
-					chain[w.user] = append(chain[w.user], link{
-						Query:       w.rawQuery,
-						NumRet:      cqnumret,
-						NumRel:      numrel,
-						RelRet:      cqrelret,
-						Description: template.HTML("This is the original query that was submitted."),
-					})
-				}
-				chain[w.user] = append(chain[w.user], link{
-					NumRet:      nqnumret,
-					NumRel:      numrel,
-					RelRet:      nqrelret,
-					Query:       q,
-					Description: template.HTML(description),
-				})
-				workMap[w.user] = workResponse{
-					nq:         nq,
-					candidates: candidates,
-					err:        err,
-					done:       true,
-					request:    w,
-					link: link{
-						NumRet:      nqnumret,
-						NumRel:      numrel,
-						RelRet:      nqrelret,
-						Query:       q,
-						Description: template.HTML(description),
-					},
-				}
-				workMu.Unlock()
-				log.Println("sending work response")
-			}
+		var q string
+		switch w.lang {
+		case "pubmed":
+			q, _ = transmute.CompileCqr2PubMed(nq.Query)
+		default:
+			q, _ = transmute.CompileCqr2Medline(nq.Query)
 		}
+
+		workMu.Lock()
+		queries[w.user] = nq
+		if len(chain[w.user]) == 0 {
+			cqnumret, cqrelret, err := ret(w.cq.Query, w.server, w.user)
+			if err != nil {
+				log.Println(err)
+				workMap[w.user] = workResponse{
+					err:  err,
+					done: true,
+				}
+				return
+			}
+			chain[w.user] = append(chain[w.user], link{
+				Query:       w.rawQuery,
+				NumRet:      cqnumret,
+				NumRel:      numrel,
+				RelRet:      cqrelret,
+				Description: template.HTML("This is the original query that was submitted."),
+			})
+		}
+		chain[w.user] = append(chain[w.user], link{
+			NumRet:      nqnumret,
+			NumRel:      numrel,
+			RelRet:      nqrelret,
+			Query:       q,
+			Description: template.HTML(description),
+		})
+		workMap[w.user] = workResponse{
+			nq:         nq,
+			candidates: candidates,
+			err:        err,
+			done:       true,
+			request:    w,
+			link: link{
+				NumRet:      nqnumret,
+				NumRel:      numrel,
+				RelRet:      nqrelret,
+				Query:       q,
+				Description: template.HTML(description),
+			},
+		}
+		workMu.Unlock()
+		log.Println("sending work response")
 	}()
 }
 
@@ -419,7 +411,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			rawQuery:        query,
 			lang:            lang,
 		}
-		workQueue <- work
+		work.start()
 		c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))
 		return
 	} else { // Otherwise, we can either get the results, or continue to wait until the request is fulfilled.
