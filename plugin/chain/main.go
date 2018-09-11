@@ -423,11 +423,6 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))
 		return
 	} else { // Otherwise, we can either get the results, or continue to wait until the request is fulfilled.
-		if c.Request.Method != "GET" {
-			log.Println("only responding to GET requests")
-			c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))
-			return
-		}
 		if response.done {
 			log.Println("completed work")
 			if response.err != nil {
@@ -436,15 +431,16 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 				c.AbortWithError(http.StatusInternalServerError, response.err)
 				return
 			}
-		} else if ok && cq.Query != nil {
+		} else if ok && !response.done {
 			log.Println("work has not been completed")
 			c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))
 			return
 		} else {
-			log.Println("there is no work and no query has been submitted")
 			if len(chain[u]) > 0 {
+				log.Println("there is no work but a chain exists")
 				c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Query: queries[u], Language: lang, Chain: chain[u], Description: chain[u][len(chain[u])-1].Description, RawQuery: chain[u][len(chain[u])-1].Query, Error: response.err}))
 			} else {
+				log.Println("there is no work and no query has been submitted")
 				c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Language: lang, Error: response.err}))
 			}
 			return
