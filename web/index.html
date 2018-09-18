@@ -45,7 +45,7 @@
                     </label>
                 </div>
                 <div class="form-group">
-                    <input class="btn btn-primary" type="submit"/>
+                    <input class="btn btn-primary" type="submit" id="search-submit"/>
                 </div>
             </form>
 
@@ -145,6 +145,11 @@
         </div>
     </div>
 </div>
+<script type="text/javascript">
+    document.getElementById("search-submit").addEventListener("click", function (e) {
+        bb.log(e, "searchsubmit", document.getElementById("search-box").value)
+    })
+</script>
 {{template "footer"}}
 </body>
 </html>
