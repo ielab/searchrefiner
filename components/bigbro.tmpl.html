@@ -10,9 +10,11 @@
         } else {
             bb = BigBro.init(ev.target.responseText, window.location.hostname + ":1984", events);
         }
-        bb.log(ev, "bigbroinit")
     });
     request.open("GET", "/api/username", true);
     request.send();
+    request.onsuccess = function () {
+        bb.log(ev, "bigbroinit")
+    }
 </script>
 {{end}}
