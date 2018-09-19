@@ -1,3 +1,4 @@
+{{ $lang := .Language }}
 {{ define "select_optimisation" }}
 <div class="form-group">
     <label>Optimisation
@@ -39,6 +40,17 @@
     </label>
     <button class="btn btn-link deselect">deselect all</button>
 </div>
+{{ end }}
+{{ define "explore_buttons" }}
+<button class="btn btn-link" id="vis" type="button">
+    QueryVis <i class="icon icon-arrow-right"></i>
+</button>
+<button class="btn btn-link" id="results" type="button">
+    Results <i class="icon icon-arrow-right"></i>
+</button>
+<button class="btn btn-link" id="edit" type="button">
+    Edit <i class="icon icon-arrow-right"></i>
+</button>
 {{ end }}
 <!DOCTYPE html>
 <html lang="en">
@@ -85,6 +97,7 @@
     </style>
 </head>
 <body>
+{{ template "bigbro" }}
 <div class="container">
 {{ template "nav" }}
 {{ if .Error }}
@@ -92,7 +105,6 @@
     {{ .Error }}
     </div>
 {{ end }}
-{{ $lang := .Language }}
 {{ if .Chain }}
     <div class="panel">
         <div class="panel-header">
@@ -130,7 +142,7 @@
                 <input type="hidden" name="query" value="{{ $link.Query }}">
                 <input type="hidden" name="lang" value="{{ $lang }}">
                 <div class="form-group">
-                    <input class="btn btn-primary" type="submit"/>
+                    <input class="btn btn-primary search-submit" type="submit"/>
                 </div>
             </form>
             <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
@@ -171,7 +183,7 @@
                     </label>
                 </div>
                 <div class="form-group">
-                    <input class="btn btn-primary" type="submit"/>
+                    <input class="btn btn-primary search-submit" type="submit"/>
                 </div>
             </form>
         </div>
@@ -190,6 +202,17 @@
             }
         })
     }
+
+    let searchsubmitBtns = document.getElementsByClassName("search-submit");
+    for (let i = 0; i < searchsubmitBtns.length; i++) {
+        searchsubmitBtns[i].addEventListener("click", function(e) {
+            e.preventDefault();
+            let v = ev.target.parentNode.getElementsByTagName("input");
+            bb.log(e, "searchtransform", document.getElementById("search-box").value);
+        })
+    }
+    document.getElementById("search-submit").addEventListener("click", function (e) {
+    })
 </script>
 {{ if .Chain }}
 <script src="/static/vis.min.js" type="text/javascript"></script>
