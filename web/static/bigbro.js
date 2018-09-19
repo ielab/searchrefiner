@@ -23,12 +23,13 @@ let BigBro = {
 
         this.ws = new WebSocket(protocol + this.data.server + "/event");
         let self = this;
-        this.ws.onopen = function () {
+        this.ws.onopen = function (ev) {
             for (let i = 0; i < self.data.events.length; i++) {
                 window.addEventListener(self.data.events[i], function (e) {
                     self.log(e, self.data.events[i]);
                 })
             }
+            bb.log(ev, "bigbroinit");
         };
         return this
     },
