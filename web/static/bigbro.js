@@ -23,6 +23,7 @@ let BigBro = {
 
         this.ws = new WebSocket(protocol + this.data.server + "/event");
         let self = this;
+
         this.ws.onopen = function (ev) {
             for (let i = 0; i < self.data.events.length; i++) {
                 window.addEventListener(self.data.events[i], function (e) {
@@ -31,10 +32,20 @@ let BigBro = {
             }
             bb.log(ev, "bigbroinit");
         };
+
+        window.onunload = function (ev) {
+            bb.log(ev, "bigbrodeinit");
+            self.ws.close();
+            console.log("hello");
+        };
         return this
     },
     // log logs an event with a specified method name (normally the actual event name).
     log: function (e, method, comment) {
+        if (this.ws.readyState !== 1) {
+            console.warn("bigbro websocket unable to connect");
+            return false;
+        }
         let event = {
             target: e.target.tagName,
             name: e.target.name,
@@ -64,5 +75,6 @@ let BigBro = {
             event.comment = comment;
         }
         this.ws.send(JSON.stringify(event));
+        return true
     }
 };

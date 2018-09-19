@@ -113,14 +113,15 @@
         <div class="panel-body">
             <form action="/plugin/chain" method="post" accept-charset="UTF-8">
                 <input type="hidden" name="lang" value="{{ $lang }}">
+                <input type="hidden" class="query" value="{{ .RawQuery }}">
                 <div id="ret-graph"></div>
             {{ template "select_transformation" }}
             {{ template "select_optimisation" }}
-                <input class="btn btn-primary" type="submit">
+                <input class="btn btn-primary search-submit" type="submit">
             </form>
             <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
                 <h4>Current Query</h4>
-                <pre>{{ .RawQuery }}</pre>
+                <pre class="query">{{ .RawQuery }}</pre>
                 <p>{{ .Description }}</p>
             </div>
         </div>
@@ -139,7 +140,7 @@
             <form action="/plugin/chain" method="post" accept-charset="UTF-8">
             {{ template "select_transformation" }}
             {{ template "select_optimisation" }}
-                <input type="hidden" name="query" value="{{ $link.Query }}">
+                <input type="hidden" name="query" class="query" value="{{ $link.Query }}">
                 <input type="hidden" name="lang" value="{{ $lang }}">
                 <div class="form-group">
                     <input class="btn btn-primary search-submit" type="submit"/>
@@ -167,7 +168,7 @@
         <div class="panel-body">
             <form action="/plugin/chain" method="post" accept-charset="UTF-8">
                 <div class="form-group">
-                    <textarea class="form-input" placeholder="Enter query here." name="query" rows="20"></textarea>
+                    <textarea class="form-input query" placeholder="Enter query here." name="query" rows="20"></textarea>
                 </div>
             {{ template "select_transformation" }}
             {{ template "select_optimisation" }}
@@ -205,14 +206,11 @@
 
     let searchsubmitBtns = document.getElementsByClassName("search-submit");
     for (let i = 0; i < searchsubmitBtns.length; i++) {
-        searchsubmitBtns[i].addEventListener("click", function(e) {
-            e.preventDefault();
-            let v = ev.target.parentNode.getElementsByTagName("input");
-            bb.log(e, "searchtransform", document.getElementById("search-box").value);
+        searchsubmitBtns[i].addEventListener("click", function (ev) {
+            let v = ev.target.parentNode.parentNode.getElementsByClassName("query")[0].value;
+            bb.log(ev, "searchtransform", v);
         })
     }
-    document.getElementById("search-submit").addEventListener("click", function (e) {
-    })
 </script>
 {{ if .Chain }}
 <script src="/static/vis.min.js" type="text/javascript"></script>
