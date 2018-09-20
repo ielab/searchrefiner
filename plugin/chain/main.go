@@ -6,6 +6,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/hscells/cqr"
 	"github.com/hscells/cui2vec"
+	"github.com/hscells/groove"
 	"github.com/hscells/groove/analysis"
 	"github.com/hscells/groove/analysis/preqpp"
 	"github.com/hscells/groove/combinator"
@@ -15,12 +16,11 @@ import (
 	"github.com/hscells/transmute/pipeline"
 	"github.com/ielab/searchrefiner"
 	"github.com/peterbourgon/diskv"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"sync"
-	"html/template"
-	"github.com/hscells/groove"
 )
 
 type ChainPlugin struct{}
@@ -469,7 +469,7 @@ func (ChainPlugin) Details() searchrefiner.PluginDetails {
 		Title:       "Query Chain Transformer",
 		Description: "Refine Boolean queries with automatic query transformations.",
 		Author:      "ielab",
-		Version:     "06.Sep.2018",
+		Version:     "20.Sep.2018",
 		ProjectURL:  "https://ielab.io/searchrefiner/",
 	}
 }

@@ -41,17 +41,6 @@
     <button class="btn btn-link deselect">deselect all</button>
 </div>
 {{ end }}
-{{ define "explore_buttons" }}
-<button class="btn btn-link" id="vis" type="button">
-    QueryVis <i class="icon icon-arrow-right"></i>
-</button>
-<button class="btn btn-link" id="results" type="button">
-    Results <i class="icon icon-arrow-right"></i>
-</button>
-<button class="btn btn-link" id="edit" type="button">
-    Edit <i class="icon icon-arrow-right"></i>
-</button>
-{{ end }}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,6 +59,8 @@
         }
 
         pre {
+            padding: 6px;
+            border: 1px solid #4d4d4d;
             font-size: 12px;
             background-color: #eee;
             white-space: pre-wrap; /* css-3 */
@@ -120,9 +111,29 @@
                 <input class="btn btn-primary search-submit" type="submit">
             </form>
             <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
-                <h4>Current Query</h4>
+                <p>This is the most recent query in the chain. {{ .Description }} Previous queries are displayed below in chronological order.</p>
                 <pre class="query">{{ .RawQuery }}</pre>
-                <p>{{ .Description }}</p>
+                <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
+                    <input type="hidden" name="lang" value="{{ .Language }}">
+                    <input type="hidden" name="query" value="{{ .RawQuery }}">
+                    <button class="btn btn-link" type="submit">
+                        QueryVis <i class="icon icon-arrow-right"></i>
+                    </button>
+                </form>
+                <form action="/query" method="POST" accept-charset="UTF-8" style="width: auto">
+                    <input type="hidden" name="lang" value="{{ .Language }}">
+                    <input type="hidden" name="query" value="{{ .RawQuery }}">
+                    <button class="btn btn-link" id="results" type="button">
+                        Results <i class="icon icon-arrow-right"></i>
+                    </button>
+                </form>
+                <form action="/transform" method="POST" accept-charset="UTF-8" style="width: auto;">
+                    <input type="hidden" name="lang" value="{{ .Language }}">
+                    <input type="hidden" name="query" value="{{ .RawQuery }}">
+                    <button class="btn btn-link" id="edit" type="button">
+                        Edit <i class="icon icon-arrow-right"></i>
+                    </button>
+                </form>
             </div>
         </div>
         <div class="panel-footer">
@@ -147,13 +158,33 @@
                 </div>
             </form>
             <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
-                <h4>Query</h4>
-                <pre>{{ $link.Query }}</pre>
             {{ if eq $i 0 }}
                 <p>This is the original query that was submitted.</p>
             {{ else }}
                 <p>{{ $link.Description }}</p>
             {{ end }}
+                <pre>{{ $link.Query }}</pre>
+                <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
+                    <input type="hidden" name="lang" value="{{ $lang }}">
+                    <input type="hidden" name="query" value="{{ $link.Query }}">
+                    <button class="btn btn-link" type="submit">
+                        QueryVis <i class="icon icon-arrow-right"></i>
+                    </button>
+                </form>
+                <form action="/query" method="POST" accept-charset="UTF-8" style="width: auto">
+                    <input type="hidden" name="lang" value="{{ $lang }}">
+                    <input type="hidden" name="query" value="{{ $link.Query }}">
+                    <button class="btn btn-link" id="results" type="button">
+                        Results <i class="icon icon-arrow-right"></i>
+                    </button>
+                </form>
+                <form action="/transform" method="POST" accept-charset="UTF-8" style="width: auto;">
+                    <input type="hidden" name="lang" value="{{ $lang }}">
+                    <input type="hidden" name="query" value="{{ $link.Query }}">
+                    <button class="btn btn-link" id="edit" type="button">
+                        Edit <i class="icon icon-arrow-right"></i>
+                    </button>
+                </form>
             </div>
         </div>
         <div class="panel-footer"></div>
@@ -187,6 +218,26 @@
                     <input class="btn btn-primary search-submit" type="submit"/>
                 </div>
             </form>
+            <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
+                <p>
+                    Enter a query to automatically transform in the text area provided.
+                    The variations of the input query will be generated using the selected transformations.
+                    One query will then be automatically selected from the generated variations using the optimisation measure.
+                </p>
+                <p>
+                    This process can be repeated and will create a chain of queries.
+                    Once multiple queries have been selected it is possible to visualise the process by which the query was transformed.
+                    At any point in the chain, a previous query can be used to create a new chain.
+                </p>
+                <p>
+                    Load a set of known-relevant PMIDs using the <a href="/settings">settings</a> page to visualise how the transformed queries retrieve this set.
+                </p>
+                <p>
+                    During the variation generation and selection process, a waiting screen will be displayed.
+                    <b>This process is dependent on the complexity of the query and the transformations used to generate variations.</b>
+                    The waiting page will automatically redirect back to this interface once the process has completed.
+                </p>
+            </div>
         </div>
         <div class="panel-footer"></div>
     </div>

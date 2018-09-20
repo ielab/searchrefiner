@@ -3,18 +3,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/groove/stats"
 	"github.com/ielab/searchrefiner"
 	"github.com/xyproto/permissionbolt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
-	"io/ioutil"
-	"plugin"
 	"path"
+	"plugin"
+	"strings"
 )
 
 func main() {
@@ -93,6 +94,7 @@ func main() {
 	}
 
 	g.Use(permissionHandler)
+	g.Use(gzip.Gzip(gzip.BestCompression))
 
 	g.LoadHTMLFiles(append([]string{
 		// Views.
@@ -131,7 +133,7 @@ func main() {
 			}
 
 			// Configure the permissions for this plugin.
-			p = path.Join("/", p)
+			p = path.Join("/plugin/", p)
 			switch handle.PermissionType() {
 			case searchrefiner.PluginAdmin:
 				perm.AddAdminPath(p)
@@ -142,7 +144,6 @@ func main() {
 			default:
 				perm.AddPublicPath(p)
 			}
-			p = path.Join("/plugin/", p)
 
 			s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
 				URL:           p,
