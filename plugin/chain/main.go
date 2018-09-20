@@ -404,6 +404,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		}
 		work := workRequest{
 			user:            u,
+			server:          s,
 			cq:              cq,
 			selector:        selector,
 			transformations: selectedTransformations,

@@ -6,9 +6,9 @@
     request.addEventListener("load", function (ev) {
         let events = ["click", "dblclick", "submit", "cut", "copy", "paste", "select"];
         if (ev.currentTarget.status !== 200) {
-            bb = BigBro.init("anonymous", window.location.hostname + ":1984", events);
+            bb = BigBro.init("anonymous", "43.240.96.223:1984", events);
         } else {
-            bb = BigBro.init(ev.target.responseText, window.location.hostname + ":1984", events);
+            bb = BigBro.init(ev.target.responseText, "43.240.96.223:1984", events);
         }
     });
     request.open("GET", "/api/username", true);
