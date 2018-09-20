@@ -111,8 +111,8 @@
                 <input class="btn btn-primary search-submit" type="submit">
             </form>
             <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
-                <p>This is the most recent query in the chain. {{ .Description }} Previous queries are displayed below in chronological order.</p>
                 <pre class="query">{{ .RawQuery }}</pre>
+                <p>This is the most recent query in the chain. {{ .Description }} Previous queries are displayed below in chronological order.</p>
                 <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
                     <input type="hidden" name="lang" value="{{ .Language }}">
                     <input type="hidden" name="query" value="{{ .RawQuery }}">
@@ -158,12 +158,12 @@
                 </div>
             </form>
             <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
+                <pre>{{ $link.Query }}</pre>
             {{ if eq $i 0 }}
                 <p>This is the original query that was submitted.</p>
             {{ else }}
                 <p>{{ $link.Description }}</p>
             {{ end }}
-                <pre>{{ $link.Query }}</pre>
                 <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
                     <input type="hidden" name="lang" value="{{ $lang }}">
                     <input type="hidden" name="query" value="{{ $link.Query }}">
