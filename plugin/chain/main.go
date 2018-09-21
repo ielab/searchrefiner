@@ -198,6 +198,7 @@ The optimisation that was applied was %s.`, len(candidates), transformationDescr
 		}
 
 		workMu.Lock()
+		defer workMu.Unlock()
 		queries[w.user] = nq
 		if len(chain[w.user]) == 0 {
 			evaluation, err := ret(w.cq.Query, w.server, w.user)
@@ -254,8 +255,8 @@ The optimisation that was applied was %s.`, len(candidates), transformationDescr
 				Description: template.HTML(description),
 			},
 		}
-		workMu.Unlock()
 		log.Println("sending work response")
+		return
 	}()
 }
 
@@ -423,8 +424,6 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		response workResponse
 	)
 
-	workMu.Lock()
-	defer workMu.Unlock()
 	if response, ok = workMap[u]; !ok && cq.Query != nil && c.Request.Method == "POST" { // If no work exists, create a job.
 		log.Println("sending work request")
 		workMap[u] = workResponse{
@@ -450,7 +449,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			if response.err != nil {
 				log.Println(response.err)
 				//c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: response.err.Error(), BackLink: "/plugin/chain"})
-				c.Render(http.StatusAccepted, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Error: response.err}))
+				c.Render(http.StatusAccepted, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Query: queries[u], Language: lang, Chain: chain[u], Description: chain[u][len(chain[u])-1].Description, RawQuery: chain[u][len(chain[u])-1].Query, Error: response.err}))
 				return
 			}
 		} else if ok && !response.done {

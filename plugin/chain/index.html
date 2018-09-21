@@ -86,10 +86,10 @@
             font-size: 16px;
         }
 
-        .vis-point.vis-graph-group0:hover, .vis-point.vis-graph-group1:hover {
-            stroke-width: 8px !important;
-            cursor: pointer;
-        }
+        /*.vis-point.vis-graph-group0:hover, .vis-point.vis-graph-group1:hover {*/
+        /*stroke-width: 8px !important;*/
+        /*cursor: pointer;*/
+        /*}*/
 
         .tooltip::after {
             white-space: normal;
@@ -102,7 +102,7 @@
 <div class="container">
 {{ template "nav" }}
 {{ if .Error }}
-    <div class="toast toast-primary">
+    <div class="toast toast-error">
     {{ .Error }}
     </div>
 {{ end }}
@@ -468,16 +468,12 @@
         dataAxis: {
             icons: false,
             alignZeros: false,
-            right: {
-                range: {
-                    min: 0,
-                }
-            },
             left: {
                 range: {
                     min: 0,
+                    max: 1,
                 }
-            }
+            },
         },
         orientation: 'top',
         legend: {
@@ -495,29 +491,31 @@
         showMinorLabels: false,
     };
     new vis.Graph2d(eval_container, eval_items, eval_groups, eval_options);
-    let ret1 = document.getElementsByClassName("vis-graph-group0");
-    let ret2 = document.getElementsByClassName("vis-graph-group1");
-    let max = 2 * {{ len .Chain }};
-    for (let i = 0; i < ret1.length; i++) {
-        ret1[i].addEventListener("click", function () {
-            let v = i;
-            if (v >= max) {
-                v = v - max + 1;
-            }
-            v--;
-            window.location = "#link-" + v;
-        })
-    }
-    for (let i = 0; i < ret2.length; i++) {
-        ret2[i].addEventListener("click", function () {
-            let v = i;
-            if (v >= max) {
-                v = v - max + 1;
-            }
-            v--;
-            window.location = "#link-" + v;
-        })
-    }
+    {{/*let ret1 = document.getElementsByClassName("vis-graph-group0");*/}}
+    {{/*let ret2 = document.getElementsByClassName("vis-graph-group1");*/}}
+    {{/*let max = 2 * {{ len .Chain }};*/}}
+    // console.log(ret1, ret1.length)
+    // for (let i = 0; i < ret1.length; i++) {
+    //     console.log(i);
+    //     ret1[i].addEventListener("click", function () {
+    //         let v = i;
+    //         if (v >= max) {
+    //             v = v - max;
+    //         }
+    //         console.log(v, i, max);
+    //         // window.location = "#link-" + v;
+    //     })
+    // }
+    // for (let i = 0; i < ret2.length; i++) {
+    //     ret2[i].addEventListener("click", function () {
+    //         let v = i;
+    //         if (v >= max) {
+    //             v = v - max;
+    //         }
+    //         console.log(v, i, max);
+    //         // window.location = "#link-" + v;
+    //     })
+    // }
 </script>
 <script type="text/javascript">
     // individual graphs.
@@ -602,14 +600,12 @@
         dataAxis: {
             icons: false,
             alignZeros: false,
-            right: {
-                range: {
-                    min: 0,
-                }
-            },
+            showMajorLabels: true,
+            showMinorLabels: true,
             left: {
                 range: {
                     min: 0,
+                    max: 1,
                 }
             }
         },
