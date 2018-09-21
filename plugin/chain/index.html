@@ -13,7 +13,7 @@
 {{ define "select_transformation" }}
 <!-- which transformations to select? -->
 <div class="form-group">
-    <p>Select Transformation</p>
+    <p>Select Transformations</p>
     <label class="form-switch">
         <input type="checkbox" name="transformations" value="cui2vec_expansion" checked>
         <i class="form-icon"></i> cui2vec Expansion
@@ -53,9 +53,14 @@
             margin: 24px;
         }
 
+        .modal-container {
+            min-width: 960px;
+        }
+
         form {
             width: 50%;
             float: left;
+            padding: 8px;
         }
 
         pre {
@@ -81,6 +86,11 @@
             font-size: 16px;
         }
 
+        .vis-point.vis-graph-group0:hover, .vis-point.vis-graph-group1:hover {
+            stroke-width: 8px !important;
+            cursor: pointer;
+        }
+
         .tooltip::after {
             white-space: normal;
             min-width: 240px;
@@ -98,21 +108,11 @@
 {{ end }}
 {{ if .Chain }}
     <div class="panel">
-        <div class="panel-header">
-            <div class="panel-title"><h3>Query Transformation</h3></div>
-        </div>
+        <div class="panel-header"></div>
         <div class="panel-body">
-            <form action="/plugin/chain" method="post" accept-charset="UTF-8">
-                <input type="hidden" name="lang" value="{{ $lang }}">
-                <input type="hidden" class="query" value="{{ .RawQuery }}">
-                <div id="ret-graph"></div>
-            {{ template "select_transformation" }}
-            {{ template "select_optimisation" }}
-                <input class="btn btn-primary search-submit" type="submit">
-            </form>
-            <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
+            <div style="width: 50%; float: left; border: 1px solid #eee; padding: 12px;">
                 <pre class="query">{{ .RawQuery }}</pre>
-                <p>This is the most recent query in the chain. {{ .Description }} Previous queries are displayed below in chronological order.</p>
+                <p style="padding: 0 32px 0 32px">This is the most recent query in the chain. {{ .Description }} Previous queries are displayed below in chronological order.</p>
                 <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
                     <input type="hidden" name="lang" value="{{ .Language }}">
                     <input type="hidden" name="query" value="{{ .RawQuery }}">
@@ -134,36 +134,90 @@
                         Edit <i class="icon icon-arrow-right"></i>
                     </button>
                 </form>
+                <div class="divider" style="clear: both"></div>
+                <h4>Continue Chain</h4>
+                <form action="/plugin/chain" method="post" accept-charset="UTF-8" style="width: 100%;">
+                    <input type="hidden" name="lang" value="{{ $lang }}">
+                    <input type="hidden" class="query" value="{{ .RawQuery }}">
+                {{ template "select_transformation" }}
+                {{ template "select_optimisation" }}
+                    <input class="btn btn-primary search-submit" type="submit">
+                </form>
+            </div>
+            <div style="width: 50%; float: left; padding-left: 12px;">
+                <div id="ret-graph"></div>
+                <div class="divider"></div>
+                <div id="eval-graph"></div>
             </div>
         </div>
-        <div class="panel-footer">
-        </div>
+        <div class="panel-footer"></div>
     </div>
     <div class="text-center divider" data-content="Previous Queries"></div>
 {{ range $i, $link := .Chain }}
-    <div class="panel">
+    <div id="link-{{ $i }}" class="panel">
         <div class="panel-header">
             <div class="panel-title">
-                <h4>&num;{{ $i }} &dash; Retrieved: {{ $link.NumRet }}, Relevant Retrieved: {{ $link.RelRet }}</h4>
+                <h4>&num;{{ $i }} &dash; Retrieved: {{ index $link.Evaluation "NumRet" }}, Relevant Retrieved: {{ index $link.Evaluation "NumRelRet" }}</h4>
             </div>
         </div>
         <div class="panel-body">
-            <form action="/plugin/chain" method="post" accept-charset="UTF-8">
-            {{ template "select_transformation" }}
-            {{ template "select_optimisation" }}
-                <input type="hidden" name="query" class="query" value="{{ $link.Query }}">
-                <input type="hidden" name="lang" value="{{ $lang }}">
-                <div class="form-group">
-                    <input class="btn btn-primary search-submit" type="submit"/>
-                </div>
-            </form>
-            <div style="width: 49%; float: right; border: 1px solid #eee; padding: 12px;">
+            <div style="width: 50%; float: left; border: 1px solid #eee; padding: 12px;">
                 <pre>{{ $link.Query }}</pre>
             {{ if eq $i 0 }}
-                <p>This is the original query that was submitted.</p>
+                <p style="padding: 0 32px 0 32px">This is the original query that was submitted.</p>
             {{ else }}
-                <p>{{ $link.Description }}</p>
+                <p style="padding: 0 32px 0 32px">{{ $link.Description }}</p>
+                <div class="form-group">
+                    <p>Selected Transformations</p>
+                    <label class="form-switch">
+                        <input type="checkbox" name="transformations" value="cui2vec_expansion" {{if index $link.Transformations "cui2vec_expansion"}} checked {{end}} disabled>
+                        <i class="form-icon"></i> cui2vec Expansion
+                    </label>
+                    <label class="form-switch">
+                        <input type="checkbox" name="transformations" value="clause_removal" {{if index $link.Transformations "clause_removal"}} checked {{end}} disabled>
+                        <i class="form-icon"></i> Clause Removal
+                    </label>
+                    <label class="form-switch">
+                        <input type="checkbox" name="transformations" value="mesh_parent" {{if index $link.Transformations "mesh_parent"}} checked {{end}} disabled>
+                        <i class="form-icon"></i> MeSH Parent
+                    </label>
+                    <label class="form-switch">
+                        <input type="checkbox" name="transformations" value="mesh_explosion" {{if index $link.Transformations "mesh_explosion"}} checked {{end}} disabled>
+                        <i class="form-icon"></i> MeSH Explosion
+                    </label>
+                    <label class="form-switch">
+                        <input type="checkbox" name="transformations" value="field_restrictions" {{if index $link.Transformations "field_restrictions"}} checked {{end}} disabled>
+                        <i class="form-icon"></i> Field Restrictions
+                    </label>
+                    <label class="form-switch">
+                        <input type="checkbox" name="transformations" value="logical_operator" {{if index $link.Transformations "logical_operator"}} checked {{end}} disabled>
+                        <i class="form-icon"></i> Logical Operators
+                    </label>
+                </div>
             {{ end }}
+                <div class="modal modal-sm" id="create-chain-{{ $i }}">
+                    <a href="#close" class="modal-overlay" aria-label="Close"></a>
+                    <div class="modal-container">
+                        <div class="modal-header"><h4>Start New Chain</h4></div>
+                        <div class="modal-body">
+                            <p class="text-error">This will discard the existing chain and create a new chain starting from Query #{{ $i }}:</p>
+                            <pre>{{ $link.Query }}</pre>
+                        </div>
+                        <div class="modal-footer" style="text-align: left;">
+                            <form action="/plugin/chain" method="post" accept-charset="UTF-8" style="width: 100%;">
+                            {{ template "select_transformation" }}
+                            {{ template "select_optimisation" }}
+                                <input type="hidden" name="query" class="query" value="{{ $link.Query }}">
+                                <input type="hidden" name="lang" value="{{ $lang }}">
+                                <div class="form-group">
+                                    <input class="btn btn-primary search-submit" type="submit" value="Start new chain from here"/>
+                                </div>
+                            </form>
+                            <a href="#close" class="btn btn-link">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+                <a class="btn btn-primary" href="#create-chain-{{ $i }}" style="margin: 8px; float: left;">New Chain</a>
                 <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
                     <input type="hidden" name="lang" value="{{ $lang }}">
                     <input type="hidden" name="query" value="{{ $link.Query }}">
@@ -185,6 +239,27 @@
                         Edit <i class="icon icon-arrow-right"></i>
                     </button>
                 </form>
+            </div>
+            <div style="width: 50%; float: right; padding: 12px;">
+                <div id="link-graph-{{ $i }}"></div>
+                <div style="width: 100%; overflow: scroll;">
+                    <table class="table table-striped" style="width: inherit;">
+                        <thead>
+                        <tr>
+                        {{ range $measure, $value := $link.Evaluation }}
+                            <th>{{ $measure }}</th>
+                        {{end}}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                        {{ range $measure, $value := $link.Evaluation }}
+                            <td class="text-ellipsis" style="max-width: 120px">{{ $value }}</td>
+                        {{end}}
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <div class="panel-footer"></div>
@@ -266,19 +341,16 @@
 {{ if .Chain }}
 <script src="/static/vis.min.js" type="text/javascript"></script>
 <script type="text/javascript">
-    var container = document.getElementById('ret-graph');
 
-    var groups = new vis.DataSet();
+    let container = document.getElementById('ret-graph');
+    let groups = new vis.DataSet();
     groups.add({
         id: 0,
         content: 'Retrieved Documents',
         options: {
-            // style: "bar",
-            // barChart: {
-            //     align: "left",
-            // },
             drawPoints: {
-                style: 'circle' // square, circle
+                size: 12,
+                style: 'circle'
             },
             interpolation: false,
         }
@@ -289,29 +361,32 @@
         options: {
             yAxisOrientation: "right",
             drawPoints: {
-                style: 'circle' // square, circle
+                size: 12,
+                style: 'circle'
             },
             interpolation: false,
         }
     });
 
-    var items = [
+    let items = [
     {{ range $i, $link := .Chain }}{
         x: {{ $i }},
-        y: {{ $link.NumRet }},
+        y: {{ index $link.Evaluation "NumRet" }},
+        label: "{{ $i }}",
         group: 0,
     },
     {{ end }}
     {{ range $i, $link := .Chain }}{
         x: {{ $i }},
-        y: {{ $link.RelRet }},
+        y: {{ index $link.Evaluation "NumRelRet" }},
+        label: "{{ $i }}",
         group: 1,
     },
     {{ end }}
     ];
 
-    var dataset = new vis.DataSet(items);
-    var options = {
+    let dataset = new vis.DataSet(items);
+    let options = {
         drawPoints: false,
         dataAxis: {
             icons: false,
@@ -342,7 +417,219 @@
         showMajorLabels: false,
         showMinorLabels: false,
     };
-    var graph2d = new vis.Graph2d(container, items, groups, options);
+    new vis.Graph2d(container, items, groups, options);
+</script>
+<script type="text/javascript">
+    let eval_container = document.getElementById('eval-graph');
+    let eval_groups = new vis.DataSet();
+    eval_groups.add({
+        id: 0,
+        content: 'Precision',
+        options: {
+            drawPoints: {
+                size: 12,
+                style: 'circle'
+            },
+            interpolation: false,
+        }
+    });
+    eval_groups.add({
+        id: 1,
+        content: "Recall",
+        options: {
+            drawPoints: {
+                size: 12,
+                style: 'circle'
+            },
+            interpolation: false,
+        }
+    });
+
+    let eval_items = [
+    {{ range $i, $link := .Chain }}{
+        x: {{ $i }},
+        y: {{ index $link.Evaluation "Precision" }},
+        label: "{{ $i }}",
+        group: 0,
+    },
+    {{ end }}
+    {{ range $i, $link := .Chain }}{
+        x: {{ $i }},
+        y: {{ index $link.Evaluation "Recall" }},
+        label: "{{ $i }}",
+        group: 1,
+    },
+    {{ end }}
+    ];
+
+    let eval_dataset = new vis.DataSet(eval_items);
+    let eval_options = {
+        drawPoints: false,
+        dataAxis: {
+            icons: false,
+            alignZeros: false,
+            right: {
+                range: {
+                    min: 0,
+                }
+            },
+            left: {
+                range: {
+                    min: 0,
+                }
+            }
+        },
+        orientation: 'top',
+        legend: {
+            left: {
+                position: "top-left",
+            },
+            right: {
+                position: "bottom-right",
+            }
+        },
+        // start: 0,
+        moveable: false,
+        showCurrentTime: false,
+        showMajorLabels: false,
+        showMinorLabels: false,
+    };
+    new vis.Graph2d(eval_container, eval_items, eval_groups, eval_options);
+    let ret1 = document.getElementsByClassName("vis-graph-group0");
+    let ret2 = document.getElementsByClassName("vis-graph-group1");
+    let max = 2 * {{ len .Chain }};
+    for (let i = 0; i < ret1.length; i++) {
+        ret1[i].addEventListener("click", function () {
+            let v = i;
+            if (v >= max) {
+                v = v - max + 1;
+            }
+            v--;
+            window.location = "#link-" + v;
+        })
+    }
+    for (let i = 0; i < ret2.length; i++) {
+        ret2[i].addEventListener("click", function () {
+            let v = i;
+            if (v >= max) {
+                v = v - max + 1;
+            }
+            v--;
+            window.location = "#link-" + v;
+        })
+    }
+</script>
+<script type="text/javascript">
+    // individual graphs.
+    let containers = {};
+    let groups2 = {};
+    let items2 = {};
+    let datasets2 = {};
+    let options2 = {};
+    {{ range $i, $link := .Chain }}
+    containers[{{$i}}] = document.getElementById('link-graph-{{ $i }}');
+    groups2[{{$i}}] = new vis.DataSet();
+    groups2[{{$i}}].add({
+        id: 0,
+        content: "Precision",
+        options: {
+            style: "bar",
+            interpolation: false,
+        }
+    });
+    groups2[{{$i}}].add({
+        id: 1,
+        content: "Recall",
+        options: {
+            style: "bar",
+            interpolation: false,
+        }
+    });
+    groups2[{{$i}}].add({
+        id: 2,
+        content: "F0.5",
+        options: {
+            style: "bar",
+            interpolation: false,
+        }
+    });
+    groups2[{{$i}}].add({
+        id: 3,
+        content: "F1",
+        options: {
+            style: "bar",
+            interpolation: false,
+        }
+    });
+    groups2[{{$i}}].add({
+        id: 4,
+        content: "F3",
+        options: {
+            style: "bar",
+            interpolation: false,
+        }
+    });
+    items2[{{$i}}] = [
+        {
+            x: 0,
+            y: {{ index $link.Evaluation "Precision" }},
+            group: 0,
+        },
+        {
+            x: 1,
+            y: {{ index $link.Evaluation "Recall" }},
+            group: 1,
+        },
+        {
+            x: 2,
+            y: {{ index $link.Evaluation "F0.5Measure" }},
+            group: 2,
+        },
+        {
+            x: 3,
+            y: {{ index $link.Evaluation "F1Measure" }},
+            group: 3,
+        },
+        {
+            x: 4,
+            y: {{ index $link.Evaluation "F3Measure" }},
+            group: 4,
+        },
+    ];
+    datasets2[{{$i}}] = new vis.DataSet(items[{{$i}}]);
+    options2[{{$i}}] = {
+        drawPoints: false,
+        dataAxis: {
+            icons: false,
+            alignZeros: false,
+            right: {
+                range: {
+                    min: 0,
+                }
+            },
+            left: {
+                range: {
+                    min: 0,
+                }
+            }
+        },
+        orientation: 'top',
+        legend: {
+            left: {
+                position: "top-left",
+            },
+            right: {
+                position: "bottom-right",
+            }
+        },
+        // start: 0,
+        moveable: false,
+        showCurrentTime: false,
+        showMajorLabels: false,
+        showMinorLabels: false,
+    };
+    new vis.Graph2d(containers[{{$i}}], items2[{{$i}}], groups2[{{$i}}], options2[{{$i}}]);
+    {{end}}
 </script>
 {{ end }}
 </body>

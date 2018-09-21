@@ -10,10 +10,12 @@ import (
 	"github.com/hscells/groove/analysis"
 	"github.com/hscells/groove/analysis/preqpp"
 	"github.com/hscells/groove/combinator"
+	"github.com/hscells/groove/eval"
 	"github.com/hscells/groove/learning"
 	"github.com/hscells/quickumlsrest"
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/pipeline"
+	"github.com/hscells/trecresults"
 	"github.com/ielab/searchrefiner"
 	"github.com/peterbourgon/diskv"
 	"html/template"
@@ -78,26 +80,27 @@ type templating struct {
 	Language    string
 	RawQuery    string
 	Description template.HTML
+	Evaluation  map[string]float64
 	Error       error
 }
 
 type link struct {
-	NumRet      int
-	RelRet      int
-	NumRel      int
-	Query       string
-	Description template.HTML
+	Evaluation      map[string]float64
+	Transformations map[string]bool
+	Query           string
+	Description     template.HTML
 }
 
 type workRequest struct {
-	user            string
-	model           string
-	rawQuery        string
-	lang            string
-	server          searchrefiner.Server
-	cq              learning.CandidateQuery
-	selector        learning.QuickRankQueryCandidateSelector
-	transformations []learning.Transformation
+	user                   string
+	model                  string
+	rawQuery               string
+	lang                   string
+	server                 searchrefiner.Server
+	cq                     learning.CandidateQuery
+	selector               learning.QuickRankQueryCandidateSelector
+	transformations        []learning.Transformation
+	appliedTransformations []string
 }
 
 type workResponse struct {
@@ -109,22 +112,35 @@ type workResponse struct {
 	link       link
 }
 
-func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (int, int, error) {
-	t, _, err := combinator.NewLogicalTree(groove.NewPipelineQuery("0", "0", q), s.Entrez, searchrefiner.QueryCacher)
+func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (map[string]float64, error) {
+	gq := groove.NewPipelineQuery("0", "0", q)
+	t, _, err := combinator.NewLogicalTree(gq, s.Entrez, searchrefiner.QueryCacher)
 	if err != nil {
 		log.Println(err)
-		return 0, 0, err
+		return nil, err
 	}
 	d := t.Documents(searchrefiner.QueryCacher)
-	foundRel := 0
-	for _, doc := range d {
-		for _, rel := range s.Settings[u].Relevant {
-			if doc == rel {
-				foundRel++
-			}
-		}
+	qrels := trecresults.NewQrelsFile()
+	qrels.Qrels["0"] = make(trecresults.Qrels, len(s.Settings[u].Relevant))
+	for _, pmid := range s.Settings[u].Relevant {
+		qrels.Qrels["0"][pmid.String()] = &trecresults.Qrel{Topic: "0", Iteration: "0", DocId: pmid.String(), Score: 1}
 	}
-	return len(d), foundRel, nil
+	results := d.Results(gq, "0")
+	return eval.Evaluate(
+		[]eval.Evaluator{
+			eval.PrecisionEvaluator,
+			eval.RecallEvaluator,
+			eval.F1Measure,
+			eval.F05Measure,
+			eval.F3Measure,
+			eval.NumRel,
+			eval.NumRet,
+			eval.NumRelRet,
+		},
+		&results,
+		*qrels,
+		"0",
+	), nil
 }
 
 func initiate() error {
@@ -159,8 +175,6 @@ func (w workRequest) start() {
 
 		// generate candidates and select the best one.
 		nq, candidates, err := transform(w.cq, w.selector, w.transformations...)
-
-		nqnumret, nqrelret, err := ret(nq.Query, w.server, w.user)
 		if err != nil {
 			log.Println(err)
 			workMap[w.user] = workResponse{
@@ -169,8 +183,6 @@ func (w workRequest) start() {
 			}
 			return
 		}
-
-		numrel := len(w.server.Settings[w.user].Relevant)
 
 		description := fmt.Sprintf(`
 This query was selected from %d variations. 
@@ -188,7 +200,7 @@ The optimisation that was applied was %s.`, len(candidates), transformationDescr
 		workMu.Lock()
 		queries[w.user] = nq
 		if len(chain[w.user]) == 0 {
-			cqnumret, cqrelret, err := ret(w.cq.Query, w.server, w.user)
+			evaluation, err := ret(w.cq.Query, w.server, w.user)
 			if err != nil {
 				log.Println(err)
 				workMap[w.user] = workResponse{
@@ -197,20 +209,39 @@ The optimisation that was applied was %s.`, len(candidates), transformationDescr
 				}
 				return
 			}
+
 			chain[w.user] = append(chain[w.user], link{
 				Query:       w.rawQuery,
-				NumRet:      cqnumret,
-				NumRel:      numrel,
-				RelRet:      cqrelret,
+				Evaluation:  evaluation,
 				Description: template.HTML("This is the original query that was submitted."),
 			})
 		}
+		evaluation, err := ret(nq.Query, w.server, w.user)
+		if err != nil {
+			log.Println(err)
+			workMap[w.user] = workResponse{
+				err:  err,
+				done: true,
+			}
+			return
+		}
+		// This is the mapping of selected transformations to the actual transformation implementation.
+		transformations := map[string]bool{
+			"clause_removal":     false,
+			"cui2vec_expansion":  false,
+			"mesh_parent":        false,
+			"mesh_explosion":     false,
+			"field_restrictions": false,
+			"logical_operator":   false,
+		}
+		for _, t := range w.appliedTransformations {
+			transformations[t] = true
+		}
 		chain[w.user] = append(chain[w.user], link{
-			NumRet:      nqnumret,
-			NumRel:      numrel,
-			RelRet:      nqrelret,
-			Query:       q,
-			Description: template.HTML(description),
+			Query:           q,
+			Evaluation:      evaluation,
+			Transformations: transformations,
+			Description:     template.HTML(description),
 		})
 		workMap[w.user] = workResponse{
 			nq:         nq,
@@ -219,9 +250,6 @@ The optimisation that was applied was %s.`, len(candidates), transformationDescr
 			done:       true,
 			request:    w,
 			link: link{
-				NumRet:      nqnumret,
-				NumRel:      numrel,
-				RelRet:      nqrelret,
 				Query:       q,
 				Description: template.HTML(description),
 			},
@@ -403,14 +431,15 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			done: false,
 		}
 		work := workRequest{
-			user:            u,
-			server:          s,
-			cq:              cq,
-			selector:        selector,
-			transformations: selectedTransformations,
-			model:           model,
-			rawQuery:        query,
-			lang:            lang,
+			user:                   u,
+			server:                 s,
+			cq:                     cq,
+			selector:               selector,
+			transformations:        selectedTransformations,
+			appliedTransformations: t,
+			model:                  model,
+			rawQuery:               query,
+			lang:                   lang,
 		}
 		work.start()
 		c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))
@@ -420,8 +449,8 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			log.Println("completed work")
 			if response.err != nil {
 				log.Println(response.err)
-				c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: response.err.Error(), BackLink: "/plugin/chain"})
-				c.AbortWithError(http.StatusInternalServerError, response.err)
+				//c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: response.err.Error(), BackLink: "/plugin/chain"})
+				c.Render(http.StatusAccepted, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Error: response.err}))
 				return
 			}
 		} else if ok && !response.done {
