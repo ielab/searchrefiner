@@ -161,7 +161,7 @@ func initiate() error {
 	}
 
 	log.Println("loading model")
-	vector, err = cui2vec.LoadModel(f, true)
+	vector, err = cui2vec.NewPrecomputedEmbeddings(f)
 	if err != nil {
 		return err
 	}

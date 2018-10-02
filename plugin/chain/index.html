@@ -111,8 +111,22 @@
         <div class="panel-header"></div>
         <div class="panel-body">
             <div style="width: 50%; float: left; border: 1px solid #eee; padding: 12px;">
+                <p><em>Selected Query</em></p>
                 <pre class="query">{{ .RawQuery }}</pre>
+                <div class="divider"></div>
+                <p><em>Transformation explanation</em></p>
                 <p style="padding: 0 32px 0 32px">This is the most recent query in the chain. {{ .Description }} Previous queries are displayed below in chronological order.</p>
+                <div class="divider"></div>
+                <p><em>Continue chain</em></p>
+                <form action="/plugin/chain" method="post" accept-charset="UTF-8" style="width: 100%; display: contents;">
+                    <input type="hidden" name="lang" value="{{ $lang }}">
+                    <input type="hidden" class="query" value="{{ .RawQuery }}">
+                {{ template "select_transformation" }}
+                {{ template "select_optimisation" }}
+                    <input class="btn btn-primary search-submit" type="submit">
+                </form>
+                <div class="divider"></div>
+                <p><em>Query actions</em></p>
                 <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
                     <input type="hidden" name="lang" value="{{ .Language }}">
                     <input type="hidden" name="query" value="{{ .RawQuery }}">
@@ -134,19 +148,12 @@
                         Edit <i class="icon icon-arrow-right"></i>
                     </button>
                 </form>
-                <div class="divider" style="clear: both"></div>
-                <h4>Continue Chain</h4>
-                <form action="/plugin/chain" method="post" accept-charset="UTF-8" style="width: 100%;">
-                    <input type="hidden" name="lang" value="{{ $lang }}">
-                    <input type="hidden" class="query" value="{{ .RawQuery }}">
-                {{ template "select_transformation" }}
-                {{ template "select_optimisation" }}
-                    <input class="btn btn-primary search-submit" type="submit">
-                </form>
             </div>
             <div style="width: 50%; float: left; padding-left: 12px;">
+                <p><em>Retrieved and relevant retrieved graph</em></p>
                 <div id="ret-graph"></div>
                 <div class="divider"></div>
+                <p><em>Precision and recall graph</em></p>
                 <div id="eval-graph"></div>
             </div>
         </div>
@@ -162,13 +169,17 @@
         </div>
         <div class="panel-body">
             <div style="width: 50%; float: left; border: 1px solid #eee; padding: 12px;">
+                <p><em>Query</em></p>
                 <pre>{{ $link.Query }}</pre>
+                <div class="divider"></div>
+                <p><em>Selection explanation</em></p>
             {{ if eq $i 0 }}
                 <p style="padding: 0 32px 0 32px">This is the original query that was submitted.</p>
             {{ else }}
                 <p style="padding: 0 32px 0 32px">{{ $link.Description }}</p>
+                <div class="divider"></div>
                 <div class="form-group">
-                    <p>Selected Transformations</p>
+                    <p><em>Selected transformations</em></p>
                     <label class="form-switch">
                         <input type="checkbox" name="transformations" value="cui2vec_expansion" {{if index $link.Transformations "cui2vec_expansion"}} checked {{end}} disabled>
                         <i class="form-icon"></i> cui2vec Expansion
@@ -217,6 +228,8 @@
                         </div>
                     </div>
                 </div>
+                <div class="divider"></div>
+                <p><em>Actions for this query</em></p>
                 <a class="btn btn-primary" href="#create-chain-{{ $i }}" style="margin: 8px; float: left;">New Chain</a>
                 <form action="/tree" method="POST" accept-charset="UTF-8" style="width: auto">
                     <input type="hidden" name="lang" value="{{ $lang }}">
@@ -241,7 +254,10 @@
                 </form>
             </div>
             <div style="width: 50%; float: right; padding: 12px;">
+                <em>Evaluation results graph</em>
                 <div id="link-graph-{{ $i }}"></div>
+                <div class="divider"></div>
+                <em>Evaluation results table</em>
                 <div style="width: 100%; overflow: scroll;">
                     <table class="table table-striped" style="width: inherit;">
                         <thead>
