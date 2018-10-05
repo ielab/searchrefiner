@@ -25,7 +25,7 @@
 <div class="container">
     <h1><img src="static/favicon.png" width="24px" height="24px">&nbsp;<b>searchrefiner</b></h1>
     <div class="columns pt-2">
-        <div class="column col-8">
+        <div class="column col-5">
             <h2>Search</h2>
             <form action="/query" method="post" accept-charset="UTF-8">
                 <div class="form-group">
@@ -45,7 +45,7 @@
                     </label>
                 </div>
                 <div class="form-group">
-                    <input class="btn btn-primary" type="submit"/>
+                    <input class="btn btn-primary" type="submit" id="search-submit"/>
                 </div>
             </form>
 
@@ -82,45 +82,74 @@
             {{ end }}
             </div>
         </div>
-        <div class="column col-4">
+        <div class="column col-7">
             <h2 class="ml-2">Tools</h2>
-            <div class="card ml-2">
-                <div class="card-header">
-                    <div class="card-title h5">QueryVis</div>
+            <div class="columns">
+                <div class="column col-6">
+                {{/* QueryVis */}}
+                    <div class="card ml-2">
+                        <div class="card-header">
+                            <div class="card-title h5">QueryVis</div>
+                        </div>
+                        <div class="card-body">
+                            Visualise queries as a syntax tree overlaid with retrieval statistics and other
+                            understandability
+                            visualisations.
+                        </div>
+                        <div class="card-footer">
+                            <a href="/tree" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
+                        </div>
+                    </div>
+                {{/* Transform */}}
+                    <div class="card ml-2 mt-2">
+                        <div class="card-header">
+                            <div class="card-title h5">Transform</div>
+                        </div>
+                        <div class="card-body">
+                            Write queries in real-time and see how they are represented in other query languages.
+                        </div>
+                        <div class="card-footer">
+                            <a href="/transform" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    Visualise queries as a syntax tree overlaid with retrieval statistics and other understandability
-                    visualisations.
-                </div>
-                <div class="card-footer">
-                    <a href="/tree" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
-                </div>
-            </div>
-            <div class="card ml-2 mt-2">
-                <div class="card-header">
-                    <div class="card-title h5">Transform</div>
-                </div>
-                <div class="card-body">
-                    Write queries in real-time and see how they are represented in other query languages.
-                </div>
-                <div class="card-footer">
-                    <a href="/transform" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
-                </div>
-            </div>
-            <div class="card ml-2 mt-2">
-                <div class="card-header">
-                    <div class="card-title h5">Settings</div>
-                </div>
-                <div class="card-body">
-                    Configure aspects of searchrefiner, e.g. loading known-to-be relevant PMIDs.
-                </div>
-                <div class="card-footer">
-                    <a href="/settings" class="btn btn-primary">Open Settings <i class="icon icon-arrow-right"></i></a>
+                <div class="column col-6">
+                {{/* Settings */}}
+                    <div class="card ml-2">
+                        <div class="card-header">
+                            <div class="card-title h5">Settings</div>
+                        </div>
+                        <div class="card-body">
+                            Configure aspects of searchrefiner, e.g. loading known-to-be relevant PMIDs.
+                        </div>
+                        <div class="card-footer">
+                            <a href="/settings" class="btn btn-primary">Open Settings
+                                <i class="icon icon-arrow-right"></i></a>
+                        </div>
+                    </div>
+                {{/* Plugins */}}
+                    <div class="card ml-2 mt-2">
+                        <div class="card-header">
+                            <div class="card-title h5">Plugins</div>
+                        </div>
+                        <div class="card-body">
+                            Access external plugins that have been installed in searchrefiner.
+                        </div>
+                        <div class="card-footer">
+                            <a href="/plugins" class="btn btn-primary">Access Plugins
+                                <i class="icon icon-arrow-right"></i></a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<script type="text/javascript">
+    document.getElementById("search-submit").addEventListener("click", function (e) {
+        bb.log(e, "searchsubmit", document.getElementById("search-box").value)
+    })
+</script>
 {{template "footer"}}
 </body>
 </html>

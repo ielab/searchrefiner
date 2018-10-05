@@ -122,6 +122,10 @@ func (s Server) ApiAccountLogout(c *gin.Context) {
 
 func (s Server) ApiAccountUsername(c *gin.Context) {
 	username := s.UserState.Username(c.Request)
+	if !s.UserState.IsLoggedIn(username) {
+		c.String(http.StatusOK, "anonymous")
+		return
+	}
 	c.String(http.StatusOK, username)
 	return
 }

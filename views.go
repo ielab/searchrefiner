@@ -204,6 +204,10 @@ func (s Server) HandleIndex(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", q)
 }
 
+func (s Server) HandlePlugins(c *gin.Context) {
+	c.HTML(http.StatusOK, "plugins.html", s.Plugins)
+}
+
 func HandleTransform(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")

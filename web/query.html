@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>searchrefiner - Search Results</title>
-    {{template "style_includes"}}
+{{template "style_includes"}}
 </head>
 <body>
 {{template "bigbro"}}
@@ -23,8 +23,7 @@
                     <h3>Reformulate Query</h3>
                     <form action="/query" method="post" accept-charset="UTF-8">
                         <div class="form-group">
-                    <textarea name="query" id="query" class="form-input" id="search-box" placeholder="Enter query here."
-                              rows="20" required>{{ .OriginalQuery }}</textarea>
+                            <textarea name="query" id="query" class="form-input" placeholder="Enter query here." rows="20" required>{{ .OriginalQuery }}</textarea>
                         </div>
                         <div class="form-group">
                             <label>Query Language
@@ -39,7 +38,7 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <input class="btn btn-primary" type="submit"/>
+                            <input class="btn btn-primary" id="search-submit" type="submit"/>
                             <button class="btn btn-link" id="vis" type="button">
                                 QueryVis <i class="icon icon-arrow-right"></i>
                             </button>
@@ -208,6 +207,11 @@
         document.body.appendChild(form);
         form.submit();
     }
+</script>
+<script type="text/javascript">
+    document.getElementById("search-submit").addEventListener("click", function (e) {
+        bb.log(e, "searchrefine", document.getElementById("query").value)
+    })
 </script>
 </body>
 </html>

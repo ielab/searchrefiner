@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
  + Integrate the ability for plugins to be developed and loaded into interface.
- + Create a "chain" plugin based off recent query transformation research.
+ + Create a "chain" plugin based off recent query transformation research (see [plugins](/plugins)).
 
 ### Changed
 

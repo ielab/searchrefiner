@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>searchrefiner chain</title>
+    <meta http-equiv="refresh" content="5">
+{{template "style_includes"}}
+    <style>
+        .panel {
+            margin: 24px;
+        }
+
+        form {
+            width: 50%;
+            float: left;
+        }
+
+        pre {
+            font-size: 12px;
+            background-color: #eee;
+            white-space: pre-wrap; /* css-3 */
+            white-space: -moz-pre-wrap; /* Mozilla, since 1999 */
+            white-space: -o-pre-wrap; /* Opera 7 */
+            word-wrap: break-word; /* Internet Explorer 5.5+ */
+        }
+
+        footer {
+            padding: 32px;
+        }
+
+        h4 {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+{{ template "bigbro" }}
+<div class="container">
+{{ template "nav" }}
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title"><h1>Please wait</h1></div>
+        </div>
+        <div class="panel-body">
+            <p>Your request has been started as a job. This page will automatically refresh once completed.</p>
+            <div class="loading loading-lg"></div>
+        </div>
+        <div class="panel-footer"></div>
+    </div>
+</div>
+</body>
+</html>

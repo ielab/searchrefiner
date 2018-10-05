@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>searchrefiner - Plugins</title>
+{{template "style_includes"}}
+    <style>
+        .content {
+            margin: 32px 64px 0 64px;
+        }
+    </style>
+</head>
+<body>
+{{template "bigbro"}}
+<div class="container">
+{{ template "nav" }}
+    <div class="content">
+        <h1>Plugins</h1>
+    {{ if . }}
+        <p>This is a list of plugins that have been installed. Clicking the title of a plugin will navigate to the interface for that plugin.</p>
+    {{ range . }}
+        <div class="tile tile-centered">
+            <div class="tile-content">
+                <div class="tile-title"><a href="{{ .URL }}">{{ .Title }}</a></div>
+                <div class="tile-subtitle"><em>{{ .Description }}</em></div>
+                <div class="tile-subtitle text-gray">{{ .Author }} · {{ .Version }} · <a href="{{ .ProjectURL }}">{{ .ProjectURL }}</a></div>
+            </div>
+        </div>
+    {{ end }}
+    {{ else }}
+        <p>There are no plugins installed.</p>
+    {{end}}
+        <div class="divider"></div>
+    {{template "footer"}}
+    </div>
+</div>
+</body>
+</html>
