@@ -1,12 +1,12 @@
 package searchrefiner
 
 import (
+	"fmt"
 	"github.com/hscells/cqr"
-	"github.com/hscells/groove"
 	"github.com/hscells/groove/combinator"
+	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/groove/stats"
 	"log"
-	"fmt"
 )
 
 func fmtLabel(retrieved int, relret int) string {
@@ -30,7 +30,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 			}
 		}
 	} else {
-		d, err := stats.GetDocumentIDs(groove.NewPipelineQuery("adj", "0", query), ss)
+		d, err := stats.GetDocumentIDs(gpipeline.NewQuery("adj", "0", query), ss)
 		if err != nil {
 			log.Println("something bad happened")
 			log.Fatalln(err)

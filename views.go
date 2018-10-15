@@ -4,10 +4,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"github.com/hscells/transmute"
-	"github.com/hscells/transmute/pipeline"
+	tpipeline "github.com/hscells/transmute/pipeline"
 	"github.com/hscells/cqr"
 	"time"
-	"github.com/hscells/groove"
+	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/groove/analysis"
 )
 
@@ -27,7 +27,7 @@ func (s Server) HandleResults(c *gin.Context) {
 		return
 	}
 
-	t := make(map[string]pipeline.TransmutePipeline)
+	t := make(map[string]tpipeline.TransmutePipeline)
 	t["medline"] = transmute.Medline2Cqr
 	t["pubmed"] = transmute.Pubmed2Cqr
 
@@ -118,7 +118,7 @@ func (s Server) HandleQuery(c *gin.Context) {
 		return
 	}
 
-	t := make(map[string]pipeline.TransmutePipeline)
+	t := make(map[string]tpipeline.TransmutePipeline)
 	t["medline"] = transmute.Medline2Cqr
 	t["pubmed"] = transmute.Pubmed2Cqr
 
@@ -165,7 +165,7 @@ func (s Server) HandleQuery(c *gin.Context) {
 		Language:         lang,
 	}
 
-	gq := groove.NewPipelineQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation))
+	gq := gpipeline.NewQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation))
 	sr.BooleanClauses, err = analysis.BooleanClauses.Execute(gq, s.Entrez)
 	sr.BooleanFields, _ = analysis.BooleanFields.Execute(gq, s.Entrez)
 	sr.BooleanKeywords, _ = analysis.BooleanKeywords.Execute(gq, s.Entrez)
@@ -212,7 +212,7 @@ func HandleTransform(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
-	t := make(map[string]pipeline.TransmutePipeline)
+	t := make(map[string]tpipeline.TransmutePipeline)
 	t["pubmed"] = transmute.Pubmed2Cqr
 	t["medline"] = transmute.Medline2Cqr
 
