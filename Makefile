@@ -11,7 +11,7 @@ searchrefiner: $(go_source) plugins
 	go build -o server cmd/searchrefiner/server.go
 
 plugins: $(go_plugin)
-	$(foreach dir, $(plugin_files), go build -buildmode=plugin -o $(dir)/plugin.so $(dir)/main.go;)
+	$(foreach dir, $(plugin_files), go build -buildmode=plugin -o $(dir)/plugin.so $(dir)/*.go;)
 
 run: all
 	@./server
