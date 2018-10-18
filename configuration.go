@@ -1,13 +1,13 @@
 package searchrefiner
 
 import (
-	"github.com/xyproto/pinterface"
-	"github.com/hscells/groove/stats"
-	"github.com/hscells/groove/combinator"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
+	"github.com/hscells/groove/combinator"
+	"github.com/hscells/groove/stats"
+	"github.com/xyproto/permissionbolt"
 	"html/template"
 	"path"
-	"github.com/gin-gonic/gin/render"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 type PluginPermission int
 
 const (
-	PluginAdmin  = iota
+	PluginAdmin = iota
 	PluginUser
 	PluginPublic
 )
@@ -55,8 +55,7 @@ type Settings struct {
 }
 
 type Server struct {
-	UserState pinterface.IUserState
-	Perm      pinterface.IPermissions
+	Perm      *permissionbolt.Permissions
 	Queries   map[string][]Query
 	Settings  map[string]Settings
 	Config    Config

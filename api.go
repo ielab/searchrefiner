@@ -93,7 +93,7 @@ func (s Server) ApiTree(c *gin.Context) {
 
 	t := buildTree(root.Root, s.Entrez, getSettings(s, c).Relevant...)
 
-	username := s.UserState.Username(c.Request)
+	username := s.Perm.UserState().Username(c.Request)
 	t.NumRel = len(s.Settings[username].Relevant)
 	t.NumRelRet = len(t.relevant)
 

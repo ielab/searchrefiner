@@ -31,8 +31,8 @@ func (s Server) ApiAccountLogin(c *gin.Context) {
 		return
 	}
 
-	if s.UserState.CorrectPassword(username, password) {
-		err := s.UserState.Login(c.Writer, username)
+	if s.Perm.UserState().CorrectPassword(username, password) {
+		err := s.Perm.UserState().Login(c.Writer, username)
 		if err != nil {
 			c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/account/login"})
 			c.AbortWithError(http.StatusUnauthorized, err)
@@ -78,7 +78,7 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 		return
 	}
 
-	if s.UserState.HasUser(username) {
+	if s.Perm.UserState().HasUser(username) {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "a user with that name already exists", BackLink: "/account/create"})
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -87,20 +87,20 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 	isAdmin := false
 	for _, u := range s.Config.Admins {
 		if u == username {
-			s.UserState.AddUser(username, password, username)
-			s.UserState.SetAdminStatus(username)
-			s.UserState.MarkConfirmed(username)
+			s.Perm.UserState().AddUser(username, password, username)
+			s.Perm.UserState().SetAdminStatus(username)
+			s.Perm.UserState().MarkConfirmed(username)
 			isAdmin = true
 			break
 		}
 	}
 
 	if !isAdmin {
-		s.UserState.AddUser(username, password, username)
-		s.UserState.AddUnconfirmed(username, "unconfirmed")
+		s.Perm.UserState().AddUser(username, password, username)
+		s.Perm.UserState().AddUnconfirmed(username, "unconfirmed")
 	}
 
-	err := s.UserState.Login(c.Writer, username)
+	err := s.Perm.UserState().Login(c.Writer, username)
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/account/create"})
 		c.AbortWithError(http.StatusUnauthorized, err)
@@ -111,18 +111,18 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 }
 
 func (s Server) ApiAccountLogout(c *gin.Context) {
-	username := s.UserState.Username(c.Request)
-	if s.UserState.IsLoggedIn(username) {
-		s.UserState.Logout(username)
-		s.UserState.ClearCookie(c.Writer)
+	username := s.Perm.UserState().Username(c.Request)
+	if s.Perm.UserState().IsLoggedIn(username) {
+		s.Perm.UserState().Logout(username)
+		s.Perm.UserState().ClearCookie(c.Writer)
 	}
 	c.Redirect(http.StatusFound, "/account/login")
 	return
 }
 
 func (s Server) ApiAccountUsername(c *gin.Context) {
-	username := s.UserState.Username(c.Request)
-	if !s.UserState.IsLoggedIn(username) {
+	username := s.Perm.UserState().Username(c.Request)
+	if !s.Perm.UserState().IsLoggedIn(username) {
 		c.String(http.StatusOK, "anonymous")
 		return
 	}
@@ -131,7 +131,7 @@ func (s Server) ApiAccountUsername(c *gin.Context) {
 }
 
 func (s Server) HandleAdmin(c *gin.Context) {
-	u, err := s.UserState.AllUnconfirmedUsernames()
+	u, err := s.Perm.UserState().AllUnconfirmedUsernames()
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -147,7 +147,7 @@ func (s Server) HandleAdmin(c *gin.Context) {
 
 func (s Server) ApiAdminConfirm(c *gin.Context) {
 	if v, ok := c.GetPostForm("username"); ok {
-		s.UserState.Confirm(v)
+		s.Perm.UserState().Confirm(v)
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "invalid credentials", BackLink: "/"})
 		c.AbortWithStatus(http.StatusUnauthorized)

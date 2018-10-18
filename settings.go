@@ -7,7 +7,7 @@ import (
 )
 
 func getSettings(s Server, c *gin.Context) Settings {
-	username := s.UserState.Username(c.Request)
+	username := s.Perm.UserState().Username(c.Request)
 
 	var us Settings
 	if v, ok := s.Settings[username]; ok {
@@ -39,7 +39,7 @@ func (s Server) ApiSettingsRelevantSet(c *gin.Context) {
 		d[i] = combinator.Document(r)
 	}
 
-	username := s.UserState.Username(c.Request)
+	username := s.Perm.UserState().Username(c.Request)
 	sets.Relevant = d
 
 	s.Settings[username] = sets

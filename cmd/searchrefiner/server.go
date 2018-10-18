@@ -70,7 +70,6 @@ func main() {
 	}
 
 	s := searchrefiner.Server{
-		UserState: perm.UserState(),
 		Perm:      perm,
 		Config:    c,
 		Queries:   make(map[string][]searchrefiner.Query),

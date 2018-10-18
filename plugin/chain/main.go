@@ -6,15 +6,15 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/hscells/cqr"
 	"github.com/hscells/cui2vec"
-	"github.com/hscells/groove"
 	"github.com/hscells/groove/analysis"
 	"github.com/hscells/groove/analysis/preqpp"
 	"github.com/hscells/groove/combinator"
 	"github.com/hscells/groove/eval"
 	"github.com/hscells/groove/learning"
+	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/quickumlsrest"
 	"github.com/hscells/transmute"
-	"github.com/hscells/transmute/pipeline"
+	tpipeline "github.com/hscells/transmute/pipeline"
 	"github.com/hscells/trecresults"
 	"github.com/ielab/searchrefiner"
 	"github.com/peterbourgon/diskv"
@@ -113,7 +113,7 @@ type workResponse struct {
 }
 
 func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (map[string]float64, error) {
-	gq := groove.NewPipelineQuery("0", "0", q)
+	gq := gpipeline.NewQuery("0", "0", q)
 	t, _, err := combinator.NewLogicalTree(gq, s.Entrez, searchrefiner.QueryCacher)
 	if err != nil {
 		log.Println(err)
@@ -319,7 +319,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	}
 
 	// Grab the username of the logged in user.
-	u := s.UserState.Username(c.Request)
+	u := s.Perm.UserState().Username(c.Request)
 
 	// Create an entry in the query expansion map for the user.
 	if _, ok := queries[u]; !ok {
@@ -370,7 +370,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		queries[u] = learning.CandidateQuery{}
 		chain[u] = []link{}
 
-		t := make(map[string]pipeline.TransmutePipeline)
+		t := make(map[string]tpipeline.TransmutePipeline)
 		t["pubmed"] = transmute.Pubmed2Cqr
 		t["medline"] = transmute.Medline2Cqr
 

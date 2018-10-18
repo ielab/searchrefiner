@@ -174,7 +174,7 @@ func (s Server) HandleQuery(c *gin.Context) {
 	sr.MeshAvgDepth, _ = analysis.MeshAvgDepth.Execute(gq, s.Entrez)
 	sr.MeshMaxDepth, _ = analysis.MeshMaxDepth.Execute(gq, s.Entrez)
 
-	username := s.UserState.Username(c.Request)
+	username := s.Perm.UserState().Username(c.Request)
 
 	// Reverse the list of previous queries.
 	rev := make([]Query, len(s.Queries[username]))
@@ -190,10 +190,10 @@ func (s Server) HandleQuery(c *gin.Context) {
 }
 
 func (s Server) HandleIndex(c *gin.Context) {
-	if !s.UserState.IsLoggedIn(s.UserState.Username(c.Request)) {
+	if !s.Perm.UserState().IsLoggedIn(s.Perm.UserState().Username(c.Request)) {
 		c.Redirect(http.StatusTemporaryRedirect, "/account/login")
 	}
-	username := s.UserState.Username(c.Request)
+	username := s.Perm.UserState().Username(c.Request)
 	// reverse the list
 	q := make([]Query, len(s.Queries[username]))
 	j := 0
@@ -244,7 +244,7 @@ func HandleTransform(c *gin.Context) {
 }
 
 func (s Server) HandleClear(c *gin.Context) {
-	username := s.UserState.Username(c.Request)
+	username := s.Perm.UserState().Username(c.Request)
 	s.Queries[username] = []Query{}
 	c.Redirect(http.StatusFound, "/")
 	return
