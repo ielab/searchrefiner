@@ -145,7 +145,7 @@ func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (map
 
 func initiate() error {
 	quickrank = searchrefiner.ServerConfiguration.Config.Options["QuicklearnBinary"].(string)
-	quickumls = quickumlsrest.NewClient(searchrefiner.ServerConfiguration.Config.Options["QuickUMLSURL"].(string))
+	//quickumls = quickumlsrest.NewClient(searchrefiner.ServerConfiguration.Config.Options["QuickUMLSURL"].(string))
 
 	log.Println("loading cui2vec components")
 	f, err := os.OpenFile(searchrefiner.ServerConfiguration.Config.Options["Cui2VecEmbeddings"].(string), os.O_RDONLY, 0644)
@@ -311,7 +311,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	// This is the mapping of selected transformations to the actual transformation implementation.
 	transformations := map[string]learning.Transformation{
 		"clause_removal":     learning.NewClauseRemovalTransformer(),
-		"cui2vec_expansion":  learning.Newcui2vecExpansionTransformer(vector, mapping, quickumls),
+		"cui2vec_expansion":  learning.Newcui2vecExpansionTransformer(vector, mapping),
 		"mesh_parent":        learning.NewMeshParentTransformer(),
 		"mesh_explosion":     learning.NewMeSHExplosionTransformer(),
 		"field_restrictions": learning.NewFieldRestrictionsTransformer(),
