@@ -3,4 +3,11 @@ statistics_cache
 searchrefiner
 *.db
 
+.idea/
 config.json
+
+*.so
+server
+*.xml
+*.model
+web/static/log

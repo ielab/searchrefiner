@@ -218,10 +218,10 @@ func main() {
  |_ -| -_| .'|  _|  _|   |  _| -_|  _| |   | -_|  _|
  |___|___|__,|_| |___|_|_|_| |___|_| |_|_|_|___|_|  
 
- Harry Scells 2018
- harrisen.scells@hdr.qut.edu.au
+ Harry Scells 2019
+ harry@scells.me
  https://ielab.io/searchrefiner
 
 `)
-	g.Run(c.Host)
+	log.Fatalln(g.Run(c.Host))
 }
