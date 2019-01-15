@@ -13,6 +13,7 @@ import (
 	"github.com/hscells/groove/learning"
 	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/quickumlsrest"
+	"github.com/hscells/quickumlsrest/quiche"
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"github.com/hscells/trecresults"
@@ -28,12 +29,11 @@ import (
 type ChainPlugin struct{}
 
 var (
-	quickrank string
-	quickumls quickumlsrest.Client
-	vector    cui2vec.Embeddings
-	mapping   cui2vec.Mapping
-	queries   = make(map[string]learning.CandidateQuery)
-	chain     = make(map[string][]link)
+	quickumlsCache quickumlsrest.Cache
+	vector         cui2vec.Embeddings
+	mapping        cui2vec.Mapping
+	queries        = make(map[string]learning.CandidateQuery)
+	chain          = make(map[string][]link)
 	// Cache for the statistics of the query performance predictors.
 	statisticsCache = diskv.New(diskv.Options{
 		BasePath:     "statistics_cache",
@@ -43,9 +43,9 @@ var (
 	})
 
 	models = map[string]string{
-		"precision": "dart_precision.xml",
-		"recall":    "dart_recall.xml",
-		"f1":        "dart_f1.xml",
+		"precision": "nearest_breadth_cluster.Precision.model",
+		"recall":    "nearest_breadth_cluster.Recall.model",
+		"f1":        "nearest_breadth_cluster.F1Measure.model",
 	}
 
 	transformationType = []string{
@@ -98,7 +98,7 @@ type workRequest struct {
 	lang                   string
 	server                 searchrefiner.Server
 	cq                     learning.CandidateQuery
-	selector               learning.QuickRankQueryCandidateSelector
+	selector               learning.QueryChainCandidateSelector
 	transformations        []learning.Transformation
 	appliedTransformations []string
 }
@@ -144,8 +144,7 @@ func ret(q cqr.CommonQueryRepresentation, s searchrefiner.Server, u string) (map
 }
 
 func initiate() error {
-	quickrank = searchrefiner.ServerConfiguration.Config.Options["QuicklearnBinary"].(string)
-	//quickumls = quickumlsrest.NewClient(searchrefiner.ServerConfiguration.Config.Options["QuickUMLSURL"].(string))
+	//quickrank = searchrefiner.ServerConfiguration.Config.Options["QuicklearnBinary"].(string)
 
 	log.Println("loading cui2vec components")
 	f, err := os.OpenFile(searchrefiner.ServerConfiguration.Config.Options["Cui2VecEmbeddings"].(string), os.O_RDONLY, 0644)
@@ -162,6 +161,11 @@ func initiate() error {
 
 	log.Println("loading model")
 	vector, err = cui2vec.NewPrecomputedEmbeddings(f)
+	if err != nil {
+		return err
+	}
+
+	quickumlsCache, err = quiche.Load(searchrefiner.ServerConfiguration.Config.Options["Quiche"].(string))
 	if err != nil {
 		return err
 	}
@@ -260,7 +264,7 @@ The optimisation that was applied was %s.`, len(candidates), transformationDescr
 	}()
 }
 
-func transform(cq learning.CandidateQuery, selector learning.QuickRankQueryCandidateSelector, selectedTransformations ...learning.Transformation) (learning.CandidateQuery, []learning.CandidateQuery, error) {
+func transform(cq learning.CandidateQuery, selector learning.QueryChainCandidateSelector, selectedTransformations ...learning.Transformation) (learning.CandidateQuery, []learning.CandidateQuery, error) {
 	// Generate variations.
 	// Only the transformations which the user has selected will be used in the variation generation.
 	candidates, err := learning.Variations(
@@ -303,7 +307,6 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		if err != nil {
 			err := errors.New("could not initiate cui2vec components")
 			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
-			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -311,7 +314,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	// This is the mapping of selected transformations to the actual transformation implementation.
 	transformations := map[string]learning.Transformation{
 		"clause_removal":     learning.NewClauseRemovalTransformer(),
-		"cui2vec_expansion":  learning.Newcui2vecExpansionTransformer(vector, mapping),
+		"cui2vec_expansion":  learning.Newcui2vecExpansionTransformer(vector, mapping, quickumlsCache),
 		"mesh_parent":        learning.NewMeshParentTransformer(),
 		"mesh_explosion":     learning.NewMeSHExplosionTransformer(),
 		"field_restrictions": learning.NewFieldRestrictionsTransformer(),
@@ -352,16 +355,10 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	}
 
 	// selector is a quickrank candidate selector configured to only select to a depth of one.
-	selector := learning.NewQuickRankQueryCandidateSelector(
-		quickrank,
-		map[string]interface{}{
-			"model-in":    fmt.Sprintf("plugin/chain/%s", models[model]),
-			"test-metric": "DCG",
-			"test-cutoff": 1,
-			"scores":      "scores.txt",
-		},
-		learning.QuickRankCandidateSelectorMaxDepth(1),
-	)
+	selector := learning.NewNearestNeighbourCandidateSelector(
+		learning.NearestNeighbourDepth(1),
+		learning.NearestNeighbourLoadModel(models[model]),
+		learning.NearestNeighbourStatisticsSource(s.Entrez))
 
 	// Respond to a request to expand a brand new query.
 	var query string
@@ -498,7 +495,7 @@ func (ChainPlugin) Details() searchrefiner.PluginDetails {
 		Title:       "Query Chain Transformer",
 		Description: "Refine Boolean queries with automatic query transformations.",
 		Author:      "ielab",
-		Version:     "20.Sep.2018",
+		Version:     "15.Jan.2019",
 		ProjectURL:  "https://ielab.io/searchrefiner/",
 	}
 }
