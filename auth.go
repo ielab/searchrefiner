@@ -19,7 +19,6 @@ func (s Server) ApiAccountLogin(c *gin.Context) {
 		username = v
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "no username supplied", BackLink: "/account/login"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -27,7 +26,6 @@ func (s Server) ApiAccountLogin(c *gin.Context) {
 		password = v
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "no password supplied", BackLink: "/account/login"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -35,7 +33,6 @@ func (s Server) ApiAccountLogin(c *gin.Context) {
 		err := s.Perm.UserState().Login(c.Writer, username)
 		if err != nil {
 			c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/account/login"})
-			c.AbortWithError(http.StatusUnauthorized, err)
 			return
 		}
 		c.Redirect(http.StatusFound, "/")
@@ -52,7 +49,6 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 		username = v
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "no username supplied", BackLink: "/account/create"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -60,7 +56,6 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 		password = v
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "passwords do not match", BackLink: "/account/create"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -68,19 +63,16 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 		password2 = v
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "passwords do not match", BackLink: "/account/create"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
 	if password != password2 {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "passwords do not match", BackLink: "/account/create"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
 	if s.Perm.UserState().HasUser(username) {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "a user with that name already exists", BackLink: "/account/create"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -103,7 +95,6 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 	err := s.Perm.UserState().Login(c.Writer, username)
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/account/create"})
-		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 	c.Redirect(http.StatusFound, "/")
@@ -134,7 +125,6 @@ func (s Server) HandleAdmin(c *gin.Context) {
 	u, err := s.Perm.UserState().AllUnconfirmedUsernames()
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -150,7 +140,6 @@ func (s Server) ApiAdminConfirm(c *gin.Context) {
 		s.Perm.UserState().Confirm(v)
 	} else {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "invalid credentials", BackLink: "/"})
-		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 

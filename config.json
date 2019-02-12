@@ -1,11 +1,17 @@
 {
-  "Host": "http://localhost:4853",
-  "AdminEmail": "admin@example.com",
+  "Host": "localhost:4853",
+  "AdminEmail": "h.scells@uq.edu.au",
   "Admins": [
-    "admin"
+    "hscells"
   ],
   "Entrez": {
-    "Email": "admin@example.com",
-    "APIKey": "1234"
+    "Email": "harryscells@gmail.com",
+    "APIKey": "22a11de46af145ce59bb288e0ede66721f09"
+  },
+  "Options": {
+    "Cui2VecEmbeddings": "/Users/s4558151/Repositories/cui2vec/testdata/cui2vec_precomputed.bin",
+    "Cui2VecMappings": "/Users/s4558151/Repositories/cui2vec/cuis.csv",
+    "Quiche": "/Users/s4558151/Repositories/cui2vec/quiche.cache",
+    "QuickRank": "/Users/s4558151/quickrank/bin/quicklearn"
   }
 }

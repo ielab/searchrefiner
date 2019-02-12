@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-errors/errors"
+	"github.com/google/uuid"
 	"github.com/hscells/cqr"
 	"github.com/hscells/cui2vec"
 	"github.com/hscells/groove/analysis"
@@ -43,9 +44,7 @@ var (
 	})
 
 	models = map[string]string{
-		"precision": "nearest_breadth_cluster.Precision.model",
-		"recall":    "nearest_breadth_cluster.Recall.model",
-		"f1":        "nearest_breadth_cluster.F1Measure.model",
+		"balanced": "breadth_evaluation_diversifiedprecision.F0.5Measure.dart.xml",
 	}
 
 	transformationType = []string{
@@ -165,11 +164,13 @@ func initiate() error {
 		return err
 	}
 
+	log.Println("loading quiche cache")
 	quickumlsCache, err = quiche.Load(searchrefiner.ServerConfiguration.Config.Options["Quiche"].(string))
 	if err != nil {
 		return err
 	}
 
+	log.Println("loaded all components")
 	return nil
 }
 
@@ -307,7 +308,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		if err != nil {
 			err := errors.New("could not initiate cui2vec components")
 			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
-			return
+			panic(err)
 		}
 	}
 
@@ -333,6 +334,7 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 
 	// Set the current candidate query to the most recent candidate.
 	cq := queries[u]
+	cq.Topic = "0"
 
 	// Get the query language.
 	lang, ok := c.GetPostForm("lang")
@@ -351,20 +353,27 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	var model string
 	model, ok = c.GetPostForm("model")
 	if !ok {
-		model = "precision"
+		model = "balanced"
 	}
 
 	// selector is a quickrank candidate selector configured to only select to a depth of one.
-	selector := learning.NewNearestNeighbourCandidateSelector(
-		learning.NearestNeighbourDepth(1),
-		learning.NearestNeighbourLoadModel(models[model]),
-		learning.NearestNeighbourStatisticsSource(s.Entrez))
+	selector := learning.NewQuickRankQueryCandidateSelector(
+		searchrefiner.ServerConfiguration.Config.Options["QuickRank"].(string),
+		map[string]interface{}{
+			"model-in":    fmt.Sprintf("plugin/chain/%s", models[model]),
+			"test-metric": "DCG",
+			"test-cutoff": 1,
+			"scores":      uuid.New().String(),
+		},
+		learning.QuickRankCandidateSelectorMaxDepth(1),
+		learning.QuickRankCandidateSelectorStatisticsSource(s.Entrez),
+	)
 
 	// Respond to a request to expand a brand new query.
 	var query string
 	if query, ok = c.GetPostForm("query"); ok {
 		// Clear any existing queries.
-		queries[u] = learning.CandidateQuery{}
+		queries[u] = learning.CandidateQuery{Topic: "0"}
 		chain[u] = []link{}
 
 		t := make(map[string]tpipeline.TransmutePipeline)
@@ -381,14 +390,12 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		bq, err := compiler.Execute(query)
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
-			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
 		rep, err := bq.Representation()
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
-			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
@@ -411,7 +418,6 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 		} else {
 			err := errors.New(fmt.Sprintf("%s is not a valid transformation", transformation))
 			c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: err.Error(), BackLink: "/plugin/chain"})
-			c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -445,10 +451,11 @@ func (ChainPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			log.Println("completed work")
 			if response.err != nil {
 				log.Println(response.err)
-				//c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: response.err.Error(), BackLink: "/plugin/chain"})
-				c.Render(http.StatusAccepted, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Query: queries[u], Language: lang, Chain: chain[u], Description: chain[u][len(chain[u])-1].Description, RawQuery: chain[u][len(chain[u])-1].Query, Error: response.err}))
-				return
+				c.HTML(http.StatusInternalServerError, "error.html", searchrefiner.ErrorPage{Error: response.err.Error(), BackLink: "/plugin/chain"})
+				panic(response.err)
 			}
+			//c.Render(http.StatusAccepted, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/index.html"), templating{Query: queries[u], Language: lang, Chain: chain[u], Description: chain[u][len(chain[u])-1].Description, RawQuery: chain[u][len(chain[u])-1].Query, Error: response.err}))
+			//return
 		} else if ok && !response.done {
 			log.Println("work has not been completed")
 			c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/chain/queue.html"), nil))

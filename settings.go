@@ -2,11 +2,11 @@ package searchrefiner
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"github.com/hscells/groove/combinator"
+	"net/http"
 )
 
-func getSettings(s Server, c *gin.Context) Settings {
+func GetSettings(s Server, c *gin.Context) Settings {
 	username := s.Perm.UserState().Username(c.Request)
 
 	var us Settings
@@ -20,17 +20,17 @@ func getSettings(s Server, c *gin.Context) Settings {
 }
 
 func (s Server) HandleSettings(c *gin.Context) {
-	c.HTML(http.StatusOK, "settings.html", getSettings(s, c))
+	c.HTML(http.StatusOK, "settings.html", GetSettings(s, c))
 	return
 }
 
 func (s Server) ApiSettingsRelevantSet(c *gin.Context) {
-	sets := getSettings(s, c)
+	sets := GetSettings(s, c)
 
 	var rel []int64
 	err := c.BindJSON(&rel)
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		c.String(http.StatusOK, err.Error())
 		return
 	}
 

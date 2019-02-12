@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <title>searchrefiner - QueryVis</title>
-    <link rel="icon" href="static/favicon.png" type="image/x-png">
-    <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
-    <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
-    <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
-    <link rel="stylesheet" href="static/vis.min.css" type="text/css">
-    <link rel="stylesheet" href="static/vue-multiselect.min.css" type="text/css">
-    <link rel="stylesheet" href="static/logtail.css" type="text/css">
-    <link rel="stylesheet" href="static/searchrefiner.css" type="text/css">
+    <link rel="icon" href="/static/favicon.png" type="image/x-png">
+    <link rel="stylesheet" href="/static/spectre.min.css" type="text/css">
+    <link rel="stylesheet" href="/static/spectre-icons.min.css" type="text/css">
+    <link rel="stylesheet" href="/static/spectre-exp.min.css" type="text/css">
+    <link rel="stylesheet" href="/static/vis.min.css" type="text/css">
+    <link rel="stylesheet" href="/static/vue-multiselect.min.css" type="text/css">
+    <link rel="stylesheet" href="/static/logtail.css" type="text/css">
+    <link rel="stylesheet" href="/static/searchrefiner.css" type="text/css">
     <style>
         body, html, .container {
             height: 100%;
@@ -64,15 +64,6 @@
             opacity: 0;
         }
 
-        #console {
-            margin: 0;
-            overflow-y: scroll;
-            height: 100%;
-            background-color: #1c1c1c;
-            color: #f9f9f9;
-            font-size: 12px;
-        }
-
         #tree-stats {
             position: absolute;
             top: 100px;
@@ -88,14 +79,14 @@
 {{template "bigbro"}}
 <div class="container" id="app">
     <header class="navbar bg-secondary nav-height">
-    {{template "sidebar"}}
+        {{template "sidebar"}}
         <section class="navbar-section">
             <button class="btn btn-link btn-sm text-error nav-height" id="btn-update-tree" v-on:click="updateTree">
                 <i class="icon icon-refresh"></i> Update Tree
             </button>
         </section>
     </header>
-    <div class="columns">
+    <div class="columns col-gapless">
         <div class="column col-4">
             <ul class="tab tab-block bg-gray">
                 <li class="tab-item addon-sm" v-bind:class="{active: tabEditor===0}" v-on:click="tabEditor=0">
@@ -146,15 +137,7 @@
             <div style="clear: both;"></div>
         </div>
         <div class="column col-8">
-            <ul class="tab tab-block bg-gray">
-                <li class="tab-item" v-bind:class="{active: tabVisualise===0}" v-on:click="tabVisualise=0">
-                    <a href="#">Tree View</a>
-                </li>
-                <li class="tab-item" v-bind:class="{active: tabVisualise===2}" v-on:click="tabVisualise=2">
-                    <a href="#">Console</a>
-                </li>
-            </ul>
-            <div id="tree-wrapper" v-show="tabVisualise===0">
+            <div id="tree-wrapper">
                 <div id="tree-stats" v-if="numRet">
                     <div><strong>[[ numRet ]]</strong> citations retrieved</div>
                     <div><strong>[[ numRel ]]</strong> citations relevant</div>
@@ -165,18 +148,9 @@
                 </div>
                 <div id="tree" class="c-move"></div>
             </div>
-            <div id="tree-wrapper" v-show="tabVisualise===2">
-                <pre id="console">Loading...</pre>
-                <a href="#" id="console-pause" class="btn btn-primary"
-                   style="position: absolute;bottom: 32px;right: 32px;">Pause</a>
-            </div>
         </div>
     </div>
 </div>
-
-<script type="text/x-template" id="venn-diagram">
-    <div></div>
-</script>
 
 <!-- Structured Query Editor components. -->
 <script type="text/x-template" id="bool-query">
@@ -192,7 +166,7 @@
         <div class="panel-body">
             <draggable v-model="query.children" :options="{group: 'children'}" style="min-height: 16px"
                        @change="updateText">
-            {{/*<ied v-bind:query="child" v-for="child in query.children" ></ied>*/}}
+                {{/*<ied v-bind:query="child" v-for="child in query.children" ></ied>*/}}
                 <div v-bind:query="child" v-for="child in query.children">
                     <div v-if="child.operator">
                         <bool-query v-bind:query="child" v-on:remove-child="removeChild" :key="child.id"
@@ -276,16 +250,10 @@
     </div>
 </script>
 
-
-<!-- Console view. -->
-<script src="static/jquery.min.js" type="text/javascript"></script>
-<script src="static/logtail.js" type="text/javascript"></script>
-
-<!-- Main app code. -->
-<script src="static/vue.js" type="text/javascript"></script>
-<script type="text/javascript" src="static/lodash.min.js"></script>
-<script src="static/Sortable.min.js"></script>
-<script src="static/vuedraggable.min.js"></script>
+<script src="/static/vue.js" type="text/javascript"></script>
+<script src="/static/lodash.min.js" type="text/javascript"></script>
+<script src="/static/Sortable.min.js"></script>
+<script src="/static/vuedraggable.min.js"></script>
 <!--suppress JSUnusedGlobalSymbols -->
 <script>
     var updateText = function () {
@@ -479,7 +447,7 @@
                     self.numRel = resp.NumRel;
                     self.numRelRet = resp.NumRelRet;
                 });
-                request.open("POST", "/api/tree", true);
+                request.open("POST", "/plugin/queryvis", true);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 request.send("query=" + this.textQuery + "&lang=" + this.queryLanguage);
                 bb.log(e, "treesubmit", document.getElementById("search-box").value)
@@ -502,25 +470,12 @@
                 this.updateTree();
             }
             this.updateText();
-        },
-        watch: {
-            vennSelected: function () {
-                console.log(this.vennSelected)
-            },
-            // Do not continue to update the log when we are not in the console tab.
-            tabVisualise: function (val) {
-                if (val === 2) {
-                    ConsoleInitial = setTimeout(GetLog, ConsolePoll)
-                } else {
-                    clearTimeout(ConsoleInitial)
-                }
-            }
         }
     })
 </script>
 
 <!-- Tree view. -->
-<script src="static/vis.min.js" type="text/javascript"></script>
+<script src="/static/vis.min.js" type="text/javascript"></script>
 <script type="text/javascript">
     // create an array with nodes
     var nodes = new vis.DataSet([]);

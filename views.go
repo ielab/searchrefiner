@@ -2,20 +2,14 @@ package searchrefiner
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
+	"github.com/hscells/cqr"
+	"github.com/hscells/groove/analysis"
+	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
-	"github.com/hscells/cqr"
+	"net/http"
 	"time"
-	gpipeline "github.com/hscells/groove/pipeline"
-	"github.com/hscells/groove/analysis"
 )
-
-func HandleTree(c *gin.Context) {
-	rawQuery := c.PostForm("query")
-	lang := c.PostForm("lang")
-	c.HTML(http.StatusOK, "tree.html", Query{QueryString: rawQuery, Language: lang})
-}
 
 func (s Server) HandleResults(c *gin.Context) {
 	start := time.Now()
@@ -41,56 +35,48 @@ func (s Server) HandleResults(c *gin.Context) {
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	cqString, err := cq.String()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	pubmedQuery, err := transmute.Cqr2Pubmed.Execute(cqString)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	q, err := pubmedQuery.String()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	pmids, err := s.Entrez.Search(q, s.Entrez.SearchSize(10))
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	docs, err := s.Entrez.Fetch(pmids)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	repr, err := cq.Representation()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	size, err := s.Entrez.RetrievalSize(repr.(cqr.CommonQueryRepresentation))
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -132,28 +118,24 @@ func (s Server) HandleQuery(c *gin.Context) {
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	repr, err := cq.Representation()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	transformed, err := cq.StringPretty()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	size, err := s.Entrez.RetrievalSize(repr.(cqr.CommonQueryRepresentation))
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -201,7 +183,11 @@ func (s Server) HandleIndex(c *gin.Context) {
 		q[j] = s.Queries[username][i]
 		j++
 	}
-	c.HTML(http.StatusOK, "index.html", q)
+
+	c.HTML(http.StatusOK, "index.html", struct {
+		Plugins []InternalPluginDetails
+		Queries []Query
+	}{Plugins: s.Plugins, Queries: q})
 }
 
 func (s Server) HandlePlugins(c *gin.Context) {
@@ -226,14 +212,12 @@ func HandleTransform(c *gin.Context) {
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	q, err := cq.StringPretty()
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
-		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 

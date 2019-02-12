@@ -1,4 +1,4 @@
-package searchrefiner
+package main
 
 import (
 	"fmt"
@@ -6,8 +6,32 @@ import (
 	"github.com/hscells/groove/combinator"
 	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/groove/stats"
+	"github.com/ielab/searchrefiner"
 	"log"
 )
+
+type node struct {
+	ID    int    `json:"id"`
+	Value int    `json:"value"`
+	Level int    `json:"level"`
+	Label string `json:"label"`
+	Shape string `json:"shape"`
+}
+
+type edge struct {
+	From  int    `json:"from"`
+	To    int    `json:"to"`
+	Value int    `json:"value"`
+	Label string `json:"label"`
+}
+
+type tree struct {
+	Nodes     []node `json:"nodes"`
+	Edges     []edge `json:"edges"`
+	relevant  map[combinator.Document]struct{}
+	NumRelRet int
+	NumRel    int
+}
 
 func fmtLabel(retrieved int, relret int) string {
 	return fmt.Sprintf("%v (%v)", retrieved, relret)
@@ -19,7 +43,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 	}
 	var docs int
 	foundRel := 0
-	if documents, err := QueryCacher.Get(query); err == nil {
+	if documents, err := searchrefiner.QueryCacher.Get(query); err == nil {
 		docs = len(documents)
 		for _, doc := range documents {
 			for _, rel := range relevant {
@@ -42,7 +66,7 @@ func buildAdjTree(query cqr.CommonQueryRepresentation, id, parent, level int, ss
 		}
 
 		// Cache results for this query.
-		QueryCacher.Set(query, combDocs)
+		searchrefiner.QueryCacher.Set(query, combDocs)
 		docs = len(d)
 
 		for _, doc := range d {
@@ -88,7 +112,7 @@ func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss
 		return
 	}
 	foundRel := 0
-	docs := treeNode.Documents(QueryCacher)
+	docs := treeNode.Documents(searchrefiner.QueryCacher)
 	for _, doc := range docs {
 		for _, rel := range relevant {
 			if doc == rel {

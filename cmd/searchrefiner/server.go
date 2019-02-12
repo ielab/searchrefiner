@@ -70,11 +70,11 @@ func main() {
 	}
 
 	s := searchrefiner.Server{
-		Perm:      perm,
-		Config:    c,
-		Queries:   make(map[string][]searchrefiner.Query),
-		Settings:  make(map[string]searchrefiner.Settings),
-		Entrez:    ss,
+		Perm:     perm,
+		Config:   c,
+		Queries:  make(map[string][]searchrefiner.Query),
+		Settings: make(map[string]searchrefiner.Settings),
+		Entrez:   ss,
 	}
 
 	permissionHandler := func(c *gin.Context) {
@@ -97,7 +97,7 @@ func main() {
 
 	g.LoadHTMLFiles(append([]string{
 		// Views.
-		"web/query.html", "web/index.html", "web/transform.html", "web/tree.html",
+		"web/query.html", "web/index.html", "web/transform.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
 		"web/help.html", "web/error.html", "web/results.html", "web/settings.html", "web/plugins.html",
 	}, searchrefiner.Components...)...)
@@ -188,11 +188,6 @@ func main() {
 	g.POST("/api/transform", searchrefiner.ApiTransform)
 	g.POST("/api/cqr2query", searchrefiner.ApiCQR2Query)
 	g.POST("/api/query2cqr", searchrefiner.ApiQuery2CQR)
-
-	// Visualisation interface.
-	g.GET("/tree", searchrefiner.HandleTree)
-	g.POST("/tree", searchrefiner.HandleTree)
-	g.POST("/api/tree", s.ApiTree)
 
 	// Settings page.
 	g.GET("/settings", s.HandleSettings)
