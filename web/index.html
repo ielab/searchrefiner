@@ -1,5 +1,5 @@
 <!--suppress HtmlUnknownTarget -->
-<html>
+<html lang="en">
 <head>
     <title>searchrefiner</title>
     <link rel="icon" href="static/favicon.png" type="image/x-png">
@@ -14,142 +14,108 @@
             background-size: 50%;
         }
 
-        .container, .column, .columns {
-            height: auto;
+        .card {
+            box-shadow: 0 .05rem .2rem rgba(48, 55, 66, .3);
+            border: 0;
+            transform: translateY(.2rem);
         }
-
     </style>
 </head>
 <body>
 {{template "bigbro"}}
 <div class="container">
-    <h1><img src="static/favicon.png" width="24px" height="24px">&nbsp;<b>searchrefiner</b></h1>
+    <h1><img src="static/favicon.png" width="24px" height="24px" alt="logo">&nbsp<b>searchrefiner</b></h1>
     <div class="columns pt-2">
-        <div class="column col-5">
-            <h2>Search</h2>
-            <form action="/query" method="post" accept-charset="UTF-8">
-                <div class="form-group">
+        <div class="column col-6">
+            <div class="card">
+                <div class="card-header"><div class="divider" data-content="SEARCH"></div></div>
+                <div class="card-body">
+                    <form action="/query" method="post" accept-charset="UTF-8">
+                        <div class="form-group">
                     <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here."
                               rows="16" required></textarea>
 
+                        </div>
+                        <div class="form-group">
+                            <label>Query Language
+                                <small><a href="/help#WritingQueries">help?</a></small>
+                                <select class="form-select" name="lang">
+                                    <option value="medline">Ovid MEDLINE</option>
+                                    <option value="pubmed">PubMed</option>
+                                    <option disabled>Cochrane Library</option>
+                                    <option disabled>EMBASE</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <input class="btn btn-primary" type="submit" id="search-submit"/>
+                        </div>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label>Query Language
-                        <small><a href="/help#WritingQueries">help?</a></small>
-                        <select class="form-select" name="lang">
-                            <option value="medline">Ovid MEDLINE</option>
-                            <option value="pubmed">PubMed</option>
-                            <option disabled>Cochrane Library</option>
-                            <option disabled>EMBASE</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="form-group">
-                    <input class="btn btn-primary" type="submit" id="search-submit"/>
-                </div>
-            </form>
-
-            <div>
-            {{ if .  }}
-                <h3>Previous Queries</h3>
-            {{ range . }}
-                <div class="columns">
-                    <div class="column col-10">
-                        <form action="/query" method="post" accept-charset="UTF-8">
-                            <input type="hidden" name="query" value="{{ .QueryString }}">
-                            <input type="hidden" name="lang" value="{{ .Language }}">
-                            <div>
-                                <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
-                                <div class="form-group">
-                                    <input class="btn btn-primary" type="submit" value="Resubmit"/>
+                <div class="card-footer">
+                    <div>
+                        {{ if .Queries  }}
+                            <h3>Previous Queries</h3>
+                            {{ range .Queries }}
+                                <div class="columns">
+                                    <div class="column col-10">
+                                        <form action="/query" method="post" accept-charset="UTF-8">
+                                            <input type="hidden" name="query" value="{{ .QueryString }}">
+                                            <input type="hidden" name="lang" value="{{ .Language }}">
+                                            <div>
+                                                <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
+                                                <div class="form-group">
+                                                    <input class="btn btn-primary" type="submit" value="Resubmit"/>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="column col-2">
+                                        <form action="/results" method="post">
+                                            <div class="ml-2 mt-2">
+                                                <small><b>{{ .NumRet }}</b> results</small>
+                                            </div>
+                                            <input type="hidden" name="query" value="{{ .QueryString }}">
+                                            <input type="hidden" name="lang" value="{{ .Language }}">
+                                            <input class="btn btn-link btn-sm" type="submit" value="Explore Results">
+                                        </form>
+                                    </div>
                                 </div>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="column col-2">
-                        <form action="/results" method="post">
-                            <div class="ml-2 mt-2">
-                                <small><b>{{ .NumRet }}</b> results</small>
-                            </div>
-                            <input type="hidden" name="query" value="{{ .QueryString }}">
-                            <input type="hidden" name="lang" value="{{ .Language }}">
-                            <input class="btn btn-link btn-sm" type="submit" value="Explore Results">
-                        </form>
+                            {{ end }}
+                            <a href="/clear" class="btn btn-link">Clear</a>
+                        {{ end }}
                     </div>
                 </div>
-            {{ end }}
-                <a href="/clear" class="btn btn-link">Clear</a>
-            {{ end }}
             </div>
         </div>
-        <div class="column col-7">
-            <h2 class="ml-2">Tools</h2>
-            <div class="columns">
-                <div class="column col-6">
-                {{/* QueryVis */}}
-                    <div class="card ml-2">
-                        <div class="card-header">
-                            <div class="card-title h5">QueryVis</div>
-                        </div>
-                        <div class="card-body">
-                            Visualise queries as a syntax tree overlaid with retrieval statistics and other
-                            understandability
-                            visualisations.
-                        </div>
-                        <div class="card-footer">
-                            <a href="/tree" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
-                        </div>
-                    </div>
-                {{/* Transform */}}
-                    <div class="card ml-2 mt-2">
-                        <div class="card-header">
-                            <div class="card-title h5">Transform</div>
-                        </div>
-                        <div class="card-body">
-                            Write queries in real-time and see how they are represented in other query languages.
-                        </div>
-                        <div class="card-footer">
-                            <a href="/transform" class="btn btn-primary">Open App <i class="icon icon-arrow-right"></i></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="column col-6">
-                {{/* Settings */}}
-                    <div class="card ml-2">
-                        <div class="card-header">
-                            <div class="card-title h5">Settings</div>
-                        </div>
-                        <div class="card-body">
-                            Configure aspects of searchrefiner, e.g. loading known-to-be relevant PMIDs.
-                        </div>
-                        <div class="card-footer">
-                            <a href="/settings" class="btn btn-primary">Open Settings
-                                <i class="icon icon-arrow-right"></i></a>
-                        </div>
-                    </div>
-                {{/* Plugins */}}
-                    <div class="card ml-2 mt-2">
-                        <div class="card-header">
-                            <div class="card-title h5">Plugins</div>
-                        </div>
-                        <div class="card-body">
-                            Access external plugins that have been installed in searchrefiner.
-                        </div>
-                        <div class="card-footer">
-                            <a href="/plugins" class="btn btn-primary">Access Plugins
-                                <i class="icon icon-arrow-right"></i></a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="column col-4">
+            <ul class="menu">
+                <li class="divider" data-content="PLUGINS"></li>
+                {{ if .Plugins }}
+                    {{ range .Plugins }}
+                        <li class="menu-item"><a href="{{ .URL }}">{{ .Title }}</a>
+                            <small>{{ .Description }}</small>
+                        </li>
+                    {{ end }}
+                {{ else }}
+                    <p>There are no plugins installed.</p>
+                {{end}}
+                <li class="divider" data-content="TOOLS"></li>
+                <li class="menu-item"><a href="/settings">Settings</a>
+                    <small>Configure known relevant documents and other aspects of searchrefiner.</small>
+                </li>
+                <li class="menu-item"><a href="/settings">Plugins</a>
+                    <small>View details of all installed plugins.</small>
+                </li>
+            </ul>
         </div>
     </div>
+    <script type="text/javascript">
+        document.getElementById("search-submit").addEventListener("click", function (e) {
+            bb.log(e, "searchsubmit", document.getElementById("search-box").value)
+        })
+    </script>
+    {{template "footer"}}
 </div>
-<script type="text/javascript">
-    document.getElementById("search-submit").addEventListener("click", function (e) {
-        bb.log(e, "searchsubmit", document.getElementById("search-box").value)
-    })
-</script>
-{{template "footer"}}
 </body>
 </html>

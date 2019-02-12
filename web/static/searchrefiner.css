@@ -5,37 +5,13 @@
     padding: 12px;
     overflow-x: scroll;
 }
-/*
-blah blah
-*/
-.column, .columns {
-    padding: 0;
-    margin: 0;
-}
 
 .container {
     padding: 0;
 }
 
-body {
-    color: #333;
-}
-
-h3 {
-    font-size: 1rem;
-}
-
-p, li {
-    text-align: justify;
-    font-size: 0.8rem;
-    line-height: 1.5;
-}
 
 textarea {
     font-family: "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Courier, monospace;
     font-size: 12px !important;
-}
-
-.accordion input:checked~.accordion-body, .accordion[open] .accordion-body {
-    max-height: 100% !important;
 }
