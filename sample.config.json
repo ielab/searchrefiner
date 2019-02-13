@@ -1,0 +1,11 @@
+{
+  "Host": "localhost:4853",
+  "AdminEmail": "admin@example.com",
+  "Admins": [
+    "admin"
+  ],
+  "Entrez": {
+    "Email": "you@example.com",
+    "APIKey": "1234abcde"
+  }
+}
