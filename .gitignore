@@ -11,3 +11,5 @@ server
 *.xml
 *.model
 web/static/log
+
+plugin/
