@@ -23,3 +23,17 @@ go install github.com/ielab/searchrefiner
 ```
 
 The application can then be configured via `config.json`. The configuration items should be self explanatory.
+
+## Citing
+
+If you use this work, please cite as:
+
+```
+@inproceedings{scells2018searchrefiner,
+    Author = {Scells, Harrisen and Zuccon, Guido},
+    Booktitle = {Proceedings of the 27th ACM International Conference on Information and Knowledge Management},
+    Organization = {ACM},
+    Title = {searchrefiner: A Query Visualisation and Understanding Tool for Systematic Reviews},
+    Year = {2018}
+}
+```
