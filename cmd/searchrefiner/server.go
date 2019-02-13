@@ -149,6 +149,9 @@ func main() {
 				PluginDetails: handle.Details(),
 			})
 
+			fmt.Println(path.Join("plugin", file.Name(), "static"))
+			g.Static(path.Join(p, "static"), path.Join("plugin", file.Name(), "static"))
+
 			// Register the handler with gin.
 			g.GET(p, func(c *gin.Context) {
 				handle.Serve(s, c)
