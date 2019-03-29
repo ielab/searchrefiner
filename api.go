@@ -1,8 +1,9 @@
 package searchrefiner
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/hscells/groove/stats"
+	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"net/http"
@@ -16,7 +17,7 @@ type searchResponse struct {
 	OriginalQuery    string
 	TransformedQuery string
 	PreviousQueries  []Query
-	Documents        []stats.EntrezDocument
+	Documents        []guru.MedlineDocument
 	Language         string
 	BooleanClauses   float64
 	BooleanKeywords  float64
@@ -48,7 +49,7 @@ func (s Server) ApiScroll(c *gin.Context) {
 	}
 
 	type scrollResponse struct {
-		Documents []stats.EntrezDocument
+		Documents []guru.MedlineDocument
 		Start     int
 		Finished  bool
 	}
@@ -137,6 +138,8 @@ func ApiCQR2Query(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
+	fmt.Println(rawQuery)
+
 	p := make(map[string]tpipeline.TransmutePipeline)
 	p["medline"] = transmute.Cqr2Medline
 	p["pubmed"] = transmute.Cqr2Pubmed
@@ -153,12 +156,15 @@ func ApiCQR2Query(c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	fmt.Println(cq)
 
 	s, err := cq.StringPretty()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	fmt.Println(s)
 
 	c.Data(http.StatusOK, "application/json", []byte(s))
 }
