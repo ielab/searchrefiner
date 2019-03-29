@@ -145,9 +145,6 @@ func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss
 		t.Edges = append(t.Edges, edge{parent, id, len(docs), fmtLabel(len(docs), foundRel)})
 		id++
 		log.Printf("combined [atom] %v (id %v - %v docs) with parent %v at level %v\n", treeNode, id, len(docs), parent, level)
-	case combinator.AdjAtom:
-		id, t = buildAdjTree(n.Query(), id, parent, level, ss, relevant...)
-		log.Printf("combined [adj] %v (id %v - %v docs) with parent %v at level %v\n", treeNode, id, len(docs), parent, level)
 	}
 	nid += id
 	return
