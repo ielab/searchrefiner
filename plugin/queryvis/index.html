@@ -103,7 +103,7 @@
                     <div class="form-group">
                         <label>Query Language
                             <small><a href="/help#WritingQueries">help?</a></small>
-                            <select id="lang" class="form-select" name="lang">
+                            <select id="lang" class="form-select" name="lang" v-model="queryLanguage">
                                 <option value="medline" {{if eq .Language "medline"}} selected {{end}}>Ovid MEDLINE
                                 </option>
                                 <option value="pubmed" {{if eq .Language "pubmed"}} selected {{end}}>PubMed</option>
@@ -426,7 +426,7 @@
             numRel: null,
             numRelRet: null,
             textQuery: "{{.QueryString}}",
-            queryLanguage: "{{.Language}}",
+            queryLanguage: "pubmed",
             cqrQuery: {},
         },
         methods: {
