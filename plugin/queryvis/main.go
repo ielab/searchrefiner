@@ -68,13 +68,16 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 }
 
 func (QueryVisPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
-	if c.Request.Method == "POST" {
+	if c.Request.Method == "POST" && c.Query("tree") == "y" {
 		handleTree(s, c)
 		return
 	}
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
-	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/queryvis/index.html"), searchrefiner.Query{QueryString: rawQuery, Language: lang}))
+	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/queryvis/index.html"), struct {
+		searchrefiner.Query
+		View string
+	}{searchrefiner.Query{QueryString: rawQuery, Language: lang}, c.Query("view")}))
 	return
 }
 
