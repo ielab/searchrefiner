@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/static/vue-multiselect.min.css" type="text/css">
     <link rel="stylesheet" href="/static/logtail.css" type="text/css">
     <link rel="stylesheet" href="/static/searchrefiner.css" type="text/css">
-    <link rel="stylesheet" href="/plugin/queryvis/static/jquery.highlight-within-textarea.css"/>
+    <link rel="stylesheet" href="/static/jquery.highlight-within-textarea.css"/>
 
     <style>
         body, html, .container {
@@ -22,7 +22,7 @@
         }
 
         #tree {
-            height: 100%;
+            height: calc(100% - 36px);
         }
 
         .columns {
@@ -68,12 +68,12 @@
 
         #tree-stats {
             position: absolute;
-            top: 100px;
-            right: 32px;
+            top: calc(36px + 3px + 10px);
+            right: 10px;
             background-color: #ffffff;
             padding: 8px;
             z-index: 99999999999;
-            border: 1px solid #1c1c1c;
+            border: .05rem solid #bcc3ce;
         }
 
         .bracket {
@@ -87,6 +87,31 @@
 
         .fields {
             background-color: #e6ffef;
+        }
+
+        .vis-button {
+            -webkit-border-radius: 0 !important;
+            -moz-border-radius: 0 !important;
+            border-radius: 0 !important;
+            background-position: 0 0 !important;
+            background-size: contain;
+        }
+
+        .vis-up, .vis-down, .vis-left, .vis-right {
+            display: none !important;
+        }
+
+        .vis-zoomExtends {
+            bottom: 90px !important;
+        }
+
+        .vis-zoomOut {
+            bottom: 10px !important;
+            right: 15px !important;
+        }
+
+        .vis-zoomIn {
+            bottom: 46px !important;
         }
     </style>
 </head>
@@ -281,8 +306,8 @@
 <script src="/static/lodash.min.js" type="text/javascript"></script>
 <script src="/static/Sortable.min.js"></script>
 <script src="/static/vuedraggable.min.js"></script>
-<script src="/plugin/queryvis/static/jquery-3.4.1.min.js" type="text/javascript"></script>
-<script src="/plugin/queryvis/static/jquery.highlight-within-textarea.js" type="text/javascript"></script>
+<script src="/static/jquery-3.4.1.min.js" type="text/javascript"></script>
+<script src="/static/jquery.highlight-within-textarea.js" type="text/javascript"></script>
 
 <!--suppress JSUnusedGlobalSymbols -->
 <script>
@@ -548,6 +573,9 @@
         edges: edges
     };
     var options = {
+        interaction: {
+            navigationButtons: true
+        },
         physics: {
             enabled: true,
             hierarchicalRepulsion: {
