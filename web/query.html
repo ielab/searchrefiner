@@ -60,9 +60,6 @@
                             <button class="btn btn-link" id="results" type="button">
                                 Results <i class="icon icon-arrow-right"></i>
                             </button>
-                            <button class="btn btn-link" id="edit" type="button">
-                                Edit <i class="icon icon-arrow-right"></i>
-                            </button>
                         </div>
                     </form>
                 </div>
@@ -214,6 +211,7 @@
         langInput.type = "hidden";
         langInput.name = "lang";
         langInput.value = langEl.value;
+        form.appendChild(langInput);
         form.appendChild(langInput);
 
         document.body.appendChild(form);

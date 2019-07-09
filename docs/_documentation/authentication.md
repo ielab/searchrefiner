@@ -1,4 +1,7 @@
-# Authentication
+---
+title: Programmatic Authentication
+weight: 4
+---
 
 Users must be authenticated to searchrefiner before using the tools and APIs. Configuration of administrators can be done via
 editing the configuration items in `config.json`, as explained in [setup instructions](setup.md).
@@ -25,10 +28,3 @@ Now when using the API, requests can be made like so:
 ```bash
 curl -X POST --cookie "user=sdfdfg5325==|53462342362|48798fg8229991288fhfnaasd3819t51" localhost:4853/api/query2cqr -F 'query=(neck[Title] AND cancer[Abstract])' -F 'lang=pubmed'
 ```
-
-## Further Links
-
- - [Home](index.md)
- - [Set-up](setup.md)
- - [API](api.md)
- - [Tools](tools.md)

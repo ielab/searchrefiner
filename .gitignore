@@ -13,3 +13,5 @@ server
 web/static/log
 
 plugin/
+
+_site/

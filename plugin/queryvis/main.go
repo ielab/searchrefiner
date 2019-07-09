@@ -37,13 +37,6 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	fmt.Println(cq)
-
-	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
-		return
-	}
 	repr, err := cq.Representation()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
