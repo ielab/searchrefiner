@@ -32,6 +32,12 @@
         #tree-wrapper {
             background-color: #f9f9f9;
             height: 100%;
+            border-left: .05rem solid #bcc3ce;
+        }
+
+        #search-box {
+            margin: 10px;
+            width: calc(100% - 35px);
         }
 
         textarea {
@@ -131,13 +137,12 @@
                     <a href="#">Text Editor</a>
                 </li>
                 <li class="tab-item addon-sm" v-bind:class="{active: tabEditor===1}" v-on:click="tabEditor=1">
-                    <a href="#">Structured Editor</a>
+                    <a href="#">Visual Editor</a>
                 </li>
             </ul>
             <div v-if="tabEditor===0">
                 <div class="form-group">
-                    <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here."
-                              rows="20" required v-model="textQuery" v-on:change="updateText" spellcheck="false"></textarea>
+                    <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here." rows="15" required v-model="textQuery" v-on:change="updateText" spellcheck="false"></textarea>
                     <div class="form-group p-2">
                         <label>Query Language
                             <small><a href="/help#WritingQueries">help?</a></small>
@@ -155,10 +160,7 @@
                             <i class="icon icon-refresh"></i> Update Tree
                         </button>
                         <button class="btn btn-link" onclick="resultsView()" type="button">
-                            Results <i class="icon icon-arrow-right"></i>
-                        </button>
-                        <button class="btn btn-link" onclick="editView()" type="button">
-                            Edit <i class="icon icon-arrow-right"></i>
+                            Analysis <i class="icon icon-arrow-right"></i>
                         </button>
                     </div>
                 </div>
@@ -205,9 +207,13 @@
 
 <!-- Structured Query Editor components. -->
 <script type="text/x-template" id="bool-query">
-    <div class="panel mb-1">
+    <div class="panel m-2 p-2">
         <div class="panel-header">
-            <span class="text-uppercase text-bold">[[query.operator]]</span>
+            <select class="form-select select-sm" v-model="query.operator" v-bind:query.operator="query.operator" v-on:change="updateText" style="display: inline; width: 92px">
+                <option value="or">OR</option>
+                <option value="and">AND</option>
+                <option value="not">NOT</option>
+            </select>
             <span class="tile-action">
                 <button class="btn btn-link btn-sm" v-on:click="removeSelf">
                     <i class="icon icon-cross text-error"></i>
@@ -215,17 +221,13 @@
             </span>
         </div>
         <div class="panel-body">
-            <draggable v-model="query.children" :options="{group: 'children'}" style="min-height: 16px"
-                       @change="updateText">
-                {{/*<ied v-bind:query="child" v-for="child in query.children" ></ied>*/}}
+            <draggable v-model="query.children" :options="{group: 'children'}" style="min-height: 16px" v-on:change="updateText">
                 <div v-bind:query="child" v-for="child in query.children">
                     <div v-if="child.operator">
-                        <bool-query v-bind:query="child" v-on:remove-child="removeChild" :key="child.id"
-                                    class="c-move"></bool-query>
+                        <bool-query v-bind:query="child" v-on:remove-child="removeChild" :key="child.id" class="c-move"></bool-query>
                     </div>
                     <div v-else-if="child.fields">
-                        <keyword-query v-bind:query="child" v-on:remove-child="removeChild" :key="child.id"
-                                       class="c-move"></keyword-query>
+                        <keyword-query v-bind:query="child" v-on:remove-child="removeChild" :key="child.id" class="c-move"></keyword-query>
                     </div>
                     <div v-else>
                         <div class="empty">
@@ -233,8 +235,7 @@
                                 <i class="icon icon-flag"></i>
                             </div>
                             <p class="empty-title h5">Error</p>
-                            <p class="empty-subtitle">There is an error with the query. Use the text editor to
-                                resolve.</p>
+                            <p class="empty-subtitle">There is an error with the query. Use the text editor to resolve.</p>
                         </div>
                     </div>
                 </div>
@@ -245,36 +246,66 @@
                 <i class="icon icon-plus"></i> Keyword
             </button>
             <button class="btn btn-link btn-sm" v-on:click="addBool">
-                <i class="icon icon-plus"></i> Child
+                <i class="icon icon-plus"></i> Clause
             </button>
         </div>
     </div>
 </script>
 <script type="text/x-template" id="keyword-query">
-    <div class="tile tile-centered rounded m-1 pl-1 pt-1 bg-secondary ">
-        <div class="tile-icon">
-            <input type="checkbox" title="Include in overlap visualisation" v-model="selected">
-        </div>
+    <div class="tile tile-centered rounded m-2 p-2 bg-secondary">
         <div class="tile-content">
             <div class="tile-title">
-                <input title="Query string" class="form-input input-sm" type="text" v-model="query.query"
-                       ref="query" v-on:change="updateText">
+                <input title="Query string" class="form-input input-sm" type="text" v-model="query.query" ref="query" v-on:change="updateText">
             </div>
-            <div class="btn-group btn-group-block">
-                <div v-for="field in fields" class="small btn btn-sm" v-bind:class="{ 'btn-primary' : field.checked }"
-                     v-bind:for="[[ id + field.fancy ]]" v-on:click="[[ field.checked = !field.checked ]]">
-                    [[field.fancy]]
-                </div>
-            </div>
-            <div class="btn-group">
-                <span class="structured-check btn-group btn-group-block">
-                    <label v-bind:for="[[ id ]]">exploded?
-                        <input v-bind:id="[[ id ]]" type="checkbox" v-bind:value="exploded"
-                               v-model="query.options.exploded" v-bind:title="exploded"
-                               v-on:click="[[exploded = !exploded]]">
-                    </label>
-                </span>
-            </div>
+            <select class="form-select select-sm" v-model="field" v-on:change="updateField($event)">
+                <option value="title_abstract">Title/Abstract</option>
+                <option value="text_word">Text Word</option>
+                <option value="title">Title</option>
+                <option value="text">Abstract</option>
+                <option value="mesh_headings">MeSH Headings</option>
+                <option value="mesh_subheading">MeSH Subheading</option>
+                <option value="floating_mesh_headings">Floating MeSH Headings</option>
+                <option value="affiliation">Affiliation</option>
+                <option value="all_fields" selected="selected">All Fields</option>
+                <option value="author">Author</option>
+                <option value="author_corporate">Author - Corporate</option>
+                <option value="author_first">Author - First</option>
+                <option value="author_full">Author - Full</option>
+                <option value="author_identifier">Author - Identifier</option>
+                <option value="author_last">Author - Last</option>
+                <option value="book">Book</option>
+                <option value="conflict_of_interest_statements">Conflict of Interest Statements</option>
+                <option value="date_completion">Date - Completion</option>
+                <option value="date_create">Date - Create</option>
+                <option value="date_entrez">Date - Entrez</option>
+                <option value="date_mesh">Date - MeSH</option>
+                <option value="date_modification">Date - Modification</option>
+                <option value="publication_date">Date - Publication</option>
+                <option value="ec_rn_number">EC/RN Number</option>
+                <option value="editor">Editor</option>
+                <option value="filter">Filter</option>
+                <option value="grant_number">Grant Number</option>
+                <option value="isbn">ISBN</option>
+                <option value="investigator">Investigator</option>
+                <option value="investigator_full">Investigator - Full</option>
+                <option value="issue">Issue</option>
+                <option value="journal">Journal</option>
+                <option value="language">Language</option>
+                <option value="location_id">Location ID</option>
+                <option value="mesh_terms">MeSH Terms</option>
+                <option value="mesh_major_topic">MeSH Major Topic</option>
+                <option value="major_mesh_headings">Major Focus MeSH Heading</option>
+                <option value="other_term">Other Term</option>
+                <option value="pagination">Pagination</option>
+                <option value="pharmacological_action">Pharmacological Action</option>
+                <option value="publication_type">Publication Type</option>
+                <option value="publisher">Publisher</option>
+                <option value="secondary_source_id">Secondary Source ID</option>
+                <option value="subject_personal_name">Subject - Personal Name</option>
+                <option value="supplementary_concept">Supplementary Concept</option>
+                <option value="transliterated_title">Transliterated Title</option>
+                <option value="volume">Volume</option>
+            </select>
         </div>
         <div class="tile-action">
             <button class="btn btn-link btn-sm" v-on:click="removeSelf">
@@ -335,7 +366,7 @@
                         className: 'operator'
                     },
                     {
-                        highlight: /\[[a-zA-Z]+\]/ig,
+                        highlight: /\[[a-zA-Z /]+\]/ig,
                         className: 'fields'
                     }
                 ]
@@ -360,7 +391,8 @@
                 console.log("got a request to remove a child")
                 console.log(this.$props.query, queryID);
                 for (var i = 0; i < this.$props.query.children.length; i++) {
-                    if (this.$props.children.id === queryID) {
+                    console.log("ie", this.$props.query.children[i].options.id, queryID)
+                    if (this.$props.children[i].options.id === queryID) {
                         this.$props.children.splice(this.$props.children.indexOf(i), 1);
                         break;
                     }
@@ -384,7 +416,7 @@
             updateText: updateText,
             addBool: function () {
                 this.query.children.push({
-                    operator: "or",
+                    operator: "OR",
                     children: [],
                     options: {}
                 })
@@ -397,20 +429,18 @@
                 })
             },
             removeChild: function (queryID) {
-                console.log("got a request to remove a child")
                 for (var i = 0; i < this.$props.query.children.length; i++) {
-                    console.log(this.$props.query.children[i].options.id, queryID)
                     if (this.$props.query.children[i].options.id === queryID) {
-                        console.log("found", queryID);
+                        console.log("bq", this.$props.query.children[i].options.id, queryID)
                         this.$props.query.children.splice(i, 1);
-                        updateText();
                         break;
                     }
                 }
+                updateText();
+
             },
             removeSelf: function () {
-                console.log("trying to remove self", this.id)
-                this.$emit("remove-child", this.id)
+                this.$emit("remove-child", this.$props.query.options.id)
             }
         }
     });
@@ -422,71 +452,24 @@
             return {
                 id: structuredID++,
                 selected: false,
-                fields: [
-                    {name: "title", checked: false, fancy: "ti"},
-                    {name: "text", checked: false, fancy: "ab"},
-                    {name: "mesh_headings", checked: false, fancy: "sh"},
-                    {name: "publication_types", checked: false, fancy: "pt"},
-                    {name: "pubdate", checked: false, fancy: "pd"}
-                ],
+                field: this.$props.query.fields[0],
                 exploded: false
             }
         },
         methods: {
             updateText: updateText,
             removeSelf: function () {
-                console.log("trying to remove self");
-                this.$emit("remove-child", this.id);
+                updateText();
+                console.log("removing", this.$props.query.options.id)
+                this.$emit("remove-child", this.$props.query.options.id);
             },
-            removeChild: function (queryID) {
-                console.log("got a request to remove self");
+            updateField: function (event) {
+                this.$props.query.fields[0] = event.target.value
+                updateText()
             }
         },
         beforeMount: function () {
             this.$props.query.options.id = this.id;
-            if (!("exploded" in this.$props.query.options)) {
-                this.$props.query.options.exploded = false;
-            }
-            for (var i = 0; i < this.fields.length; i++) {
-                for (var j = 0; j < this.$props.query.fields.length; j++) {
-                    if (this.fields[i].name === this.$props.query.fields[j]) {
-                        this.fields[i].checked = true;
-                        break;
-                    }
-                }
-            }
-        },
-        watch: {
-            exploded: {
-                handler: function () {
-                    this.$props.query.options.exploded = this.exploded;
-                    updateText();
-                },
-                deep: true
-            },
-            fields: {
-                handler: function () {
-                    var oldFields = this.$props.query.fields.length;
-                    this.$props.query.fields = [];
-                    for (var i = 0; i < this.fields.length; i++) {
-                        if (this.fields[i].checked) {
-                            this.$props.query.fields.push(this.fields[i].name);
-                        }
-                    }
-                    // Only request an update when fields are changed.
-                    if (oldFields != this.$props.query.fields.length) {
-                        updateText();
-                    }
-                },
-                deep: true
-            },
-            selected: function (val) {
-                if (val) {
-                    vennSelected[this.id] = JSON.stringify(this.query)
-                } else {
-                    delete vennSelected[this.id]
-                }
-            }
         }
     });
 
