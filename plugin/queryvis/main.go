@@ -57,6 +57,18 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 	t.NumRel = len(s.Settings[username].Relevant)
 	t.NumRelRet = len(t.relevant)
 
+	var numRet int64
+	if len(t.Nodes) > 0 {
+		numRet = int64(t.Nodes[0].Value)
+	}
+
+	s.Queries[username] = append(s.Queries[username], searchrefiner.Query{
+		QueryString: rawQuery,
+		Language:    lang,
+		NumRet:      numRet,
+		NumRelRet:   int64(t.NumRelRet),
+	})
+
 	c.JSON(200, t)
 }
 
