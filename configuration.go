@@ -38,11 +38,11 @@ type Config struct {
 }
 
 type Query struct {
-	QueryString     string
-	Language        string
-	NumRet          int64
-	PreviousQueries []Query
-	Relevant        []string
+	QueryString string
+	Language    string
+	NumRet      int64
+	NumRelRet   int64
+	Relevant    []string
 }
 
 type ErrorPage struct {
@@ -55,12 +55,12 @@ type Settings struct {
 }
 
 type Server struct {
-	Perm      *permissionbolt.Permissions
-	Queries   map[string][]Query
-	Settings  map[string]Settings
-	Config    Config
-	Entrez    stats.EntrezStatisticsSource
-	Plugins   []InternalPluginDetails
+	Perm     *permissionbolt.Permissions
+	Queries  map[string][]Query
+	Settings map[string]Settings
+	Config   Config
+	Entrez   stats.EntrezStatisticsSource
+	Plugins  []InternalPluginDetails
 }
 
 // Plugin is the interface that must be implemented in order to register an external tool.

@@ -172,6 +172,7 @@ func ApiCQR2Query(c *gin.Context) {
 func ApiQuery2CQR(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
+	field := c.PostForm("field")
 
 	p := make(map[string]tpipeline.TransmutePipeline)
 	p["medline"] = transmute.Medline2Cqr
@@ -182,6 +183,11 @@ func ApiQuery2CQR(c *gin.Context) {
 		compiler = v
 	} else {
 		lang = "medline"
+	}
+
+	// Use the field parameter to change the default field mapping.
+	if len(field) > 0 {
+		compiler.Parser.FieldMapping["default"] = []string{field}
 	}
 
 	cq, err := compiler.Execute(rawQuery)
@@ -197,4 +203,35 @@ func ApiQuery2CQR(c *gin.Context) {
 	}
 
 	c.Data(http.StatusOK, "application/json", []byte(s))
+}
+
+func (s Server) ApiHistory(c *gin.Context) {
+	if !s.Perm.UserState().IsLoggedIn(s.Perm.UserState().Username(c.Request)) {
+		c.Status(http.StatusForbidden)
+		return
+	}
+	username := s.Perm.UserState().Username(c.Request)
+	// reverse the list
+	q := make([]Query, len(s.Queries[username]))
+	j := 0
+	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
+		q[j] = s.Queries[username][i]
+		j++
+	}
+
+	c.JSON(http.StatusOK, q)
+	return
+}
+
+func (s Server) ApiHistoryDelete(c *gin.Context) {
+	if !s.Perm.UserState().IsLoggedIn(s.Perm.UserState().Username(c.Request)) {
+		c.Status(http.StatusForbidden)
+		return
+	}
+	username := s.Perm.UserState().Username(c.Request)
+
+	delete(s.Queries, username)
+
+	c.Status(http.StatusOK)
+	return
 }

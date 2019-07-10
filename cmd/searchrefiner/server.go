@@ -191,6 +191,8 @@ func main() {
 	g.POST("/api/transform", searchrefiner.ApiTransform)
 	g.POST("/api/cqr2query", searchrefiner.ApiCQR2Query)
 	g.POST("/api/query2cqr", searchrefiner.ApiQuery2CQR)
+	g.GET("/api/history", s.ApiHistory)
+	g.DELETE("/api/history", s.ApiHistory)
 
 	// Settings page.
 	g.GET("/settings", s.HandleSettings)
