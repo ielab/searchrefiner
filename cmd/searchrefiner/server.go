@@ -29,6 +29,20 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	fs, err := ioutil.ReadDir(searchrefiner.PluginStoragePath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	storage := make(map[string]*searchrefiner.PluginStorage)
+	for _, f := range fs {
+		ps, err := searchrefiner.OpenPluginStorage(f.Name())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		storage[f.Name()] = ps
+	}
+
 	lf, err := os.OpenFile("web/static/log", os.O_WRONLY|os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalln(err)
@@ -75,6 +89,7 @@ func main() {
 		Queries:  make(map[string][]searchrefiner.Query),
 		Settings: make(map[string]searchrefiner.Settings),
 		Entrez:   ss,
+		Storage:  storage,
 	}
 
 	permissionHandler := func(c *gin.Context) {
@@ -165,6 +180,9 @@ func main() {
 	// Administration.
 	g.GET("/admin", s.HandleAdmin)
 	g.POST("/admin/api/confirm", s.ApiAdminConfirm)
+	g.POST("/admin/api/storage", s.ApiAdminUpdateStorage)
+	g.POST("/admin/api/storage/delete", s.ApiAdminDeleteStorage)
+	g.POST("/admin/api/storage/csv", s.ApiAdminCSVStorage)
 
 	// Authentication views.
 	g.GET("/account/login", searchrefiner.HandleAccountLogin)
@@ -191,8 +209,9 @@ func main() {
 	g.POST("/api/transform", searchrefiner.ApiTransform)
 	g.POST("/api/cqr2query", searchrefiner.ApiCQR2Query)
 	g.POST("/api/query2cqr", searchrefiner.ApiQuery2CQR)
-	g.GET("/api/history", s.ApiHistory)
-	g.DELETE("/api/history", s.ApiHistory)
+	g.GET("/api/history", s.ApiHistoryGet)
+	g.POST("/api/history", s.ApiHistoryAdd)
+	g.DELETE("/api/history", s.ApiHistoryDelete)
 
 	// Settings page.
 	g.GET("/settings", s.HandleSettings)

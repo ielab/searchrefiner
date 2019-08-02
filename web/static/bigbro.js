@@ -9,6 +9,7 @@ let BigBro = {
             "cut", "copy", "paste", "select", "keydown", "keyup"
         ],
     },
+    queue: [],
     // init must be called with the user and the server, and optionally a list of
     // events to listen to globally.
     init: function (user, server, events) {
@@ -21,31 +22,19 @@ let BigBro = {
             protocol = 'wss://';
         }
 
-        this.ws = new WebSocket(protocol + this.data.server + "/event");
+        this.ws = new WebSocket(protocol + this.data.server);
         let self = this;
-
-        this.ws.onopen = function (ev) {
+        this.ws.onopen = function () {
             for (let i = 0; i < self.data.events.length; i++) {
                 window.addEventListener(self.data.events[i], function (e) {
                     self.log(e, self.data.events[i]);
                 })
             }
-            bb.log(ev, "bigbroinit");
-        };
-
-        window.onunload = function (ev) {
-            bb.log(ev, "bigbrodeinit");
-            self.ws.close();
-            console.log("hello");
         };
         return this
     },
     // log logs an event with a specified method name (normally the actual event name).
     log: function (e, method, comment) {
-        if (this.ws.readyState !== 1) {
-            console.warn("bigbro websocket unable to connect");
-            return false;
-        }
         let event = {
             target: e.target.tagName,
             name: e.target.name,
@@ -74,7 +63,16 @@ let BigBro = {
         if (comment != null) {
             event.comment = comment;
         }
+
+        if (this.ws.readyState !== 1) {
+            this.queue.push(event);
+            return false;
+        }
+
+        while (this.queue.length > 0) {
+            this.ws.send(JSON.stringify(this.queue.pop()))
+        }
+
         this.ws.send(JSON.stringify(event));
-        return true
     }
 };

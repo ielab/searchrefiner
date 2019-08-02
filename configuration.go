@@ -8,11 +8,12 @@ import (
 	"github.com/xyproto/permissionbolt"
 	"html/template"
 	"path"
+	"time"
 )
 
 var (
 	QueryCacher         = combinator.NewFileQueryCache("file_cache")
-	Components          = []string{"components/sidebar.tmpl.html", "components/util.tmpl.html", "components/login.template.html", "components/bigbro.tmpl.html"}
+	Components          = []string{"components/sidebar.tmpl.html", "components/util.tmpl.html", "components/login.template.html", "components/announcement.tmpl.html"}
 	ServerConfiguration = Server{}
 )
 
@@ -38,11 +39,12 @@ type Config struct {
 }
 
 type Query struct {
-	QueryString string
-	Language    string
-	NumRet      int64
-	NumRelRet   int64
-	Relevant    []string
+	Time        time.Time `csv:"time"`
+	QueryString string    `csv:"query"`
+	Language    string    `csv:"language"`
+	NumRet      int64     `csv:"num_ret"`
+	NumRelRet   int64     `csv:"num_rel_ret"`
+	Relevant    []string  `csv:"relevant"`
 }
 
 type ErrorPage struct {
@@ -61,6 +63,7 @@ type Server struct {
 	Config   Config
 	Entrez   stats.EntrezStatisticsSource
 	Plugins  []InternalPluginDetails
+	Storage  map[string]*PluginStorage
 }
 
 // Plugin is the interface that must be implemented in order to register an external tool.
@@ -99,4 +102,23 @@ func RenderPlugin(tmpl template.Template, data interface{}) render.HTML {
 		Name:     tmpl.Name(),
 		Data:     data,
 	}
+}
+
+func (s Server) getAllPluginStorage() (map[string]map[string]map[string]string, error) {
+	st := make(map[string]map[string]map[string]string)
+	for plugin, ps := range s.Storage {
+		st[plugin] = make(map[string]map[string]string)
+		buckets, err := ps.GetBuckets()
+		if err != nil {
+			return nil, err
+		}
+		for _, bucket := range buckets {
+			v, err := ps.GetValues(bucket)
+			if err != nil {
+				return nil, err
+			}
+			st[plugin][bucket] = v
+		}
+	}
+	return st, nil
 }

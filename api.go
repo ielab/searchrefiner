@@ -3,11 +3,13 @@ package searchrefiner
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/hscells/cqr"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type searchResponse struct {
@@ -51,6 +53,7 @@ func (s Server) ApiScroll(c *gin.Context) {
 	type scrollResponse struct {
 		Documents []guru.MedlineDocument
 		Start     int
+		Total     float64
 		Finished  bool
 	}
 
@@ -97,12 +100,24 @@ func (s Server) ApiScroll(c *gin.Context) {
 		return
 	}
 
+	repr, err := cq.Representation()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	total, err := s.Entrez.RetrievalSize(repr.(cqr.CommonQueryRepresentation))
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	finished := false
-	if len(docs) == 0 {
+	if len(docs) == 0 || (startString == "0" && len(docs) == int(total)) {
 		finished = true
 	}
 
-	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished})
+	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished, Total: total})
 }
 
 func ApiTransform(c *gin.Context) {
@@ -205,7 +220,7 @@ func ApiQuery2CQR(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", []byte(s))
 }
 
-func (s Server) ApiHistory(c *gin.Context) {
+func (s Server) ApiHistoryGet(c *gin.Context) {
 	if !s.Perm.UserState().IsLoggedIn(s.Perm.UserState().Username(c.Request)) {
 		c.Status(http.StatusForbidden)
 		return
@@ -220,6 +235,54 @@ func (s Server) ApiHistory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, q)
+	return
+}
+
+func (s Server) ApiHistoryAdd(c *gin.Context) {
+	if !s.Perm.UserState().IsLoggedIn(s.Perm.UserState().Username(c.Request)) {
+		c.Status(http.StatusForbidden)
+		return
+	}
+	username := s.Perm.UserState().Username(c.Request)
+	rawQuery := c.PostForm("query")
+	lang := c.PostForm("lang")
+
+	p := make(map[string]tpipeline.TransmutePipeline)
+	p["medline"] = transmute.Medline2Cqr
+	p["pubmed"] = transmute.Pubmed2Cqr
+
+	compiler := p["medline"]
+	if v, ok := p[lang]; ok {
+		compiler = v
+	} else {
+		lang = "medline"
+	}
+
+	cq, err := compiler.Execute(rawQuery)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	repr, err := cq.Representation()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	size, err := s.Entrez.RetrievalSize(repr.(cqr.CommonQueryRepresentation))
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	s.Queries[username] = append(s.Queries[username], Query{
+		Time:        time.Now(),
+		QueryString: rawQuery,
+		Language:    lang,
+		NumRet:      int64(size),
+	})
+
+	c.Status(http.StatusOK)
 	return
 }
 

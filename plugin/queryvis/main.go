@@ -10,6 +10,7 @@ import (
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"github.com/ielab/searchrefiner"
 	"net/http"
+	"time"
 )
 
 type QueryVisPlugin struct {
@@ -63,6 +64,7 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 	}
 
 	s.Queries[username] = append(s.Queries[username], searchrefiner.Query{
+		Time:        time.Now(),
 		QueryString: rawQuery,
 		Language:    lang,
 		NumRet:      numRet,

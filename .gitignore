@@ -1,6 +1,8 @@
 file_cache
 statistics_cache
 searchrefiner
+plugin_storage
+data
 *.db
 
 .idea/

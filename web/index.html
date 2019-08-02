@@ -23,17 +23,18 @@
 </head>
 <body>
 <div class="container">
+    {{ template "announcement-toast" }}
     <h1><img src="static/favicon.png" width="24px" height="24px" alt="logo">&nbsp<b>searchrefiner</b></h1>
     <div class="columns pt-2">
         <div class="column col-6">
             <div class="card">
-                <div class="card-header"><div class="divider" data-content="SEARCH"></div></div>
+                <div class="card-header">
+                    <div class="divider" data-content="SEARCH"></div>
+                </div>
                 <div class="card-body">
                     <form action="/query" method="post" accept-charset="UTF-8">
                         <div class="form-group">
-                    <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here."
-                              rows="16" required></textarea>
-
+                            <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here." rows="16" required></textarea>
                         </div>
                         <div class="form-group">
                             <label>Query Language
@@ -105,6 +106,10 @@
                 </li>
                 <li class="menu-item"><a href="/plugins">Plugins</a>
                     <small>View details of all installed plugins.</small>
+                </li>
+                <li class="divider" data-content="ACCOUNT"></li>
+                <li class="menu-item"><a href="/plugins">Logout</a>
+                    <small>Logout from searchrefiner.</small>
                 </li>
             </ul>
         </div>
