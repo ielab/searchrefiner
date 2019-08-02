@@ -97,7 +97,7 @@ func (p *PluginStorage) ToCSV(bucket string) (string, error) {
 	}
 	var b strings.Builder
 	for k, v := range vals {
-		b.WriteString(fmt.Sprintf("%s,%s", k, v))
+		b.WriteString(fmt.Sprintf("%s,%s\n", k, v))
 	}
 	return b.String(), nil
 }

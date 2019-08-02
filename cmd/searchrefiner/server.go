@@ -110,14 +110,9 @@ func main() {
 	g.Use(permissionHandler)
 	g.Use(gzip.Gzip(gzip.BestCompression))
 
-	g.LoadHTMLFiles(append([]string{
-		// Views.
-		"web/query.html", "web/index.html", "web/transform.html",
-		"web/account_create.html", "web/account_login.html", "web/admin.html",
-		"web/help.html", "web/error.html", "web/results.html", "web/settings.html", "web/plugins.html",
-	}, searchrefiner.Components...)...)
-
 	g.Static("/static/", "./web/static")
+
+	var pluginTemplates []string
 
 	// Handle plugins.
 	files, err := ioutil.ReadDir("plugin")
@@ -147,7 +142,7 @@ func main() {
 			}
 
 			// Configure the permissions for this plugin.
-			p = path.Join("/plugin/", p)
+			p = path.Join("./plugin/", p)
 			switch handle.PermissionType() {
 			case searchrefiner.PluginAdmin:
 				perm.AddAdminPath(p)
@@ -159,12 +154,28 @@ func main() {
 				perm.AddPublicPath(p)
 			}
 
+			pluginFiles, err := ioutil.ReadDir(p)
+			if err != nil {
+				panic(err)
+			}
+			for _, f := range pluginFiles {
+				if !f.IsDir() {
+					parts := strings.Split(f.Name(), ".")
+					if len(parts) < 2 {
+						continue
+					}
+					if parts[len(parts)-2] == "tmpl" && parts[len(parts)-1] == "html" {
+						fmt.Println(path.Join(p, f.Name()))
+						pluginTemplates = append(pluginTemplates, path.Join(p, f.Name()))
+					}
+				}
+			}
+
 			s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
 				URL:           p,
 				PluginDetails: handle.Details(),
 			})
 
-			fmt.Println(path.Join("plugin", file.Name(), "static"))
 			g.Static(path.Join(p, "static"), path.Join("plugin", file.Name(), "static"))
 
 			// Register the handler with gin.
@@ -176,6 +187,14 @@ func main() {
 			})
 		}
 	}
+
+	g.LoadHTMLFiles(append([]string{
+		// Views.
+		"web/query.html", "web/index.html", "web/transform.html",
+		"web/account_create.html", "web/account_login.html", "web/admin.html",
+		"web/help.html", "web/error.html", "web/results.html", "web/settings.html", "web/plugins.html",
+	}, append(searchrefiner.Components, pluginTemplates...)...)...)
+	searchrefiner.PluginTemplates = pluginTemplates
 
 	// Administration.
 	g.GET("/admin", s.HandleAdmin)

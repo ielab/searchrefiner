@@ -185,9 +185,10 @@ func (s Server) HandleIndex(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "index.html", struct {
-		Plugins []InternalPluginDetails
-		Queries []Query
-	}{Plugins: s.Plugins, Queries: q})
+		Plugins  []InternalPluginDetails
+		Queries  []Query
+		Language string
+	}{Plugins: s.Plugins, Queries: q, Language: "pubmed"})
 }
 
 func (s Server) HandlePlugins(c *gin.Context) {

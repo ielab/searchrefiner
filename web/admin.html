@@ -101,7 +101,7 @@
                                                 {{ range $key, $value := $table }}
                                                     <div class="divider"></div>
                                                     <div class="column col-5">{{ $key }}</div>
-                                                    <div class="column col-5">{{ $value }}</div>
+                                                    <div class="column col-5" style="white-space: nowrap;overflow-x: auto">{{ $value }}</div>
                                                     <!-- TODO -->
                                                     <div class="column col-2">
                                                         <form method="post" action="/admin/api/storage/delete">

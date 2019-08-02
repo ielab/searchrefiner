@@ -13,6 +13,7 @@ import (
 
 var (
 	QueryCacher         = combinator.NewFileQueryCache("file_cache")
+	PluginTemplates     []string
 	Components          = []string{"components/sidebar.tmpl.html", "components/util.tmpl.html", "components/login.template.html", "components/announcement.tmpl.html"}
 	ServerConfiguration = Server{}
 )
@@ -92,7 +93,7 @@ type InternalPluginDetails struct {
 // TemplatePlugin is the template method which will include searchrefiner components.
 func TemplatePlugin(p string) template.Template {
 	_, f := path.Split(p)
-	return *template.Must(template.New(f).ParseFiles(append(Components, p)...))
+	return *template.Must(template.New(f).ParseFiles(append(append(PluginTemplates, Components...), p)...))
 }
 
 // RenderPlugin returns a gin-compatible HTML renderer for plugins.
