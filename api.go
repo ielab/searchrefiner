@@ -6,6 +6,7 @@ import (
 	"github.com/hscells/cqr"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
+	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"net/http"
 	"strconv"
@@ -246,7 +247,6 @@ func (s Server) ApiHistoryAdd(c *gin.Context) {
 	username := s.Perm.UserState().Username(c.Request)
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
-
 	p := make(map[string]tpipeline.TransmutePipeline)
 	p["medline"] = transmute.Medline2Cqr
 	p["pubmed"] = transmute.Pubmed2Cqr
@@ -267,6 +267,14 @@ func (s Server) ApiHistoryAdd(c *gin.Context) {
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	date, ok := c.GetPostForm("date")
+	if ok {
+		repr = cqr.NewBooleanQuery(cqr.AND, []cqr.CommonQueryRepresentation{
+			repr.(cqr.CommonQueryRepresentation),
+			cqr.NewKeyword(date, fields.PublicationDate),
+		})
 	}
 
 	size, err := s.Entrez.RetrievalSize(repr.(cqr.CommonQueryRepresentation))
