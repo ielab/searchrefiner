@@ -1,6 +1,7 @@
 package searchrefiner
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/hscells/groove/combinator"
@@ -90,10 +91,35 @@ type InternalPluginDetails struct {
 	PluginDetails
 }
 
+func TmplDict(values ...interface{}) (map[string]interface{}, error) {
+	// Thank-you to https://stackoverflow.com/a/18276968!
+	if len(values)%2 != 0 {
+		return nil, errors.New("invalid dict call")
+	}
+	dict := make(map[string]interface{}, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, errors.New("dict keys must be strings")
+		}
+
+		switch v := values[i+1].(type) {
+		case string:
+			dict[key] = template.HTML(v)
+		default:
+			dict[key] = v
+		}
+	}
+	return dict, nil
+}
+
 // TemplatePlugin is the template method which will include searchrefiner components.
 func TemplatePlugin(p string) template.Template {
 	_, f := path.Split(p)
-	return *template.Must(template.New(f).ParseFiles(append(append(PluginTemplates, Components...), p)...))
+	return *template.Must(template.
+		New(f).
+		Funcs(template.FuncMap{"dict": TmplDict}).
+		ParseFiles(append(append(PluginTemplates, Components...), p)...))
 }
 
 // RenderPlugin returns a gin-compatible HTML renderer for plugins.

@@ -193,7 +193,7 @@ func main() {
 		"web/query.html", "web/index.html", "web/transform.html",
 		"web/account_create.html", "web/account_login.html", "web/admin.html",
 		"web/help.html", "web/error.html", "web/results.html", "web/settings.html", "web/plugins.html",
-	}, append(searchrefiner.Components, pluginTemplates...)...)...)
+	}, append(searchrefiner.Components)...)...)
 	searchrefiner.PluginTemplates = pluginTemplates
 
 	// Administration.
