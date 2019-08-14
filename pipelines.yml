@@ -1,0 +1,6 @@
+- pipeline.id: bigbro
+  path.config: "pipeline-bb.conf"
+- pipeline.id: sr_gin
+  path.config: "pipeline-gin.conf"
+- pipeline.id: sr_events
+  path.config: "pipeline-eve.conf"

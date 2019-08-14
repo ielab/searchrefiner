@@ -7,15 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/groove/stats"
 	"github.com/ielab/searchrefiner"
+	log "github.com/sirupsen/logrus"
 	"github.com/xyproto/permissionbolt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
 	"plugin"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -43,15 +44,45 @@ func main() {
 		storage[f.Name()] = ps
 	}
 
-	lf, err := os.OpenFile("web/static/log", os.O_WRONLY|os.O_RDONLY|os.O_CREATE, 0644)
+	err = os.MkdirAll("logs", 0777)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	lf.Truncate(0)
+
+	t := time.Now().Unix()
+	ginLf, err := os.OpenFile(fmt.Sprintf("logs/sr-gin-%d.log", t), os.O_WRONLY|os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	eveLf, err := os.OpenFile(fmt.Sprintf("logs/sr-eve-%d.log", t), os.O_WRONLY|os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: time.RFC3339,
+	})
+
+	log.SetOutput(io.MultiWriter(eveLf, os.Stdout))
 
 	dbPath := "citemed.db"
 
 	g := gin.Default()
+	gin.DefaultWriter = io.MultiWriter(ginLf, os.Stdout)
+	g.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		// your custom format
+		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+			param.ClientIP,
+			param.TimeStamp.Format(time.RFC3339),
+			param.Method,
+			param.Path,
+			param.Request.Proto,
+			param.StatusCode,
+			param.Latency,
+			param.Request.UserAgent(),
+			param.ErrorMessage,
+		)
+	}))
 
 	perm, err := permissionbolt.NewWithConf(dbPath)
 	if err != nil {
@@ -243,9 +274,6 @@ func main() {
 	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
 	})
-
-	mw := io.MultiWriter(lf, os.Stdout)
-	log.SetOutput(mw)
 
 	// Set a global server configuration variable so plugins have access to it.
 	searchrefiner.ServerConfiguration = s

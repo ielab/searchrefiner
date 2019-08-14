@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove/combinator"
@@ -9,6 +8,7 @@ import (
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"github.com/ielab/searchrefiner"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
@@ -31,7 +31,7 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 		lang = "medline"
 	}
 
-	fmt.Println(rawQuery)
+	log.Infof("recieved a query %s in format %s", rawQuery, lang)
 
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
@@ -43,8 +43,6 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	fmt.Println(repr)
-
 	var root combinator.LogicalTree
 	root, _, err = combinator.NewLogicalTree(gpipeline.NewQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, searchrefiner.QueryCacher)
 	if err != nil {

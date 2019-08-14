@@ -1,13 +1,13 @@
 package searchrefiner
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
@@ -118,6 +118,8 @@ func (s Server) ApiScroll(c *gin.Context) {
 		finished = true
 	}
 
+	log.Infof("[scroll]  %s:%s:%s:%f", lang, rawQuery, startString, total)
+
 	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished, Total: total})
 }
 
@@ -154,7 +156,7 @@ func ApiCQR2Query(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
 
-	fmt.Println(rawQuery)
+	log.Infof("[cqr2query] %s:%s", lang, rawQuery)
 
 	p := make(map[string]tpipeline.TransmutePipeline)
 	p["medline"] = transmute.Cqr2Medline
@@ -172,15 +174,12 @@ func ApiCQR2Query(c *gin.Context) {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	fmt.Println(cq)
 
 	s, err := cq.StringPretty()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	fmt.Println(s)
 
 	c.Data(http.StatusOK, "application/json", []byte(s))
 }
@@ -200,6 +199,8 @@ func ApiQuery2CQR(c *gin.Context) {
 	} else {
 		lang = "medline"
 	}
+
+	log.Infof("[query2cqr] %s:%s:%s", field, lang, rawQuery)
 
 	// Use the field parameter to change the default field mapping.
 	if len(field) > 0 {
@@ -258,6 +259,7 @@ func (s Server) ApiHistoryAdd(c *gin.Context) {
 		lang = "medline"
 	}
 
+	log.Infof("[addhistory] %s:%s:%s", username, rawQuery, lang)
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
@@ -299,10 +301,10 @@ func (s Server) ApiHistoryDelete(c *gin.Context) {
 		c.Status(http.StatusForbidden)
 		return
 	}
+
 	username := s.Perm.UserState().Username(c.Request)
-
 	delete(s.Queries, username)
-
+	log.Infof("[deletehistory] %s", username)
 	c.Status(http.StatusOK)
 	return
 }
