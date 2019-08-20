@@ -1,32 +1,33 @@
 {{define "sidebar"}}
-<section class="navbar-section">
-    <a class="off-canvas-toggle btn btn-link" href="#sidebar">
-        <i class="icon icon-menu"></i> searchrefiner
-    </a>
-    <div class="off-canvas">
-        <ul class="menu off-canvas-sidebar" id="sidebar">
-            <li class="menu-item">
-                <div class="tile tile-centered">
-                    <div class="tile-icon"><img src="/static/favicon.png" class="avatar" width="32px"></div>
-                    <div class="tile-content">searchrefiner</div>
-                </div>
-            </li>
-            <li class="divider"></li>
-            <li class="menu-item"><a href="/">Home</a></li>
-            <li class="menu-item"><a href="/settings">Settings</a></li>
-            <li class="menu-item"><a href="/plugins">Plugins</a></li>
-        </ul>
-        <a class="off-canvas-overlay" href="#close"></a>
-    </div>
-</section>
+    <section class="navbar-section">
+        <a class="off-canvas-toggle btn btn-link" href="#sidebar">
+            <i class="icon icon-menu"></i> searchrefiner
+        </a>
+        <div class="off-canvas">
+            <ul class="menu off-canvas-sidebar" id="sidebar">
+                <li class="menu-item">
+                    <div class="tile tile-centered">
+                        <div class="tile-icon"><img src="/static/favicon.png" class="avatar" width="32px"></div>
+                        <div class="tile-content">searchrefiner</div>
+                    </div>
+                </li>
+                <li class="divider"></li>
+                <li class="menu-item"><a href="/">Home</a></li>
+                <li class="menu-item"><a href="/settings">Settings</a></li>
+                <li class="menu-item"><a href="/plugins">Plugins</a></li>
+            </ul>
+            <a class="off-canvas-overlay" href="#close"></a>
+        </div>
+    </section>
+    <section class="navbar-section">
+        {{ template "announcement-navbar" }}
+    </section>
 {{end}}
 
 {{ define "nav" }}
-<header class="navbar bg-secondary nav-height mb-2">
-    <section class="navbar-section">
-    {{template "sidebar"}}
-    </section>
-    <section class="navbar-section">
-    </section>
-</header>
+    <header class="navbar bg-secondary nav-height mb-2">
+        <section class="navbar-section">
+            {{template "sidebar"}}
+        </section>
+    </header>
 {{end}}

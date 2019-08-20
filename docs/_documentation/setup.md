@@ -1,13 +1,18 @@
-# Set-up
+---
+title: "Setup"
+weight: 1
+---
 
 searchrefiner is built as a Go application. To build the application from source, the [Go toolchain](https://golang.org/) is 
-required. Once installed, the software may be installed via:
+required. Once installed, the software may be installed by cloning:
 
 ```bash
-go get github.com/ielab/searchrefiner
+git clone git@github.com:ielab/searchrefiner.git
 ```
 
-To run the software, either use `go build` to create a compiled binary and run `./searchrefiner` or use `go run *.go`.
+or by directly [downloading](https://github.com/ielab/searchrefiner/archive/master.zip).
+
+searchrefiner is built using `make`. To build and run the application use the command `make run`.
 
 ## Configuration
 
@@ -21,6 +26,24 @@ The configuration items are used as follows:
  - `Entrez.Email`: The email to report to eutils. 
  - `Entrez.APIKey`: The API key to report to eutils. 
   
+An example configuration file is presented below:
+
+```json
+{
+  "Host": "localhost:4853",
+  "AdminEmail": "ADMIN_EMAIL_ADDRESS",
+  "Admins": [
+    "ADMIN_USERNAME"
+  ],
+  "Entrez": {
+    "Email": "YOUR_EMAIL_ADDRESS",
+    "APIKey": "YOUR_API_KEY"
+  }
+}
+```
+
+The Entrez options must be entered, and an API key for eutils can be obtained by logging into NCBI and navigating to [https://www.ncbi.nlm.nih.gov/account/settings/](https://www.ncbi.nlm.nih.gov/account/settings/).
+  
 ## Databases
 
 searchrefiner uses BoltDB for storing user information. This file will be created when the software is run for the first time
@@ -28,9 +51,4 @@ in the same directory.
 
 ## Further Links
 
-This should be enough to get an instance of searchrefiner up and running. For information on using searchrefiner, see the links below:
-
- - [Home](index.md)
- - [Authentication](authentication.md)
- - [API](api.md)
- - [Tools](tools.md)
+This should be enough to get an instance of searchrefiner up and running. For information on using searchrefiner, see the links in the sidebar to the left.

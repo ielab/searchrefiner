@@ -1,0 +1,18 @@
+{{ define "announcement" }}{{/*searchrefiner will be down for maintenance between 1400-1500 AEST 02/Aug.*/}}{{ end }}
+
+{{ define "announcement-toast" }}
+    {{ $active := false }}
+    {{ if $active }}
+        <div class="toast toast-primary">
+            <h5>Announcement:</h5>
+            <p>{{ template "announcement" }}</p>
+        </div>
+    {{ end }}
+{{ end }}
+
+{{ define "announcement-navbar" }}
+    {{ $active := false }}
+    {{ if $active }}
+        <small class="text-error"><b>Announcement:</b> {{ template "announcement" }}</small>
+    {{ end }}
+{{ end }}

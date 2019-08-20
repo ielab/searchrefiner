@@ -1,6 +1,8 @@
 file_cache
 statistics_cache
 searchrefiner
+plugin_storage
+data
 *.db
 
 .idea/
@@ -10,6 +12,8 @@ config.json
 server
 *.xml
 *.model
-web/static/log
+logs/
+sincedb*
 
 plugin/
+_site/

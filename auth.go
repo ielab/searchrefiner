@@ -124,15 +124,29 @@ func (s Server) ApiAccountUsername(c *gin.Context) {
 func (s Server) HandleAdmin(c *gin.Context) {
 	u, err := s.Perm.UserState().AllUnconfirmedUsernames()
 	if err != nil {
-		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
+		return
+	}
+
+	conf, err := s.Perm.UserState().AllUsernames()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
+		return
+	}
+
+	storage, err := s.getAllPluginStorage()
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
 		return
 	}
 
 	type admin struct {
 		Unconfirmed []string
+		Confirmed   []string
+		Storage     map[string]map[string]map[string]string
 	}
 
-	c.HTML(http.StatusOK, "admin.html", admin{Unconfirmed: u})
+	c.HTML(http.StatusOK, "admin.html", admin{Unconfirmed: u, Confirmed: conf, Storage: storage})
 }
 
 func (s Server) ApiAdminConfirm(c *gin.Context) {
@@ -144,4 +158,122 @@ func (s Server) ApiAdminConfirm(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, "/admin")
+}
+
+func (s Server) ApiAdminUpdateStorage(c *gin.Context) {
+	var (
+		plugin string
+		bucket string
+		key    string
+		value  string
+	)
+	if v, ok := c.GetPostForm("plugin"); ok {
+		plugin = v
+	} else {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+	if v, ok := c.GetPostForm("bucket"); ok {
+		bucket = v
+	} else {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+	if v, ok := c.GetPostForm("key"); ok {
+		key = v
+	} else {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+	if v, ok := c.GetPostForm("value"); ok {
+		value = v
+	} else {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+
+	var ps *PluginStorage
+	ps, ok := s.Storage[plugin]
+	if !ok {
+		var err error
+		ps, err = OpenPluginStorage(plugin)
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+			return
+		}
+		s.Storage[plugin] = ps
+	}
+
+	err := ps.PutValue(bucket, key, value)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/admin"})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin")
+}
+
+func (s Server) ApiAdminDeleteStorage(c *gin.Context) {
+	var (
+		plugin string
+		bucket string
+		key    string
+	)
+	if v, ok := c.GetPostForm("plugin"); ok {
+		plugin = v
+	} else {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+	if v, ok := c.GetPostForm("bucket"); ok {
+		bucket = v
+	} else {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+	if v, ok := c.GetPostForm("key"); ok {
+		key = v
+	} else {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+
+	ps, ok := s.Storage[plugin]
+	if !ok {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "cannot update storage", BackLink: "/admin"})
+		return
+	}
+
+	err := ps.DeleteKey(bucket, key)
+	if err != nil {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/admin"})
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin")
+}
+
+func (s Server) ApiAdminCSVStorage(c *gin.Context) {
+	plugin, ok := c.GetPostForm("plugin")
+	if !ok {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "plugin not found", BackLink: "/admin"})
+		return
+	}
+	bucket, ok := c.GetPostForm("bucket")
+	if !ok {
+		c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: "bucket not found", BackLink: "/admin"})
+		return
+	}
+	var resp string
+	if ps, ok := s.Storage[plugin]; ok {
+		var err error
+		resp, err = ps.ToCSV(bucket)
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/admin"})
+			return
+		}
+	}
+
+	c.Data(http.StatusFound, "text/plain", []byte(resp))
+	return
 }

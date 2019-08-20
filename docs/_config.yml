@@ -1,14 +1,28 @@
 repository: ielab/searchrefiner
 timezone: AEST
 # Dependencies
-markdown:       kramdown
-highlighter:    rouge
+markdown: kramdown
+highlighter: rouge
 
 kramdown:
-  auto_ids:     true
+  auto_ids: true
 
 # Permalinks
-permalink:      pretty
+permalink: pretty
 
 exclude:
     - _site/
+
+logo: /assets/images/favicon.png
+
+collections:
+  documentation:
+    output: true
+
+
+defaults:
+  - scope:
+      path: ""
+      type: "documentation"
+    values:
+      layout: documentation

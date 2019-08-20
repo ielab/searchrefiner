@@ -1,1 +1,2 @@
 web/static/* linguist-vendored
+plugin/*/static/* linguist-vendored

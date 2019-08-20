@@ -1,4 +1,7 @@
-# searchrefiner API
+---
+title: REST API
+weight: 3
+---
 
 searchrefiner, once logged in, exposes the following application programming interfaces. These can be used to integrate or 
 augment searchrefiner into other tools.
@@ -34,7 +37,4 @@ Once authenticated, the following APIs can be used:
  
 ## Further Links
 
- - [Home](index.md)
- - [Set-up](setup.md)
- - [Authentication](authentication.md)
- - [Tools](tools.md)
+ - [Authentication](/documentation/authentication)

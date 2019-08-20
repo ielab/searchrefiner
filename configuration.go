@@ -1,6 +1,7 @@
 package searchrefiner
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/hscells/groove/combinator"
@@ -8,11 +9,13 @@ import (
 	"github.com/xyproto/permissionbolt"
 	"html/template"
 	"path"
+	"time"
 )
 
 var (
 	QueryCacher         = combinator.NewFileQueryCache("file_cache")
-	Components          = []string{"components/sidebar.tmpl.html", "components/util.tmpl.html", "components/login.template.html", "components/bigbro.tmpl.html"}
+	PluginTemplates     []string
+	Components          = []string{"components/sidebar.tmpl.html", "components/util.tmpl.html", "components/login.template.html", "components/announcement.tmpl.html"}
 	ServerConfiguration = Server{}
 )
 
@@ -38,11 +41,12 @@ type Config struct {
 }
 
 type Query struct {
-	QueryString     string
-	Language        string
-	NumRet          int64
-	PreviousQueries []Query
-	Relevant        []string
+	Time        time.Time `csv:"time"`
+	QueryString string    `csv:"query"`
+	Language    string    `csv:"language"`
+	NumRet      int64     `csv:"num_ret"`
+	NumRelRet   int64     `csv:"num_rel_ret"`
+	Relevant    []string  `csv:"relevant"`
 }
 
 type ErrorPage struct {
@@ -55,12 +59,13 @@ type Settings struct {
 }
 
 type Server struct {
-	Perm      *permissionbolt.Permissions
-	Queries   map[string][]Query
-	Settings  map[string]Settings
-	Config    Config
-	Entrez    stats.EntrezStatisticsSource
-	Plugins   []InternalPluginDetails
+	Perm     *permissionbolt.Permissions
+	Queries  map[string][]Query
+	Settings map[string]Settings
+	Config   Config
+	Entrez   stats.EntrezStatisticsSource
+	Plugins  []InternalPluginDetails
+	Storage  map[string]*PluginStorage
 }
 
 // Plugin is the interface that must be implemented in order to register an external tool.
@@ -86,10 +91,35 @@ type InternalPluginDetails struct {
 	PluginDetails
 }
 
+func TmplDict(values ...interface{}) (map[string]interface{}, error) {
+	// Thank-you to https://stackoverflow.com/a/18276968!
+	if len(values)%2 != 0 {
+		return nil, errors.New("invalid dict call")
+	}
+	dict := make(map[string]interface{}, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, errors.New("dict keys must be strings")
+		}
+
+		switch v := values[i+1].(type) {
+		case string:
+			dict[key] = template.HTML(v)
+		default:
+			dict[key] = v
+		}
+	}
+	return dict, nil
+}
+
 // TemplatePlugin is the template method which will include searchrefiner components.
 func TemplatePlugin(p string) template.Template {
 	_, f := path.Split(p)
-	return *template.Must(template.New(f).ParseFiles(append(Components, p)...))
+	return *template.Must(template.
+		New(f).
+		Funcs(template.FuncMap{"dict": TmplDict}).
+		ParseFiles(append(append(PluginTemplates, Components...), p)...))
 }
 
 // RenderPlugin returns a gin-compatible HTML renderer for plugins.
@@ -99,4 +129,23 @@ func RenderPlugin(tmpl template.Template, data interface{}) render.HTML {
 		Name:     tmpl.Name(),
 		Data:     data,
 	}
+}
+
+func (s Server) getAllPluginStorage() (map[string]map[string]map[string]string, error) {
+	st := make(map[string]map[string]map[string]string)
+	for plugin, ps := range s.Storage {
+		st[plugin] = make(map[string]map[string]string)
+		buckets, err := ps.GetBuckets()
+		if err != nil {
+			return nil, err
+		}
+		for _, bucket := range buckets {
+			v, err := ps.GetValues(bucket)
+			if err != nil {
+				return nil, err
+			}
+			st[plugin][bucket] = v
+		}
+	}
+	return st, nil
 }

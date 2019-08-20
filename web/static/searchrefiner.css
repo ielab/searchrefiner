@@ -3,13 +3,12 @@
     background-color: #EFEFEF;
     border-radius: 3px;
     padding: 12px;
-    overflow-x: scroll;
+    white-space: normal;
 }
 
 .container {
     padding: 0;
 }
-
 
 textarea {
     font-family: "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Courier, monospace;

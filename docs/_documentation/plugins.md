@@ -1,10 +1,13 @@
-# Plugins
+---
+title: "Plugins"
+weight: 2
+---
 
 Plugins are a way to extend the searchrefiner interface. Plugins allow for tight integration with searchrefiner, including authentication, low-level API access (e.g., loaded known-relevant PMIDs), and access to configuration items.
 
 ## Developing a plugin
 
-A plugin is essentially an implementation of the `Plugin` Go interface:
+A plugin is an implementation of the searchrefiner Go Plugin interface:
 
 ```go
 type Plugin interface {
@@ -21,4 +24,31 @@ For the searchrefiner server to register a HTTP handler to a plugin the followin
 
 searchrefiner will then create a route of the same name of the plugin.
 
-To run searchrefiner, building all plugins, use `make run`.
+An example file containing this implementation is below:
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/ielab/searchrefiner"
+	"net/http"
+)
+
+// example is the concrete implementation for the plugin.
+type example struct {	
+}
+
+func (e example) Serve(s searchrefiner.Server, c *gin.Context) {
+    c.String(http.StatusOK, "it works!")
+    return
+}
+
+func (e example) PermissionType() searchrefiner.PluginPermission {
+    return searchrefiner.PluginUser
+}
+
+var Example example // Example is the exported variable.
+```
+
+The make system will build and include all plugins in the `plugin` path automatically.

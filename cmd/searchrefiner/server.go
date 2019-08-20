@@ -7,15 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/groove/stats"
 	"github.com/ielab/searchrefiner"
+	log "github.com/sirupsen/logrus"
 	"github.com/xyproto/permissionbolt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
 	"plugin"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -29,15 +30,59 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	lf, err := os.OpenFile("web/static/log", os.O_WRONLY|os.O_RDONLY|os.O_CREATE, 0644)
+	fs, err := ioutil.ReadDir(searchrefiner.PluginStoragePath)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	lf.Truncate(0)
+
+	storage := make(map[string]*searchrefiner.PluginStorage)
+	for _, f := range fs {
+		ps, err := searchrefiner.OpenPluginStorage(f.Name())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		storage[f.Name()] = ps
+	}
+
+	err = os.MkdirAll("logs", 0777)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	t := time.Now().Unix()
+	ginLf, err := os.OpenFile(fmt.Sprintf("logs/sr-gin-%d.log", t), os.O_WRONLY|os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	eveLf, err := os.OpenFile(fmt.Sprintf("logs/sr-eve-%d.log", t), os.O_WRONLY|os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: time.RFC3339,
+	})
+
+	log.SetOutput(io.MultiWriter(eveLf, os.Stdout))
 
 	dbPath := "citemed.db"
 
 	g := gin.Default()
+	gin.DefaultWriter = io.MultiWriter(ginLf, os.Stdout)
+	g.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		// your custom format
+		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+			param.ClientIP,
+			param.TimeStamp.Format(time.RFC3339),
+			param.Method,
+			param.Path,
+			param.Request.Proto,
+			param.StatusCode,
+			param.Latency,
+			param.Request.UserAgent(),
+			param.ErrorMessage,
+		)
+	}))
 
 	perm, err := permissionbolt.NewWithConf(dbPath)
 	if err != nil {
@@ -75,6 +120,7 @@ func main() {
 		Queries:  make(map[string][]searchrefiner.Query),
 		Settings: make(map[string]searchrefiner.Settings),
 		Entrez:   ss,
+		Storage:  storage,
 	}
 
 	permissionHandler := func(c *gin.Context) {
@@ -95,14 +141,9 @@ func main() {
 	g.Use(permissionHandler)
 	g.Use(gzip.Gzip(gzip.BestCompression))
 
-	g.LoadHTMLFiles(append([]string{
-		// Views.
-		"web/query.html", "web/index.html", "web/transform.html",
-		"web/account_create.html", "web/account_login.html", "web/admin.html",
-		"web/help.html", "web/error.html", "web/results.html", "web/settings.html", "web/plugins.html",
-	}, searchrefiner.Components...)...)
-
 	g.Static("/static/", "./web/static")
+
+	var pluginTemplates []string
 
 	// Handle plugins.
 	files, err := ioutil.ReadDir("plugin")
@@ -132,7 +173,7 @@ func main() {
 			}
 
 			// Configure the permissions for this plugin.
-			p = path.Join("/plugin/", p)
+			p = path.Join("./plugin/", p)
 			switch handle.PermissionType() {
 			case searchrefiner.PluginAdmin:
 				perm.AddAdminPath(p)
@@ -144,12 +185,28 @@ func main() {
 				perm.AddPublicPath(p)
 			}
 
+			pluginFiles, err := ioutil.ReadDir(p)
+			if err != nil {
+				panic(err)
+			}
+			for _, f := range pluginFiles {
+				if !f.IsDir() {
+					parts := strings.Split(f.Name(), ".")
+					if len(parts) < 2 {
+						continue
+					}
+					if parts[len(parts)-2] == "tmpl" && parts[len(parts)-1] == "html" {
+						fmt.Println(path.Join(p, f.Name()))
+						pluginTemplates = append(pluginTemplates, path.Join(p, f.Name()))
+					}
+				}
+			}
+
 			s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
 				URL:           p,
 				PluginDetails: handle.Details(),
 			})
 
-			fmt.Println(path.Join("plugin", file.Name(), "static"))
 			g.Static(path.Join(p, "static"), path.Join("plugin", file.Name(), "static"))
 
 			// Register the handler with gin.
@@ -162,9 +219,20 @@ func main() {
 		}
 	}
 
+	g.LoadHTMLFiles(append([]string{
+		// Views.
+		"web/query.html", "web/index.html", "web/transform.html",
+		"web/account_create.html", "web/account_login.html", "web/admin.html",
+		"web/help.html", "web/error.html", "web/results.html", "web/settings.html", "web/plugins.html",
+	}, append(searchrefiner.Components)...)...)
+	searchrefiner.PluginTemplates = pluginTemplates
+
 	// Administration.
 	g.GET("/admin", s.HandleAdmin)
 	g.POST("/admin/api/confirm", s.ApiAdminConfirm)
+	g.POST("/admin/api/storage", s.ApiAdminUpdateStorage)
+	g.POST("/admin/api/storage/delete", s.ApiAdminDeleteStorage)
+	g.POST("/admin/api/storage/csv", s.ApiAdminCSVStorage)
 
 	// Authentication views.
 	g.GET("/account/login", searchrefiner.HandleAccountLogin)
@@ -191,6 +259,9 @@ func main() {
 	g.POST("/api/transform", searchrefiner.ApiTransform)
 	g.POST("/api/cqr2query", searchrefiner.ApiCQR2Query)
 	g.POST("/api/query2cqr", searchrefiner.ApiQuery2CQR)
+	g.GET("/api/history", s.ApiHistoryGet)
+	g.POST("/api/history", s.ApiHistoryAdd)
+	g.DELETE("/api/history", s.ApiHistoryDelete)
 
 	// Settings page.
 	g.GET("/settings", s.HandleSettings)
@@ -203,9 +274,6 @@ func main() {
 	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
 	})
-
-	mw := io.MultiWriter(lf, os.Stdout)
-	log.SetOutput(mw)
 
 	// Set a global server configuration variable so plugins have access to it.
 	searchrefiner.ServerConfiguration = s

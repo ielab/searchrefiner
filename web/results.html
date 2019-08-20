@@ -44,13 +44,10 @@
     </style>
 </head>
 <body>
-{{template "bigbro"}}
 <div class="container" id="app">
     <header class="navbar bg-secondary nav-height mb-2">
         <section class="navbar-section">
         {{template "sidebar"}}
-        </section>
-        <section class="navbar-section">
         </section>
     </header>
     <div class="columns">
@@ -71,45 +68,45 @@
                 <ol v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="100">
                 {{ range .Documents }}
                     <li class="pb-2">
-                        <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.ID}}">{{.Title}}</a>
+                        <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.PMID}}">{{.TI}}</a>
                         <div class="text-left text-sm">
-                        {{range .Authors}}<a class="text-success author-sm"
+                        {{range .AU}}<a class="text-success author-sm"
                                              href='https://www.ncbi.nlm.nih.gov/pubmed/?term="{{ . }}"[Author]'>{{.}}</a>{{end}}
                         </div>
-                        <div class="text-left text-sm">{{.Text}}</div>
+                        <div class="text-left text-sm">{{.AB}}</div>
                         <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>PMID</strong>: {{.ID}}</span>
+                            <span class="span-sm"><strong>PMID</strong>: {{.PMID}}</span>
                         </div>
                         <div class="text-left text-sm text-gray">
                             <span class="span-sm"><strong>Publication Types</strong>:</span>
-                        {{range .PublicationTypes}}<a class="text-gray a-sm"
+                        {{range .PT}}<a class="text-gray a-sm"
                                                       href="https://www.ncbi.nlm.nih.gov/pubmed/?term={{ . }}[Publication Type]">{{ . }}</a>{{end}}
                         </div>
                         <div class="text-left text-sm text-gray">
                             <span class="span-sm"><strong>MeSH headings</strong>:</span>
-                        {{range .MeSHHeadings}}<a class="text-gray a-sm"
+                        {{range .MH}}<a class="text-gray a-sm"
                                                   href="https://www.ncbi.nlm.nih.gov/mesh/?term={{ . }}">{{ . }}</a>{{end}}
                         </div>
                     </li>
                 {{ end }}
                     <li v-for="c in data" class="pb-2">
-                        <a v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/' + c.ID">[[c.Title]]</a>
+                        <a v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/' + c.PMID">[[c.TI]]</a>
                         <div class="text-left text-sm">
-                            <a v-for="author in c.Authors" class="text-success author-sm"
+                            <a v-for="author in c.AU" class="text-success author-sm"
                                v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=%22' + author + '%22[Author]'">[[author]]</a>
                         </div>
-                        <div class="text-left text-sm">[[c.Text]]</div>
+                        <div class="text-left text-sm">[[c.AB]]</div>
                         <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>PMID</strong>: [[ c.ID ]]</span>
+                            <span class="span-sm"><strong>PMID</strong>: [[ c.PMID ]]</span>
                         </div>
                         <div class="text-left text-sm text-gray">
                             <span class="span-sm"><strong>Publication Types</strong>:</span>
-                            <a v-for="pubtype in c.PublicationTypes" class="text-gray a-sm"
+                            <a v-for="pubtype in c.PT" class="text-gray a-sm"
                                v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=' + pubtype + '[Publication Type]'">[[pubtype]]</a>
                         </div>
                         <div class="text-left text-sm text-gray">
                             <span class="span-sm"><strong>MeSH headings</strong>:</span>
-                            <a v-for="heading in c.MeSHHeadings" class="text-gray a-sm"
+                            <a v-for="heading in c.MH" class="text-gray a-sm"
                                v-bind:href="'https://www.ncbi.nlm.nih.gov/mesh/?term=' + heading">[[heading]]</a>
                         </div>
                     </li>

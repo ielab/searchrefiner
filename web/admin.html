@@ -3,19 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <title>searchrefiner Administration</title>
+    <link rel="icon" href="static/favicon.png" type="image/x-png">
+    <link rel="stylesheet" href="static/spectre.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
+    <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
+    <link rel="stylesheet" href="static/searchrefiner.css" type="text/css">
 </head>
 <body>
-<h1>Unconfirmed users:</h1>
-<ol>
-{{ range .Unconfirmed }}
-     <li>
-         <form method="post" action="/admin/api/confirm">
-             <input type="hidden" name="username" value="{{ . }}">
-             <div>{{ . }}</div>
-             <div><input type="submit" value="confirm"></div>
-         </form>
-     </li>
-{{end}}
-</ol>
+<div class="container">
+    <header class="navbar bg-secondary nav-height mb-2">
+        <section class="navbar-section">
+            {{template "sidebar"}}
+            <span class="text-center text-error">searchrefiner admin console</span>
+
+        </section>
+        <section class="navbar-section">
+        </section>
+    </header>
+
+    <div class="columns p-2 m-2">
+        <div class="column col-6">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Manage users</h2>
+                </div>
+                <div class="divider"></div>
+                <div class="panel-body">
+                    <h2>Unconfirmed users:</h2>
+                    <ol>
+                        {{ range .Unconfirmed }}
+                            <li>
+                                <form method="post" action="/admin/api/confirm">
+                                    <input type="hidden" name="username" value="{{ . }}">
+                                    <div>{{ . }}</div>
+                                    <div><input type="submit" value="confirm"></div>
+                                </form>
+                            </li>
+                        {{end}}
+                    </ol>
+                    <div class="divider"></div>
+                    <h2>Confirmed users:</h2>
+                    <ol>
+                        {{ range .Confirmed }}
+                            <li>{{ . }}</li>
+                        {{end}}
+                    </ol>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="column col-6">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Manage storage</h2>
+                </div>
+                <div class="panel-body">
+                    <form method="post" action="/admin/api/storage">
+                        <label>Plugin
+                            <input type="text" class="form-input" name="plugin">
+                        </label>
+                        <label>Bucket
+                            <input type="text" class="form-input" name="bucket">
+                        </label>
+                        <label>Key
+                            <input type="text" class="form-input" name="key">
+                        </label>
+                        <label>Value
+                            <input type="text" class="form-input" name="value">
+                        </label>
+                        <br/>
+                        <input type="submit" class="form-input btn btn-primary" value="submit">
+                    </form>
+                </div>
+                <div class="divider"></div>
+                <div class="panel-footer">
+                    {{ range $plugin, $buckets := .Storage }}
+                        <div class="panel mb-2">
+                            <div class="panel-header">
+                                <h3>{{ $plugin }}</h3>
+                            </div>
+                            {{ range $bucket, $table := $buckets }}
+                                <div class="panel-body">
+                                    <div class="panel">
+                                        <div class="panel-header">
+                                            <h4 class="form-inline">{{ $bucket }}</h4>
+                                            <form method="post" action="/admin/api/storage/csv" class="form-inline float-right">
+                                                <input type="hidden" name="plugin" value="{{ $plugin }}">
+                                                <input type="hidden" name="bucket" value="{{ $bucket }}">
+                                                <div class="form-group">
+                                                    <button type="submit" class="btn btn-action"><i class="icon icon-download"></i></button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="panel-body">
+                                            <div class="columns">
+                                                {{ range $key, $value := $table }}
+                                                    <div class="divider"></div>
+                                                    <div class="column col-5">{{ $key }}</div>
+                                                    <div class="column col-5" style="white-space: nowrap;overflow-x: auto">{{ $value }}</div>
+                                                    <!-- TODO -->
+                                                    <div class="column col-2">
+                                                        <form method="post" action="/admin/api/storage/delete">
+                                                            <input type="hidden" name="plugin" value="{{ $plugin }}">
+                                                            <input type="hidden" name="bucket" value="{{ $bucket }}">
+                                                            <input type="hidden" name="key" value="{{ $key }}">
+                                                            <button type="submit" class="btn btn-error float-right"><i class="icon icon-cross"></i></button>
+                                                        </form>
+                                                    </div>
+                                                {{ end }}
+                                            </div>
+                                        </div>
+                                        <div class="panel-footer">
+                                            <form method="post" action="/admin/api/storage" class="form-group">
+                                                <input type="hidden" name="plugin" value="{{ $plugin }}">
+                                                <input type="hidden" name="bucket" value="{{ $bucket }}">
+                                                <label class="form-inline">Key
+                                                    <input type="text" name="key" class="form-input">
+                                                </label>
+                                                <label class="form-inline">Value
+                                                    <input type="text" name="value" class="form-input">
+                                                </label>
+                                                <label class="form-inline">
+                                                    <input type="submit" value="submit" class="btn btn-primary form-input">
+                                                </label>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="panel-footer"></div>
+                            {{ end }}
+                        </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

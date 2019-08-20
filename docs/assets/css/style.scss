@@ -1,24 +1,40 @@
 ---
 ---
 
-@import "{{ site.theme }}";
 
-body {
-    margin: 32pt;
+main {
+    max-width: 960px;
+    margin: 32px auto;
 }
 
-ol, ul {
-    margin-left: 32pt;
-    margin-bottom: 8pt;
+#menu-toggle-label {
+    display: none;
 }
 
-.small, .small p {
-    font-size: xx-small;
-    padding: 0pt;
-    margin: 0pt;
-}
-
-img {
-    max-width: 640px;
-    height: auto;
+@media only screen and (max-width: 960px) {
+    main {
+        margin: -12px;
+        padding: 32px;
+    }
+    aside > * {
+        display: inline;
+        vertical-align: top;
+    }
+    #menu-toggle-label {
+        display: block;
+        float: right;
+    }
+    #menu-toggle {
+        display: none;
+    }
+    #menu-toggle:checked + #menu {
+        max-height: 500px;
+    }
+    #menu {
+        overflow: hidden;
+        max-height: 0;
+        padding: 0;
+        margin: 0 auto;
+        -webkit-transition: all 0.3s ease;
+    }
 }

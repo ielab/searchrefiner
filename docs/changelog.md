@@ -1,6 +1,22 @@
-# Changelog
+---
+title: "Changelog"
+---
 
 All notable changes to this project will be documented in this file.
+
+## [09.Jun.2019]
+
+### Added
+
+ + Add zoom controls to QueryVis.
+
+### Changed
+
+ + Improve the structured editor, and renamed it to "Visual Editor".
+
+### Removed
+
+ + Remove all traces of "edit" button.
 
 ## [04.Sep.2018]
 
