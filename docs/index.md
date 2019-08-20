@@ -5,8 +5,8 @@ type: docs
 
 _Systematic Review Query Visualisation and Understanding Interface_
 
-<a href="/assets/images/tree.png"><img src="/assets/images/tree.png" title="tree" width="49%" style="display:inline"></a>
-<a href="/assets/images/query.png"><img src="/assets/images/query.png" title="query" width="49%" style="display:inline"></a>
+<a href="assets/images/tree.png"><img src="assets/images/tree.png" title="tree" width="49%" style="display:inline"></a>
+<a href="assets/images/query.png"><img src="assets/images/query.png" title="query" width="49%" style="display:inline"></a>
 
 <div class="flex three three-600">
     <div>
@@ -19,14 +19,14 @@ _Systematic Review Query Visualisation and Understanding Interface_
     <div>
         <article class="card">
             <footer>
-                 Visit the on-line web <a href="/demo">demo</a>!
+                 Visit the on-line web <a href="demo">demo</a>!
             </footer>
         </article>
     </div>
     <div>
         <article class="card">
             <footer>
-                 Read the <a href="/documentation">documentation</a>!
+                 Read the <a href="documentation">documentation</a>!
             </footer>
         </article>
     </div>
