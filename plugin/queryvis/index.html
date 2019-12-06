@@ -188,7 +188,6 @@
                         <div class="divider"></div>
                         <ol>
                             <li v-if="init" v-for="item in wordsFromES" class="pb-2">
-                                <!--TODO ADD ONCLICK METHODS-->
                                 <span><strong>Term: </strong><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
                                 <div class="text-left text-sm">
                                     <span class="span-sm"><strong>PMI Score:</strong> [[ item.score ]] </span>
