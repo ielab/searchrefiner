@@ -18,7 +18,7 @@
         body, html, .container {
             height: 100%;
             max-height: 100%;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
 
         #tree {
@@ -119,6 +119,15 @@
         .vis-zoomIn {
             bottom: 46px !important;
         }
+
+        .text-sm {
+            line-height: 0.9rem;
+        }
+
+        .span-sm {
+            font-size: 10px;
+            line-height: 0.0rem;
+        }
     </style>
 </head>
 <body>
@@ -170,6 +179,35 @@
                             <i class="form-icon"></i> {{ if eq .View "g" }} graph view {{ else }} hierarchical view {{ end }}
                         </label>
                     </form>
+                </div>
+                <div class="panel-footer">
+                    <div class="divider"></div>
+                    <div v-if="busy && !ready" class="loading loading-lg"></div>
+                    <div v-if="init" style="width: 49%; float: left; margin-right: 1%; border: slateblue 1px solid;"></br>
+                        <div style="text-align: center;"><h5>ES-Index</h5></div>
+                        <div class="divider"></div>
+                        <ol>
+                            <li v-if="init" v-for="item in wordsFromES" class="pb-2">
+                                <!--TODO ADD ONCLICK METHODS-->
+                                <span><strong>Term: </strong><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
+                                <div class="text-left text-sm">
+                                    <span class="span-sm"><strong>PMI Score:</strong> [[ item.score ]] </span>
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
+                    <div v-if="init" style="width: 49%; float: left; margin-left: 1%; border: slateblue 1px solid;"></br>
+                        <div style="text-align: center;"><h5>CUI2Vec</h5></div>
+                        <div class="divider"></div>
+                        <ol>
+                            <li v-if="init" v-for="item in wordsFromCUI" class="pb-2">
+                                <span><strong>Term: </strong><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
+                                <div class="text-left text-sm">
+                                    <span class="span-sm"><strong>Consine Similarity Score:</strong> [[ item.score ]] </span>
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
                 </div>
             </div>
             <div style="clear: both;"></div>
@@ -483,6 +521,13 @@
             textQuery: "{{.QueryString}}",
             queryLanguage: "pubmed",
             cqrQuery: {},
+            wordsFromES: [{"term":"", "score":0.0}],
+            wordsFromCUI: [{"term":"", "score":0.0}],
+            init: false,
+            busy: false,
+            ready: false,
+            word: "",
+            id: null,
         },
         watch: {
             queryLanguage: function (e) {
@@ -492,8 +537,42 @@
             }
         },
         methods: {
+            reconstructQuery: function (term) {
+                let self = this;
+                var id = self.id;
+                var selectedLabel = network.body.data.nodes._data[id].label;
+                var trimmedLabel = selectedLabel.split("[", 1);
+                var textQuery = self.textQuery;
+                var newTextQuery = textQuery.replace(trimmedLabel, term);
+                self.textQuery = newTextQuery;
+                self.updateTree();
+            },
+            getAlternatives: function (word) {
+                var self = this;
+                self.init = false;
+                self.ready = false;
+                self.busy = true;
+                var el = document.getElementById("btn-update-tree");
+                el.classList.add("loading");
+                var request = new XMLHttpRequest();
+                request.addEventListener("load", function (ev) {
+                    el.classList.remove("loading");
+                    var resp = JSON.parse(ev.currentTarget.responseText);
+                    var ESwords = resp["ES"];
+                    var CUIwords = resp["CUI"];
+                    self.wordsFromES = ESwords;
+                    self.wordsFromCUI = CUIwords;
+                    self.ready = true;
+                    self.init = true;
+                    self.busy = false;
+                });
+                // the retSize and pool size can be changed, default both are 5
+                request.open("GET", "http://localhost:6688/search?retSize=5&pool=5&term=" + word);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                request.send(null);
+            },
             updateTree: function (e) {
-                var self = this
+                var self = this;
                 var el = document.getElementById("btn-update-tree");
                 el.classList.add("loading");
                 var request = new XMLHttpRequest();
@@ -501,6 +580,16 @@
                     el.classList.remove("loading");
                     var resp = JSON.parse(ev.target.responseText);
                     network.setData(resp);
+                    network.on("click", function (params) {
+                        var id = params.nodes[0];
+                        var selectedLabel = network.body.data.nodes._data[id].label;
+                        var trimmedLabel = selectedLabel.split("[", 1);
+                        if (trimmedLabel != "and" && trimmedLabel != "or" && trimmedLabel != "not") {
+                            self.getAlternatives(trimmedLabel);
+                            self.word = trimmedLabel;
+                            self.id = id;
+                        }
+                    });
                     for (var i = 0; i < resp.nodes.length; i++) {
                         if (resp.nodes[i].id == 1) {
                             self.numRet = resp.nodes[i].value
@@ -611,6 +700,7 @@
                     max: 100
                 }
             },
+            chosen: true,
             widthConstraint: true
         },
         layout: {
