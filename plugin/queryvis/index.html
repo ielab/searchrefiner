@@ -545,6 +545,10 @@
                 var textQuery = self.textQuery;
                 var newTextQuery = textQuery.replace(trimmedLabel, term);
                 self.textQuery = newTextQuery;
+                var strCqrQuery = JSON.stringify(self.cqrQuery);
+                var newStrCqrQuery = strCqrQuery.replace(trimmedLabel, term);
+                var newCqrQuery = JSON.parse(newStrCqrQuery);
+                self.cqrQuery = newCqrQuery;
                 self.updateTree();
             },
             getAlternatives: function (word) {
