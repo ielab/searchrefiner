@@ -162,7 +162,7 @@
                         </label>
                     </div>
                     <div class="form-group p-2">
-                        <button class="btn btn nav-height" id="btn-update-tree" v-on:click="updateTree">
+                        <button class="btn btn nav-height" id="btn-update-tree" v-on:click="updateTree('none')">
                             <i class="icon icon-refresh"></i> Visualise
                         </button>
                         <button class="btn btn-link" onclick="resultsView()" type="button">
@@ -180,7 +180,7 @@
                         </label>
                     </form>
                 </div>
-                <div class="panel-footer">
+                <div id="alter" class="panel-footer">
                     <div class="divider"></div>
                     <div v-if="busy && !ready" class="loading loading-lg"></div>
                     <div v-if="init" style="width: 49%; float: left; margin-right: 1%; border: slateblue 1px solid;"></br>
@@ -548,7 +548,7 @@
                 var newStrCqrQuery = strCqrQuery.replace(trimmedLabel, term);
                 var newCqrQuery = JSON.parse(newStrCqrQuery);
                 self.cqrQuery = newCqrQuery;
-                self.updateTree();
+                self.updateTree("display");
             },
             getAlternatives: function (word) {
                 var self = this;
@@ -574,10 +574,15 @@
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 request.send(null);
             },
-            updateTree: function (e) {
+            updateTree: function (stat, e) {
                 var self = this;
                 var el = document.getElementById("btn-update-tree");
                 el.classList.add("loading");
+                if (stat === "none") {
+                    document.getElementById("alter").style.display = "none";
+                } else if (stat === "display") {
+                    document.getElementById("alter").style.display = "block";
+                }
                 var request = new XMLHttpRequest();
                 request.addEventListener("load", function (ev) {
                     el.classList.remove("loading");
@@ -591,6 +596,7 @@
                             self.getAlternatives(trimmedLabel);
                             self.word = trimmedLabel;
                             self.id = id;
+                            document.getElementById("alter").style.display = "block";
                         }
                     });
                     for (var i = 0; i < resp.nodes.length; i++) {
