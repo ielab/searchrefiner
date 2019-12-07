@@ -188,7 +188,7 @@
                         <div class="divider"></div>
                         <ol>
                             <li v-if="init" v-for="item in wordsFromES" class="pb-2">
-                                <span><strong>Term: </strong><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
+                                <span><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
                                 <div class="text-left text-sm">
                                     <span class="span-sm"><strong>PMI Score:</strong> [[ item.score ]] </span>
                                 </div>
@@ -200,7 +200,7 @@
                         <div class="divider"></div>
                         <ol>
                             <li v-if="init" v-for="item in wordsFromCUI" class="pb-2">
-                                <span><strong>Term: </strong><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
+                                <span><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
                                 <div class="text-left text-sm">
                                     <span class="span-sm"><strong>Consine Similarity Score:</strong> [[ item.score ]] </span>
                                 </div>
