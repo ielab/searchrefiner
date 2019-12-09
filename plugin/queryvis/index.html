@@ -183,26 +183,14 @@
                 <div id="alter" class="panel-footer">
                     <div class="divider"></div>
                     <div v-if="busy && !ready" class="loading loading-lg"></div>
-                    <div v-if="init" style="width: 49%; float: left; margin-right: 1%; border: slateblue 1px solid;"></br>
-                        <div style="text-align: center;"><h5>ES-Index</h5></div>
+                    <div v-if="init" style="width: 100%; float: left; border: slateblue 1px solid;"></br>
+                        <div style="text-align: center;"><h5>Alternative Words Found</h5></div>
                         <div class="divider"></div>
-                        <ol>
-                            <li v-if="init" v-for="item in wordsFromES" class="pb-2">
+                        <ol style="column-count: 2; -webkit-column-count: 2; -moz-column-count: 2;">
+                            <li v-if="init" v-for="item in wordSuggestions" class="pb-2">
                                 <span><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
                                 <div class="text-left text-sm">
-                                    <span class="span-sm"><strong>PMI Score:</strong> [[ item.score ]] </span>
-                                </div>
-                            </li>
-                        </ol>
-                    </div>
-                    <div v-if="init" style="width: 49%; float: left; margin-left: 1%; border: slateblue 1px solid;"></br>
-                        <div style="text-align: center;"><h5>CUI2Vec</h5></div>
-                        <div class="divider"></div>
-                        <ol>
-                            <li v-if="init" v-for="item in wordsFromCUI" class="pb-2">
-                                <span><a href="#/" v-on:click="reconstructQuery(item.term)">[[ item.term ]]</a></span></br>
-                                <div class="text-left text-sm">
-                                    <span class="span-sm"><strong>Consine Similarity Score:</strong> [[ item.score ]] </span>
+                                    <span class="span-sm"><strong>Score:</strong> [[ item.score ]] </span>
                                 </div>
                             </li>
                         </ol>
@@ -520,8 +508,7 @@
             textQuery: "{{.QueryString}}",
             queryLanguage: "pubmed",
             cqrQuery: {},
-            wordsFromES: [{"term":"", "score":0.0}],
-            wordsFromCUI: [{"term":"", "score":0.0}],
+            wordSuggestions: [{"term":"", "score":0.0}],
             init: false,
             busy: false,
             ready: false,
@@ -560,17 +547,14 @@
                 var request = new XMLHttpRequest();
                 request.addEventListener("load", function (ev) {
                     el.classList.remove("loading");
-                    var resp = JSON.parse(ev.currentTarget.responseText);
-                    var ESwords = resp["ES"];
-                    var CUIwords = resp["CUI"];
-                    self.wordsFromES = ESwords;
-                    self.wordsFromCUI = CUIwords;
+                    var wordSuggestions = JSON.parse(ev.currentTarget.responseText);
+                    self.wordSuggestions = wordSuggestions;
                     self.ready = true;
                     self.init = true;
                     self.busy = false;
                 });
                 // the retSize and pool size can be changed, default both are 5
-                request.open("GET", "http://localhost:6688/search?retSize=5&pool=5&term=" + word);
+                request.open("GET", "http://localhost:6688/search?retSize=10&pool=20&term=" + word);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 request.send(null);
             },
