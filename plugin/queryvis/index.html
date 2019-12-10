@@ -18,7 +18,7 @@
         body, html, .container {
             height: 100%;
             max-height: 100%;
-            overflow: hidden;
+            /* overflow: hidden; */
         }
 
         #tree {
@@ -119,6 +119,15 @@
         .vis-zoomIn {
             bottom: 46px !important;
         }
+
+        .text-sm {
+            line-height: 0.9rem;
+        }
+
+        .span-sm {
+            font-size: 10px;
+            line-height: 0.0rem;
+        }
     </style>
 </head>
 <body>
@@ -153,7 +162,7 @@
                         </label>
                     </div>
                     <div class="form-group p-2">
-                        <button class="btn btn nav-height" id="btn-update-tree" v-on:click="updateTree">
+                        <button class="btn btn nav-height" id="btn-update-tree" v-on:click="updateTree('none')">
                             <i class="icon icon-refresh"></i> Visualise
                         </button>
                         <button class="btn btn-link" onclick="resultsView()" type="button">
@@ -170,6 +179,26 @@
                             <i class="form-icon"></i> {{ if eq .View "g" }} graph view {{ else }} hierarchical view {{ end }}
                         </label>
                     </form>
+                </div>
+                <div id="alter" class="panel-footer">
+                    <div class="divider"></div>
+                    <div v-if="busy && !ready" class="loading loading-lg"></div>
+                    <div v-if="init" style="width: 100%; float: left; border: slateblue 1px solid;"></br>
+                        <div style="text-align: center;"><h5>Alternative Words Found</h5></div>
+                        <div class="divider"></div>
+                        <ol style="column-count: 2; -webkit-column-count: 2; -moz-column-count: 2;">
+                            <li v-if="init" v-for="item in wordSuggestions" class="pb-2">
+                                <input type="checkbox" class="termSelected" v-bind:name="item.term" v-bind:value="item.term"> [[ item.term ]]</br>
+                                <div class="text-left text-sm">
+                                    <span class="span-sm"><strong>Score:</strong> [[ item.score ]] </span>
+                                </div>
+                            </li>
+                        </ol>
+                        <button class="btn btn nav-height" id="btn-reconstruct" v-on:click="reconstructQuery()" style="margin-left: 3%;">
+                            <i class="icon icon-refresh"></i> Reconstruct
+                        </button>
+                        <div class="divider"></div>
+                    </div>
                 </div>
             </div>
             <div style="clear: both;"></div>
@@ -483,6 +512,14 @@
             textQuery: "{{.QueryString}}",
             queryLanguage: "pubmed",
             cqrQuery: {},
+            wordSuggestions: [{"term":"", "score":0.0}],
+            init: false,
+            busy: false,
+            ready: false,
+            word: "",
+            id: null,
+            selectedTerms: [],
+            filteredNodes: [],
         },
         watch: {
             queryLanguage: function (e) {
@@ -492,15 +529,230 @@
             }
         },
         methods: {
-            updateTree: function (e) {
-                var self = this
+            reconstructQuery: function () {
+                let self = this;
+                var id = self.id;
+                self.getFilteredNodes();
+                filteredNodes = self.filteredNodes;
+                var selectedTerms = [];
+                var newStrCqrQuery = null;
+                var checkboxes = document.getElementsByClassName("termSelected");
+                for (var i = 0; i < checkboxes.length; i++) {
+                    if (checkboxes[i].checked) {
+                        selectedTerms.push(checkboxes[i].value);
+                    }
+                }
+                self.selectedTerms = selectedTerms;
+                var el = document.getElementById("btn-reconstruct");
+                el.classList.add("loading");
+                if (selectedTerms.length === 0) {
+                    setTimeout(() => {
+                        console.log("no term selected.")
+                        el.classList.remove("loading");
+                    }, 500);
+                    return
+                }
+                if (self.queryLanguage === undefined) {
+                    self.queryLanguage = "pubmed";
+                }
+                if (selectedTerms.length === 1) {
+                    var term = selectedTerms[0];
+                    for (var i = 0; i < filteredNodes.length; i++) {
+                        if (filteredNodes[i].id === id) {
+                            var selectedLabel = network.body.data.nodes._data[id].label;
+                            var selectedTerm = selectedLabel.split('[', 1)[0];
+                            filteredNodes[i].query = term;
+                            filteredNodes[i].label = filteredNodes[i].label.replace(selectedTerm, term);
+                        }
+                    }
+                    self.cqrQuery = self.rebuildCqr(filteredNodes);
+                    newStrCqrQuery = JSON.stringify(self.cqrQuery);
+                    var request = new XMLHttpRequest();
+                    request.addEventListener("load", function (ev) {
+                        el.classList.remove("loading");
+                        if (ev.currentTarget.status === 200) {
+                            self.textQuery = ev.currentTarget.responseText;
+                            self.updateTree("display");
+                        }
+                    });
+                    request.open("POST", "/api/cqr2query");
+                    request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    request.send("query=" + newStrCqrQuery + "&lang=" + self.queryLanguage);
+                } else {
+                    var selectedLabel = network.body.data.nodes._data[id].label;
+                    var field = "[" + selectedLabel.split("[", 2)[1];
+                    for (var i = 0; i < selectedTerms.length; i++) {
+                        selectedTerms[i] = selectedTerms[i] + field;
+                    }
+                    selectedTerms.push(selectedLabel);
+                    var allIds = [];
+                    for (var i = 0; i < filteredNodes.length; i++) {
+                        allIds.push(filteredNodes[i].id);
+                    }
+                    var maxId = Math.max(...allIds);
+                    var children = [];
+                    var newNodes = [];
+                    for (var j = 0; j < selectedTerms.length; j++) {
+                        var trimmedField = field.substr(1).slice(0, -1);
+                        var fields = [trimmedField];
+                        var child = {
+                            "fields" : fields,
+                            "options" : {
+                                "exploded" : true,
+                                "truncated" : false
+                            },
+                            "id" : maxId += 1,
+                            "parentId" : id,
+                            "shape" : "box",
+                            "query" : selectedTerms[j].split("[", 1)[0],
+                            "label" : selectedTerms[j].split("[", 1)[0] + field,
+                        }
+                        newNodes.push(child);
+                    }
+                    var newNode = {
+                        "id" : id,
+                        "operator" : "or",
+                        "label" : "or",
+                        "shape" : "circle",
+                        "options" : {},
+                    };                    
+                    for (var i = 0; i < filteredNodes.length; i++) {
+                        if (filteredNodes[i].id === id) {
+                            newNode.parentId = filteredNodes[i].parentId;
+                            newNode.label = newNode.operator;
+                            newNodes.push(newNode);
+                        }
+                    }
+                    filteredNodes = filteredNodes.concat(newNodes);
+                    self.cqrQuery = self.rebuildCqr(filteredNodes);
+                    newStrCqrQuery = JSON.stringify(self.cqrQuery);
+                    var request = new XMLHttpRequest();
+                    request.addEventListener("load", function (ev) {
+                        el.classList.remove("loading");
+                        if (ev.currentTarget.status === 200) {
+                            self.textQuery = ev.currentTarget.responseText;
+                            self.updateTree("display");
+                        }
+                    });
+                    request.open("POST", "/api/cqr2query");
+                    request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    request.send("query=" + newStrCqrQuery + "&lang=" + self.queryLanguage);
+                }
+            },
+            getFilteredNodes: function () {
+                let self = this;
+                var nodes = network.body.data.nodes._data;
+                var edges = network.body.data.edges._data;
+                var newNodes = [];
+                for (var keye in edges) {
+                    var toID = edges[keye].to;
+                    var fromID = edges[keye].from;
+                    for (var keyn in nodes) {
+                        if (nodes[keyn].id == toID) {
+                            var node = nodes[keyn];
+                            node.parentId = fromID;
+                            newNodes.push(node);
+                        } else if (nodes[keyn].level == 0) {
+                            var node = nodes[keyn];
+                            node.parentId = null;
+                            newNodes.push(node);
+                        }
+                    }
+                }
+                var filteredNodes = _.uniq(newNodes, 'id');
+                self.filteredNodes = filteredNodes;
+            },
+            rebuildCqr: function (filteredNodes) {
+                let self = this;
+                // Thanks to https://stackoverflow.com/a/31247960
+                var base = [],
+                dict = {},
+                item,
+                itemInMap;
+                for(var i = 0; i < filteredNodes.length; i++) {
+                    item = filteredNodes[i];
+                    dict[item.id] = item;
+                    dict[item.id]['children'] = [];
+                }
+                for (var id in dict) {
+                    if (dict.hasOwnProperty(id)) {
+                        itemInMap = dict[id];
+                        if (itemInMap.parentId) {
+                            if (itemInMap['label'] == 'and' || itemInMap['label'] == 'or' || itemInMap['label'] == 'not') {
+                                itemInMap['operator'] = itemInMap['label'];
+                                itemInMap['options'] = {};
+                                dict[itemInMap['parentId']]['children'].push(itemInMap);
+                            } else if (itemInMap['children'].length === 0) {
+                                delete itemInMap.children;
+                                itemInMap['options'] = {
+                                    "exploded" : true,
+                                    "truncated" : false
+                                };
+                                if (itemInMap['query'] === undefined || itemInMap['query'] === null || itemInMap['query'] === '') {
+                                    var field = "[" + itemInMap['label'].split("[", 2)[1];
+                                    itemInMap['query'] = itemInMap['label'].split("[", 1)[0];
+                                    itemInMap['fields'] = [field.substr(1).slice(0, -1)];
+                                }
+                                dict[itemInMap['parentId']]['children'].push(itemInMap);
+                            }
+                        } else {
+                            if (itemInMap['label'] == 'and' || itemInMap['label'] == 'or' || iitemInMap['label'] == 'not') {
+                                itemInMap['operator'] = itemInMap['label'];
+                                itemInMap['options'] = {};
+                                base.push(itemInMap);
+                            }
+                        }
+                    }
+                }
+                var preCqr = base[0];
+                return preCqr;
+            },
+            getAlternatives: function (word) {
+                var self = this;
+                self.init = false;
+                self.ready = false;
+                self.busy = true;
                 var el = document.getElementById("btn-update-tree");
                 el.classList.add("loading");
                 var request = new XMLHttpRequest();
                 request.addEventListener("load", function (ev) {
                     el.classList.remove("loading");
+                    var wordSuggestions = JSON.parse(ev.currentTarget.responseText);
+                    self.wordSuggestions = wordSuggestions;
+                    self.ready = true;
+                    self.init = true;
+                    self.busy = false;
+                });
+                // the retSize and pool size can be changed, default both are 5
+                request.open("GET", "http://localhost:6688/search?retSize=10&pool=20&term=" + word);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                request.send(null);
+            },
+            updateTree: function (stat, e) {
+                var self = this;
+                var el = document.getElementById("btn-update-tree");
+                el.classList.add("loading");
+                if (stat === "none") {
+                    document.getElementById("alter").style.display = "none";
+                } else if (stat === "display") {
+                    document.getElementById("alter").style.display = "block";
+                }
+                var request = new XMLHttpRequest();
+                request.addEventListener("load", function (ev) {
+                    el.classList.remove("loading");
                     var resp = JSON.parse(ev.target.responseText);
                     network.setData(resp);
+                    network.on("click", function (params) {
+                        var id = params.nodes[0];
+                        var selectedLabel = network.body.data.nodes._data[id].label;
+                        var trimmedLabel = selectedLabel.split("[", 1);
+                        if (trimmedLabel != "and" && trimmedLabel != "or" && trimmedLabel != "not") {
+                            self.getAlternatives(trimmedLabel);
+                            self.word = trimmedLabel;
+                            self.id = id;
+                            document.getElementById("alter").style.display = "block";
+                        }
+                    });
                     for (var i = 0; i < resp.nodes.length; i++) {
                         if (resp.nodes[i].id == 1) {
                             self.numRet = resp.nodes[i].value
@@ -611,6 +863,7 @@
                     max: 100
                 }
             },
+            chosen: true,
             widthConstraint: true
         },
         layout: {
