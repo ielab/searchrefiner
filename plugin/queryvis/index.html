@@ -192,6 +192,9 @@
                                 <div class="text-left text-sm">
                                     <span class="span-sm"><strong>Score:</strong> [[ item.score ]] </span>
                                 </div>
+                                <div class="text-left text-sm">
+                                    <span class="span-sm"><strong>Source:</strong> [[ item.source ]] </span>
+                                </div>
                             </li>
                         </ol>
                         <button class="btn btn nav-height" id="btn-reconstruct" v-on:click="reconstructQuery()" style="margin-left: 3%;">
@@ -561,8 +564,10 @@
                         if (filteredNodes[i].id === id) {
                             var selectedLabel = network.body.data.nodes._data[id].label;
                             var selectedTerm = selectedLabel.split('[', 1)[0];
+                            var field = ("[" + selectedLabel.split("[", 2)[1]).substr(1).slice(0, -1);
                             filteredNodes[i].query = term;
                             filteredNodes[i].label = filteredNodes[i].label.replace(selectedTerm, term);
+                            filteredNodes[i].fields = [field];
                         }
                     }
                     self.cqrQuery = self.rebuildCqr(filteredNodes);
@@ -723,8 +728,8 @@
                     self.init = true;
                     self.busy = false;
                 });
-                // the retSize and pool size can be changed, default both are 5
-                request.open("GET", "http://localhost:6688/search?retSize=10&pool=20&term=" + word);
+                // the retSize and pool size can be changed, default retSize = 10, pool = 20, merged = true, sources = cui,es
+                request.open("GET", "http://localhost:6688/search?retSize=10&pool=20&merged=true&sources=cui,es&term=" + word);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 request.send(null);
             },
