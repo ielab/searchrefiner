@@ -41,6 +41,13 @@ func (p *PluginStorage) PutValue(bucket, key, value string) error {
 	})
 }
 
+func (p *PluginStorage) CreateBucket(bucket string) error {
+	return p.db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(bucket))
+		return err
+	})
+}
+
 func (p *PluginStorage) DeleteKey(bucket, key string) error {
 	return p.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
