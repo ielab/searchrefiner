@@ -8,6 +8,6 @@
     "Email": "you@example.com",
     "APIKey": "1234abcde"
   },
-  "Mode" : "iuserstudy",
-  "EnableAll" : false
+  "Mode" : "",
+  "EnableAll" : true
 }
