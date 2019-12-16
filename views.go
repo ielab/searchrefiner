@@ -195,6 +195,16 @@ func (s Server) HandlePlugins(c *gin.Context) {
 	c.HTML(http.StatusOK, "plugins.html", s.Plugins)
 }
 
+func (s Server) HandlePluginWithControl(c *gin.Context) {
+	mode := s.Config.Mode
+	if mode == "" {
+		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "no plugin available", BackLink: "/account/login"})
+		return
+	}
+	c.Redirect(http.StatusFound, "/plugin/"+mode)
+	return
+}
+
 func HandleTransform(c *gin.Context) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")

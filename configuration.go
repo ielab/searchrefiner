@@ -38,6 +38,8 @@ type Config struct {
 	Admins     []string
 	Entrez     EntrezConfig
 	Options    map[string]interface{}
+	Mode       string
+	EnableAll  bool
 }
 
 type Query struct {
