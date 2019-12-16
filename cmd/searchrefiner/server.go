@@ -3,6 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-gonic/gin"
+	"github.com/hscells/groove/stats"
+	"github.com/ielab/searchrefiner"
+	log "github.com/sirupsen/logrus"
+	"github.com/xyproto/permissionbolt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -11,13 +17,6 @@ import (
 	"plugin"
 	"strings"
 	"time"
-
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-gonic/gin"
-	"github.com/hscells/groove/stats"
-	"github.com/ielab/searchrefiner"
-	log "github.com/sirupsen/logrus"
-	"github.com/xyproto/permissionbolt"
 )
 
 func main() {

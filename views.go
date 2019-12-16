@@ -1,15 +1,14 @@
 package searchrefiner
 
 import (
-	"net/http"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove/analysis"
 	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
+	"net/http"
+	"time"
 )
 
 func (s Server) HandleResults(c *gin.Context) {
