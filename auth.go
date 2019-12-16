@@ -1,8 +1,9 @@
 package searchrefiner
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func HandleAccountLogin(c *gin.Context) {
@@ -35,8 +36,18 @@ func (s Server) ApiAccountLogin(c *gin.Context) {
 			c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/account/login"})
 			return
 		}
-		c.Redirect(http.StatusFound, "/")
-		return
+		mode := s.Config.Mode
+		enableAll := s.Config.EnableAll
+		if mode != "" && enableAll == false {
+			c.Redirect(http.StatusFound, "/plugin/"+mode)
+			return
+		} else if enableAll == true {
+			c.Redirect(http.StatusFound, "/")
+			return
+		} else {
+			c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "no plugin available", BackLink: "/account/login"})
+			return
+		}
 	}
 	c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "invalid login credentials", BackLink: "/account/login"})
 	c.Status(http.StatusUnauthorized)

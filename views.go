@@ -1,14 +1,15 @@
 package searchrefiner
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove/analysis"
 	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
-	"net/http"
-	"time"
 )
 
 func (s Server) HandleResults(c *gin.Context) {
@@ -193,6 +194,16 @@ func (s Server) HandleIndex(c *gin.Context) {
 
 func (s Server) HandlePlugins(c *gin.Context) {
 	c.HTML(http.StatusOK, "plugins.html", s.Plugins)
+}
+
+func (s Server) HandlePluginWithControl(c *gin.Context) {
+	mode := s.Config.Mode
+	if mode == "" {
+		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: "no plugin available", BackLink: "/account/login"})
+		return
+	}
+	c.Redirect(http.StatusFound, "/plugin/"+mode)
+	return
 }
 
 func HandleTransform(c *gin.Context) {

@@ -2,14 +2,15 @@ package searchrefiner
 
 import (
 	"errors"
+	"html/template"
+	"path"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/hscells/groove/combinator"
 	"github.com/hscells/groove/stats"
 	"github.com/xyproto/permissionbolt"
-	"html/template"
-	"path"
-	"time"
 )
 
 var (
@@ -38,6 +39,8 @@ type Config struct {
 	Admins     []string
 	Entrez     EntrezConfig
 	Options    map[string]interface{}
+	Mode       string
+	EnableAll  bool
 }
 
 type Query struct {
