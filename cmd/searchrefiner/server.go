@@ -98,8 +98,6 @@ func main() {
 	perm.AddUserPath("/api")
 	perm.AddUserPath("/plugins")
 
-	perm.AddUserPath("/plugin/*")
-
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
 	perm.AddPublicPath("/help")
