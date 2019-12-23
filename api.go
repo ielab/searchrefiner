@@ -1,15 +1,22 @@
 package searchrefiner
 
 import (
+	"bufio"
 	"github.com/gin-gonic/gin"
+	"github.com/hanglics/gocheck/pkg/checker"
+	"github.com/hanglics/gocheck/pkg/loader"
 	"github.com/hscells/cqr"
+	"github.com/hscells/groove/analysis"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -121,6 +128,77 @@ func (s Server) ApiScroll(c *gin.Context) {
 	log.Infof("[scroll]  %s:%s:%s:%f", lang, rawQuery, startString, total)
 
 	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished, Total: total})
+}
+
+func HandleQueryValidation(c *gin.Context) {
+	rawQuery := c.PostForm("query")
+	lang := c.PostForm("lang")
+	absPathFields, _ := filepath.Abs("../searchrefiner/dictionary/fields.txt")
+	fieldsDictionary := loader.LoadDictionary(absPathFields)
+	absPath, _ := filepath.Abs("../searchrefiner/dictionary/words.txt")
+	keywordDictionary := loader.LoadDictionary(absPath)
+
+	var fieldsError []string
+
+	if lang == "medline" {
+		scanner := bufio.NewScanner(strings.NewReader(rawQuery))
+		var extractedFields []string
+		for scanner.Scan() {
+			temp := scanner.Text()
+			line := temp[3:]
+			reg := regexp.MustCompile(`\.([^.]+)\.`)
+			rawFields := reg.FindAllStringSubmatch(line, -1)
+			extractedFields = append(extractedFields, rawFields[0][1])
+		}
+		for _, i := range extractedFields {
+			flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i), 0)
+			if !flag {
+				fieldsError = append(fieldsError, i)
+			}
+		}
+	} else if lang == "pubmed" {
+		reg := regexp.MustCompile(`\[([^]]+)\]`)
+		rawFields := reg.FindAllStringSubmatch(rawQuery, -1)
+		for _, i := range rawFields {
+			flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i[1]), 0)
+			if !flag {
+				fieldsError = append(fieldsError, i[1])
+			}
+		}
+	}
+	p := make(map[string]tpipeline.TransmutePipeline)
+	p["medline"] = transmute.Medline2Cqr
+	p["pubmed"] = transmute.Pubmed2Cqr
+	compiler := p["medline"]
+	if v, ok := p[lang]; ok {
+		compiler = v
+	} else {
+		lang = "medline"
+	}
+	cq, err := compiler.Execute(rawQuery)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	repr, err := cq.Representation()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+	}
+	commonRepr := repr.(cqr.CommonQueryRepresentation)
+	keywords := analysis.QueryKeywords(commonRepr)
+	var spellErrors []string
+	resp := make(map[string][]string)
+	for i := 0; i < len(keywords); i++ {
+		keyword := keywords[i].QueryString
+		keyword = strings.ToLower(keyword)
+		flag := checker.CheckWord(keywordDictionary, keyword, 0)
+		if !flag {
+			spellErrors = append(spellErrors, keyword)
+		}
+	}
+	resp["keyword"] = spellErrors
+	resp["fields"] = fieldsError
+	c.JSON(http.StatusOK, resp)
 }
 
 func ApiTransform(c *gin.Context) {

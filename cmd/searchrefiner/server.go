@@ -97,6 +97,8 @@ func main() {
 	perm.AddUserPath("/api")
 	perm.AddUserPath("/plugins")
 
+	perm.AddUserPath("/api/validate")
+
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
 	perm.AddPublicPath("/help")
@@ -386,6 +388,9 @@ func main() {
 	g.GET("/api/history", s.ApiHistoryGet)
 	g.POST("/api/history", s.ApiHistoryAdd)
 	g.DELETE("/api/history", s.ApiHistoryDelete)
+
+	// Handle query validation
+	g.POST("/api/validate", searchrefiner.HandleQueryValidation)
 
 	if s.Config.EnableAll == true {
 		// Settings page.

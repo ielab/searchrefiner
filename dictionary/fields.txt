@@ -1,0 +1,213 @@
+Affiliation
+affiliation
+All Fields
+all fields
+Author
+author
+Authors
+authors
+Author Corporate
+author corporate
+Author First
+author first
+Author Full
+author full
+Author Identifier
+author identifier
+Author Last
+author last
+Book
+book
+Conflict Of Interest Statements
+conflict of interest statements
+Date Completion
+date completion
+Date Create
+date create
+Date Entrez
+date entrez
+Date MeSH
+date mesh
+Date Modification
+date modification
+Date Publication
+date publication
+ECRN Number
+ecrn number
+ec rn number
+EC/RN Number
+EC RN Number
+ec/rn number
+Editor
+editor
+Filter
+filter
+Grant Number
+grant number
+ISBN
+isbn
+Investigator
+investigator
+Investigator Full
+investigator full
+Issue
+issue
+Journal
+journal
+Language
+language
+Location ID
+location id
+MeSH Major Topic
+mesh major topic
+MeSH Subheading
+mesh subheading
+MeSH Terms
+mesh terms
+Other Term
+other term
+Pagination
+pagination
+Pharmacological Action
+pharmacological action
+Publication Type
+publication type
+Publisher
+publisher
+Secondary Source ID
+secondary source id
+Subject Personal Name
+subject personal name
+Supplementary Concept
+supplementary concept
+Floating Mesh Headings
+floating mesh headings
+Text Word
+text word
+Title
+title
+Title/Abstract
+title/abstract
+Title Abstract
+title abstract
+Transliterated Title
+transliterated title
+Volume
+volume
+Abstract
+abstract
+Mesh Headings
+mesh headings
+Major Focus Mesh Heading
+major focus mesh heading
+Publication Date
+publication date
+Publication Status
+publication status
+PMID
+pmid
+all_fields
+author_corporate
+author_first
+author_full
+author_identifier
+author_last
+conflict_of_interest_statements
+date_completion
+date_create
+date_entrez
+date_mesh
+date_modification
+date_publication
+ec_rn_number
+grant_number
+investigator_full
+location_id
+mesh_major_topic
+mesh_subheading
+mesh_terms
+other_term
+pharmacological_action
+publication_type
+secondary_source_id
+subject_personal_name
+supplementary_concept
+floating_mesh_headings
+text_word
+title_abstract
+transliterated_title
+mesh_headings
+major_mesh_headings
+publication_date
+publication_status
+mesh
+majr
+mash major topic
+subheading
+subheadings
+Date - Entrez : 3000
+date - entrez : 3000
+Author - Corporate
+author - corporate
+Author - First
+author -first
+Author - Full
+author - full
+Author - Identifier
+author - identifier
+Author - Last
+author - last
+Date - Completion
+date - completion
+Date - Create
+date - create
+date - entrez
+Date - Entrez
+Date - MeSH
+date - mesh
+Date - Modification
+date - modification
+Date - Publication
+date - publication
+Investigator - Full
+investigator - full
+Subject - Personal Name
+subject - personal name
+mh
+sh
+tw
+ti
+pt
+sb
+tiab
+text
+ti,ab
+ti,ab,sh
+ab
+ai
+as
+au
+ax
+ba
+bd
+be
+bf
+em
+ed
+fa
+fe
+fs
+fx
+ot
+mh
+px
+pt
+rs
+rn
+sb
+sh
+tw
+ti
+ja
+jn
+jw
