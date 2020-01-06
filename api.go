@@ -199,9 +199,26 @@ func HandleQueryValidation(c *gin.Context) {
 	for i := 0; i < len(keywords); i++ {
 		keyword := keywords[i].QueryString
 		keyword = strings.ToLower(keyword)
-		flag := checker.CheckWord(keywordDictionary, keyword, 0)
-		if !flag {
-			spellErrors = append(spellErrors, keyword)
+		var slices []string
+		if strings.Contains(keyword, " ") {
+			slices = strings.Split(keyword, " ")
+			for _, s := range slices {
+				if strings.Contains(s, "*") {
+					s = s[:len(s) - 1]
+				}
+				flag := checker.CheckWord(keywordDictionary, s, 0)
+				if !flag {
+					spellErrors = append(spellErrors, s)
+				}
+			}
+		} else {
+			if strings.Contains(keyword, "*") {
+				keyword = keyword[:len(keyword) - 1]
+			}
+			flag := checker.CheckWord(keywordDictionary, keyword, 0)
+			if !flag {
+				spellErrors = append(spellErrors, keyword)
+			}
 		}
 	}
 	resp["keyword"] = spellErrors
