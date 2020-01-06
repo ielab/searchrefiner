@@ -138,9 +138,11 @@ func HandleQueryValidation(c *gin.Context) {
 	absPath, _ := filepath.Abs("../searchrefiner/dictionary/words.txt")
 	keywordDictionary := loader.LoadDictionary(absPath)
 
+	lang = strings.ToLower(lang)
+
 	var fieldsError []string
 
-	if lang == "medline" {
+	if strings.ToLower(lang) == "medline" {
 		scanner := bufio.NewScanner(strings.NewReader(rawQuery))
 		var extractedFields []string
 		for scanner.Scan() {
@@ -148,21 +150,27 @@ func HandleQueryValidation(c *gin.Context) {
 			line := temp[3:]
 			reg := regexp.MustCompile(`\.([^.]+)\.`)
 			rawFields := reg.FindAllStringSubmatch(line, -1)
-			extractedFields = append(extractedFields, rawFields[0][1])
-		}
-		for _, i := range extractedFields {
-			flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i), 0)
-			if !flag {
-				fieldsError = append(fieldsError, i)
+			if len(rawFields) > 0 {
+				extractedFields = append(extractedFields, rawFields[0][1])
 			}
 		}
-	} else if lang == "pubmed" {
+		if len(extractedFields) > 0 {
+			for _, i := range extractedFields {
+				flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i), 0)
+				if !flag {
+					fieldsError = append(fieldsError, i)
+				}
+			}
+		}
+	} else if strings.ToLower(lang) == "pubmed" {
 		reg := regexp.MustCompile(`\[([^]]+)\]`)
 		rawFields := reg.FindAllStringSubmatch(rawQuery, -1)
-		for _, i := range rawFields {
-			flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i[1]), 0)
-			if !flag {
-				fieldsError = append(fieldsError, i[1])
+		if len(rawFields) > 0 {
+			for _, i := range rawFields {
+				flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i[1]), 0)
+				if !flag {
+					fieldsError = append(fieldsError, i[1])
+				}
 			}
 		}
 	}
