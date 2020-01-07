@@ -2,6 +2,13 @@ package searchrefiner
 
 import (
 	"bufio"
+	"net/http"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/hanglics/gocheck/pkg/checker"
 	"github.com/hanglics/gocheck/pkg/loader"
@@ -12,12 +19,6 @@ import (
 	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type searchResponse struct {
@@ -154,23 +155,19 @@ func HandleQueryValidation(c *gin.Context) {
 				extractedFields = append(extractedFields, rawFields[0][1])
 			}
 		}
-		if len(extractedFields) > 0 {
-			for _, i := range extractedFields {
-				flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i), 0)
-				if !flag {
-					fieldsError = append(fieldsError, i)
-				}
+		for _, i := range extractedFields {
+			flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i), 0)
+			if !flag {
+				fieldsError = append(fieldsError, i)
 			}
 		}
 	} else if strings.ToLower(lang) == "pubmed" {
 		reg := regexp.MustCompile(`\[([^]]+)\]`)
 		rawFields := reg.FindAllStringSubmatch(rawQuery, -1)
-		if len(rawFields) > 0 {
-			for _, i := range rawFields {
-				flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i[1]), 0)
-				if !flag {
-					fieldsError = append(fieldsError, i[1])
-				}
+		for _, i := range rawFields {
+			flag := checker.CheckWord(fieldsDictionary, strings.ToLower(i[1]), 0)
+			if !flag {
+				fieldsError = append(fieldsError, i[1])
 			}
 		}
 	}
@@ -204,7 +201,7 @@ func HandleQueryValidation(c *gin.Context) {
 			slices = strings.Split(keyword, " ")
 			for _, s := range slices {
 				if strings.Contains(s, "*") {
-					s = s[:len(s) - 1]
+					s = s[:len(s)-1]
 				}
 				flag := checker.CheckWord(keywordDictionary, s, 0)
 				if !flag {
@@ -213,7 +210,7 @@ func HandleQueryValidation(c *gin.Context) {
 			}
 		} else {
 			if strings.Contains(keyword, "*") {
-				keyword = keyword[:len(keyword) - 1]
+				keyword = keyword[:len(keyword)-1]
 			}
 			flag := checker.CheckWord(keywordDictionary, keyword, 0)
 			if !flag {
