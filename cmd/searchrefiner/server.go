@@ -98,6 +98,7 @@ func main() {
 	perm.AddUserPath("/plugins")
 
 	perm.AddUserPath("/api/validate")
+	perm.AddUserPath("/api/formulate")
 
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
@@ -391,6 +392,9 @@ func main() {
 
 	// Handle query validation
 	g.POST("/api/validate", searchrefiner.HandleQueryValidation)
+
+	// Handle query formulation
+	g.POST("/api/formulate", searchrefiner.HandleQueryFormulation)
 
 	if s.Config.EnableAll == true {
 		// Settings page.

@@ -14,6 +14,8 @@ import (
 	"github.com/hanglics/gocheck/pkg/loader"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove/analysis"
+	//"github.com/hscells/groove/formulation"
+	//"github.com/hscells/groove/pipeline"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
@@ -129,6 +131,16 @@ func (s Server) ApiScroll(c *gin.Context) {
 	log.Infof("[scroll]  %s:%s:%s:%f", lang, rawQuery, startString, total)
 
 	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished, Total: total})
+}
+
+func HandleQueryFormulation(c *gin.Context) {
+	seedIDs := c.PostForm("seeds")
+	resp := make(map[string]string)
+	resp["seeds"] = seedIDs
+
+	//objectiveFormulator := formulation.NewObjectiveFormulator(pipeline.Query{})
+
+	c.JSON(http.StatusOK, resp)
 }
 
 func HandleQueryValidation(c *gin.Context) {
