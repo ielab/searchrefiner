@@ -136,8 +136,9 @@ func (s Server) ApiScroll(c *gin.Context) {
 // TODO: finish the query formulation method
 func HandleQueryFormulation(c *gin.Context) {
 	seedIDs := c.PostForm("seeds")
-	resp := make(map[string]string)
-	resp["seeds"] = seedIDs
+	resp := make(map[string][]string)
+	pmids := strings.Split(seedIDs, ",")
+	resp["seeds"] = pmids
 
 	//objectiveFormulator := formulation.NewObjectiveFormulator(pipeline.Query{})
 
