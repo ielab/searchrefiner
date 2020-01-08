@@ -133,6 +133,7 @@ func (s Server) ApiScroll(c *gin.Context) {
 	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished, Total: total})
 }
 
+// TODO: finish the query formulation method
 func HandleQueryFormulation(c *gin.Context) {
 	seedIDs := c.PostForm("seeds")
 	resp := make(map[string]string)
