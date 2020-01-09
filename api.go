@@ -2,25 +2,27 @@ package searchrefiner
 
 import (
 	"bufio"
+	"github.com/gin-gonic/gin"
+	"github.com/hanglics/gocheck/pkg/checker"
+	"github.com/hanglics/gocheck/pkg/loader"
+	"github.com/hscells/cqr"
+	"github.com/hscells/groove/analysis"
+	"github.com/hscells/groove/eval"
+	"github.com/hscells/groove/formulation"
+	"github.com/hscells/groove/pipeline"
+	"github.com/hscells/groove/stats"
+	"github.com/hscells/guru"
+	"github.com/hscells/transmute"
+	"github.com/hscells/transmute/fields"
+	tpipeline "github.com/hscells/transmute/pipeline"
+	"github.com/hscells/trecresults"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/hanglics/gocheck/pkg/checker"
-	"github.com/hanglics/gocheck/pkg/loader"
-	"github.com/hscells/cqr"
-	"github.com/hscells/groove/analysis"
-	//"github.com/hscells/groove/formulation"
-	//"github.com/hscells/groove/pipeline"
-	"github.com/hscells/guru"
-	"github.com/hscells/transmute"
-	"github.com/hscells/transmute/fields"
-	tpipeline "github.com/hscells/transmute/pipeline"
-	log "github.com/sirupsen/logrus"
 )
 
 type searchResponse struct {
@@ -39,6 +41,11 @@ type searchResponse struct {
 	MeshExploded     float64
 	MeshAvgDepth     float64
 	MeshMaxDepth     float64
+}
+
+type queryFormulationResponse struct {
+	seeds			[]string
+	query 			[]cqr.CommonQueryRepresentation
 }
 
 func (s Server) ApiScroll(c *gin.Context) {
@@ -134,13 +141,66 @@ func (s Server) ApiScroll(c *gin.Context) {
 }
 
 // TODO: finish the query formulation method
-func HandleQueryFormulation(c *gin.Context) {
+func (s Server) HandleQueryFormulation(c *gin.Context) {
 	seedIDs := c.PostForm("seeds")
-	resp := make(map[string][]string)
 	pmids := strings.Split(seedIDs, ",")
-	resp["seeds"] = pmids
 
-	//objectiveFormulator := formulation.NewObjectiveFormulator(pipeline.Query{})
+	qrel1 := trecresults.Qrel{
+		Topic:     "X",
+		Iteration: "None",
+		DocId:     "31909949",
+		Score:     1,
+	}
+	qrel2 := trecresults.Qrel{
+		Topic:     "X",
+		Iteration: "None",
+		DocId:     "31909948",
+		Score:     1,
+	}
+	qrel3 := trecresults.Qrel{
+		Topic:     "X",
+		Iteration: "None",
+		DocId:     "31909947",
+		Score:     1,
+	}
+	qrel4 := trecresults.Qrel{
+		Topic:     "X",
+		Iteration: "None",
+		DocId:     "31909946",
+		Score:     1,
+	}
+
+	query := pipeline.Query{
+		Topic: "X",
+		Name:  "None",
+		Query: nil,
+	}
+
+	qrels := make(map[string]*trecresults.Qrel)
+
+	qrels[qrel1.DocId] = &qrel1
+	qrels[qrel2.DocId] = &qrel2
+	qrels[qrel3.DocId] = &qrel3
+	qrels[qrel4.DocId] = &qrel4
+
+	stat, _ := stats.NewEntrezStatisticsSource()
+
+	population := formulation.NewPubMedSet(s.Entrez)
+
+	optimisation := eval.F1Measure
+
+	objFormulator := formulation.NewObjectiveFormulator(query, stat, qrels, population, "None", "None", "cui_semantic_types.txt", "None", optimisation)
+
+	formulation.ObjectiveMinDocs(4)
+
+	q1, q2, _, _, _, _ := objFormulator.Derive()
+
+	var queries = []cqr.CommonQueryRepresentation{q1, q2}
+
+	resp := queryFormulationResponse{
+		seeds: pmids,
+		query: queries,
+	}
 
 	c.JSON(http.StatusOK, resp)
 }
