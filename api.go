@@ -2,6 +2,7 @@ package searchrefiner
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hanglics/gocheck/pkg/checker"
 	"github.com/hanglics/gocheck/pkg/loader"
@@ -166,8 +167,10 @@ func (s Server) HandleQueryFormulation(c *gin.Context) {
 	stat := s.Entrez
 	population := formulation.NewPubMedSet(stat)
 	optimisation := eval.F1Measure
-	option := formulation.ObjectiveMinDocs(30)
-	objFormulator := formulation.NewObjectiveFormulator(query, stat, qrels, population, "None", "None", "cui_semantic_types.txt", "http://ielab-metamap.uqcloud.net", optimisation, option)
+	optionMinDocs := formulation.ObjectiveMinDocs(30)
+	optionGrid := formulation.ObjectiveGrid([]float64{0.05, 0.10, 0.15, 0.20, 0.25, 0.30},[]float64{0.001, 0.01, 0.02, 0.05, 0.10, 0.20},[]int{1, 5, 10, 15, 20, 25})
+	objFormulator := formulation.NewObjectiveFormulator(query, stat, qrels, population, "None", "None", "cui_semantic_types.txt", "http://ielab-metamap.uqcloud.net", optimisation, optionMinDocs, optionGrid)
+	fmt.Println(objFormulator)
 	q1, q2, _, _, _, err := objFormulator.Derive()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
