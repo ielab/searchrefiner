@@ -10,7 +10,6 @@ import (
 	"github.com/hscells/groove/eval"
 	"github.com/hscells/groove/formulation"
 	"github.com/hscells/groove/pipeline"
-	"github.com/hscells/groove/stats"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
@@ -44,8 +43,7 @@ type searchResponse struct {
 }
 
 type queryFormulationResponse struct {
-	seeds			[]string
-	query 			[]cqr.CommonQueryRepresentation
+	Query 			[]string
 }
 
 func (s Server) ApiScroll(c *gin.Context) {
@@ -142,67 +140,68 @@ func (s Server) ApiScroll(c *gin.Context) {
 
 // TODO: finish the query formulation method
 func (s Server) HandleQueryFormulation(c *gin.Context) {
+	var q1Ret string
+	var q2Ret string
 	seedIDs := c.PostForm("seeds")
+	lang := c.PostForm("lang")
 	pmids := strings.Split(seedIDs, ",")
-
-	qrel1 := trecresults.Qrel{
-		Topic:     "X",
-		Iteration: "None",
-		DocId:     "31909949",
-		Score:     1,
+	for _, pmid := range pmids {
+		pmid = strings.TrimSpace(pmid)
 	}
-	qrel2 := trecresults.Qrel{
-		Topic:     "X",
-		Iteration: "None",
-		DocId:     "31909948",
-		Score:     1,
+	qrels := make(map[string]*trecresults.Qrel)
+	for _, pmid := range pmids {
+		qrel := trecresults.Qrel{
+			Topic:     "X",
+			Iteration: "None",
+			DocId:     pmid,
+			Score:     1,
+		}
+		qrels[pmid] = &qrel
 	}
-	qrel3 := trecresults.Qrel{
-		Topic:     "X",
-		Iteration: "None",
-		DocId:     "31909947",
-		Score:     1,
-	}
-	qrel4 := trecresults.Qrel{
-		Topic:     "X",
-		Iteration: "None",
-		DocId:     "31909946",
-		Score:     1,
-	}
-
 	query := pipeline.Query{
 		Topic: "X",
 		Name:  "None",
 		Query: nil,
 	}
-
-	qrels := make(map[string]*trecresults.Qrel)
-
-	qrels[qrel1.DocId] = &qrel1
-	qrels[qrel2.DocId] = &qrel2
-	qrels[qrel3.DocId] = &qrel3
-	qrels[qrel4.DocId] = &qrel4
-
-	stat, _ := stats.NewEntrezStatisticsSource()
-
-	population := formulation.NewPubMedSet(s.Entrez)
-
+	stat := s.Entrez
+	population := formulation.NewPubMedSet(stat)
 	optimisation := eval.F1Measure
-
-	objFormulator := formulation.NewObjectiveFormulator(query, stat, qrels, population, "None", "None", "cui_semantic_types.txt", "None", optimisation)
-
-	formulation.ObjectiveMinDocs(4)
-
-	q1, q2, _, _, _, _ := objFormulator.Derive()
-
-	var queries = []cqr.CommonQueryRepresentation{q1, q2}
-
-	resp := queryFormulationResponse{
-		seeds: pmids,
-		query: queries,
+	option := formulation.ObjectiveMinDocs(30)
+	objFormulator := formulation.NewObjectiveFormulator(query, stat, qrels, population, "None", "None", "cui_semantic_types.txt", "http://ielab-metamap.uqcloud.net", optimisation, option)
+	q1, q2, _, _, _, err := objFormulator.Derive()
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
+	if lang == "pubmed" {
+		q1Ret, err = transmute.CompileCqr2PubMed(q1)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
 
-	c.JSON(http.StatusOK, resp)
+		q2Ret, err = transmute.CompileCqr2PubMed(q2)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+	} else if lang == "medline" {
+		q1Ret, err = transmute.CompileCqr2Medline(q1)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		q2Ret, err = transmute.CompileCqr2Medline(q2)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+	var strQueries = []string{q1Ret, q2Ret}
+	c.Header("Content-type", "application/json; charset=utf-8")
+	c.Header("Connection", "keep-alive")
+	c.JSON(http.StatusOK, queryFormulationResponse{Query: strQueries})
 }
 
 func HandleQueryValidation(c *gin.Context) {
