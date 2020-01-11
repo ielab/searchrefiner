@@ -138,7 +138,6 @@ func (s Server) ApiScroll(c *gin.Context) {
 	c.JSON(http.StatusOK, scrollResponse{Documents: docs, Start: len(docs), Finished: finished, Total: total})
 }
 
-// TODO: finish the query formulation method
 func (s Server) HandleQueryFormulation(c *gin.Context) {
 	var q1Ret string
 	var q2Ret string
