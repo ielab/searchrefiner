@@ -99,7 +99,6 @@ func main() {
 
 	perm.AddUserPath("/api/validate")
 	perm.AddUserPath("/api/formulate")
-	perm.AddUserPath("/ws")
 
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
