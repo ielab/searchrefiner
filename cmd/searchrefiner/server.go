@@ -95,8 +95,6 @@ func main() {
 	perm.AddUserPath("/api")
 	perm.AddUserPath("/plugins")
 
-	perm.AddUserPath("/api/validate")
-
 	perm.AddPublicPath("/account")
 	perm.AddPublicPath("/static")
 	perm.AddPublicPath("/help")
@@ -264,6 +262,10 @@ func main() {
 		g.GET("/query", s.HandleQuery)
 	} else {
 		g.GET("/", func(ctx *gin.Context) {
+			if !s.Perm.UserState().IsLoggedIn(s.Perm.UserState().Username(ctx.Request)) {
+				ctx.Redirect(http.StatusTemporaryRedirect, "/account/login")
+				return
+			}
 			ctx.Redirect(http.StatusFound, c.Mode)
 		})
 	}
