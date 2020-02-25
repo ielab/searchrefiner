@@ -90,9 +90,7 @@ func main() {
 	}
 
 	perm.Clear()
-	perm.AddUserPath("/tree")
 	perm.AddUserPath("/query")
-	perm.AddUserPath("/transform")
 	perm.AddUserPath("/settings")
 	perm.AddUserPath("/api")
 	perm.AddUserPath("/plugins")
@@ -154,62 +152,63 @@ func main() {
 		if file.IsDir() {
 			// Open the shared object file that will become the plugin.
 			p := file.Name()
+
+			plug, err := plugin.Open(path.Join("plugin", p, "plugin.so"))
+			if err != nil {
+				panic(err)
+			}
+
+			// Grab the exported type.
+			sym, err := plug.Lookup(strings.Title(p))
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			// Ensure the type implements the plugin.
+			var handle searchrefiner.Plugin
+			var ok bool
+			if handle, ok = sym.(searchrefiner.Plugin); !ok {
+				log.Fatalln("could not cast", p, "to plugin")
+			}
+
+			// Configure the permissions for this plugin.
+			p = path.Join("./plugin/", p)
+			switch handle.PermissionType() {
+			case searchrefiner.PluginAdmin:
+				perm.AddAdminPath(p)
+			case searchrefiner.PluginPublic:
+				perm.AddPublicPath(p)
+			case searchrefiner.PluginUser:
+				perm.AddUserPath(p)
+			default:
+				perm.AddPublicPath(p)
+			}
+
+			pluginFiles, err := ioutil.ReadDir(p)
+			if err != nil {
+				panic(err)
+			}
+			for _, f := range pluginFiles {
+				if !f.IsDir() {
+					parts := strings.Split(f.Name(), ".")
+					if len(parts) < 2 {
+						continue
+					}
+					if parts[len(parts)-2] == "tmpl" && parts[len(parts)-1] == "html" {
+						fmt.Println(path.Join(p, f.Name()))
+						pluginTemplates = append(pluginTemplates, path.Join(p, f.Name()))
+					}
+				}
+			}
+
+			s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
+				URL:           p,
+				PluginDetails: handle.Details(),
+			})
+
+			g.Static(path.Join(p, "static"), path.Join("plugin", file.Name(), "static"))
+
 			if p == s.Config.Mode && s.Config.EnableAll == false {
-				plug, err := plugin.Open(path.Join("plugin", p, "plugin.so"))
-				if err != nil {
-					panic(err)
-				}
-
-				// Grab the exported type.
-				sym, err := plug.Lookup(strings.Title(p))
-				if err != nil {
-					log.Fatalln(err)
-				}
-
-				// Ensure the type implements the plugin.
-				var handle searchrefiner.Plugin
-				var ok bool
-				if handle, ok = sym.(searchrefiner.Plugin); !ok {
-					log.Fatalln("could not cast", p, "to plugin")
-				}
-
-				// Configure the permissions for this plugin.
-				p = path.Join("./plugin/", p)
-				switch handle.PermissionType() {
-				case searchrefiner.PluginAdmin:
-					perm.AddAdminPath(p)
-				case searchrefiner.PluginPublic:
-					perm.AddPublicPath(p)
-				case searchrefiner.PluginUser:
-					perm.AddUserPath(p)
-				default:
-					perm.AddPublicPath(p)
-				}
-
-				pluginFiles, err := ioutil.ReadDir(p)
-				if err != nil {
-					panic(err)
-				}
-				for _, f := range pluginFiles {
-					if !f.IsDir() {
-						parts := strings.Split(f.Name(), ".")
-						if len(parts) < 2 {
-							continue
-						}
-						if parts[len(parts)-2] == "tmpl" && parts[len(parts)-1] == "html" {
-							fmt.Println(path.Join(p, f.Name()))
-							pluginTemplates = append(pluginTemplates, path.Join(p, f.Name()))
-						}
-					}
-				}
-
-				s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
-					URL:           p,
-					PluginDetails: handle.Details(),
-				})
-
-				g.Static(path.Join(p, "static"), path.Join("plugin", file.Name(), "static"))
-
 				// Register the handler with gin.
 				g.GET(p, func(c *gin.Context) {
 					handle.Serve(s, c)
@@ -217,62 +216,8 @@ func main() {
 				g.POST(p, func(c *gin.Context) {
 					handle.Serve(s, c)
 				})
+				break
 			} else if s.Config.EnableAll == true {
-				plug, err := plugin.Open(path.Join("plugin", p, "plugin.so"))
-				if err != nil {
-					panic(err)
-				}
-
-				// Grab the exported type.
-				sym, err := plug.Lookup(strings.Title(p))
-				if err != nil {
-					log.Fatalln(err)
-				}
-
-				// Ensure the type implements the plugin.
-				var handle searchrefiner.Plugin
-				var ok bool
-				if handle, ok = sym.(searchrefiner.Plugin); !ok {
-					log.Fatalln("could not cast", p, "to plugin")
-				}
-
-				// Configure the permissions for this plugin.
-				p = path.Join("./plugin/", p)
-				switch handle.PermissionType() {
-				case searchrefiner.PluginAdmin:
-					perm.AddAdminPath(p)
-				case searchrefiner.PluginPublic:
-					perm.AddPublicPath(p)
-				case searchrefiner.PluginUser:
-					perm.AddUserPath(p)
-				default:
-					perm.AddPublicPath(p)
-				}
-
-				pluginFiles, err := ioutil.ReadDir(p)
-				if err != nil {
-					panic(err)
-				}
-				for _, f := range pluginFiles {
-					if !f.IsDir() {
-						parts := strings.Split(f.Name(), ".")
-						if len(parts) < 2 {
-							continue
-						}
-						if parts[len(parts)-2] == "tmpl" && parts[len(parts)-1] == "html" {
-							fmt.Println(path.Join(p, f.Name()))
-							pluginTemplates = append(pluginTemplates, path.Join(p, f.Name()))
-						}
-					}
-				}
-
-				s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
-					URL:           p,
-					PluginDetails: handle.Details(),
-				})
-
-				g.Static(path.Join(p, "static"), path.Join("plugin", file.Name(), "static"))
-
 				// Register the handler with gin.
 				g.GET(p, func(c *gin.Context) {
 					handle.Serve(s, c)
@@ -280,65 +225,6 @@ func main() {
 				g.POST(p, func(c *gin.Context) {
 					handle.Serve(s, c)
 				})
-			} else {
-				plug, err := plugin.Open(path.Join("plugin", p, "plugin.so"))
-				if err != nil {
-					panic(err)
-				}
-
-				// Grab the exported type.
-				sym, err := plug.Lookup(strings.Title(p))
-				if err != nil {
-					log.Fatalln(err)
-				}
-
-				// Ensure the type implements the plugin.
-				var handle searchrefiner.Plugin
-				var ok bool
-				if handle, ok = sym.(searchrefiner.Plugin); !ok {
-					log.Fatalln("could not cast", p, "to plugin")
-				}
-
-				// Configure the permissions for this plugin.
-				p = path.Join("./plugin/", p)
-				switch handle.PermissionType() {
-				case searchrefiner.PluginAdmin:
-					perm.AddAdminPath(p)
-				case searchrefiner.PluginPublic:
-					perm.AddPublicPath(p)
-				case searchrefiner.PluginUser:
-					perm.AddUserPath(p)
-				default:
-					perm.AddPublicPath(p)
-				}
-
-				pluginFiles, err := ioutil.ReadDir(p)
-				if err != nil {
-					panic(err)
-				}
-				for _, f := range pluginFiles {
-					if !f.IsDir() {
-						parts := strings.Split(f.Name(), ".")
-						if len(parts) < 2 {
-							continue
-						}
-						if parts[len(parts)-2] == "tmpl" && parts[len(parts)-1] == "html" {
-							fmt.Println(path.Join(p, f.Name()))
-							pluginTemplates = append(pluginTemplates, path.Join(p, f.Name()))
-						}
-					}
-				}
-
-				s.Plugins = append(s.Plugins, searchrefiner.InternalPluginDetails{
-					URL:           p,
-					PluginDetails: handle.Details(),
-				})
-
-				g.Static(path.Join(p, "static"), path.Join("plugin", file.Name(), "static"))
-
-				// Register the handler with gin.
-				g.GET(p, s.HandlePluginWithControl)
-				g.POST(p, s.HandlePluginWithControl)
 			}
 		}
 	}
@@ -368,11 +254,21 @@ func main() {
 	g.GET("/account/api/logout", s.ApiAccountLogout)
 	g.GET("/api/username", s.ApiAccountUsername)
 
-	// Main query interface.
-	g.GET("/", s.HandleIndex)
-	g.GET("/clear", s.HandleClear)
-	g.POST("/query", s.HandleQuery)
-	g.GET("/query", s.HandleQuery)
+	if c.EnableAll == true {
+		// Main query interface.
+		g.GET("/", s.HandleIndex)
+		g.GET("/clear", s.HandleClear)
+		g.POST("/query", s.HandleQuery)
+		g.GET("/query", s.HandleQuery)
+	} else {
+		g.GET("/", func(ctx *gin.Context) {
+			if !s.Perm.UserState().IsLoggedIn(s.Perm.UserState().Username(ctx.Request)) {
+				ctx.Redirect(http.StatusTemporaryRedirect, "/account/login")
+				return
+			}
+			ctx.Redirect(http.StatusFound, c.Mode)
+		})
+	}
 	g.POST("/results", s.HandleResults)
 	g.GET("/results", s.HandleResults)
 	g.POST("/api/scroll", s.ApiScroll)
@@ -386,6 +282,7 @@ func main() {
 	g.GET("/api/history", s.ApiHistoryGet)
 	g.POST("/api/history", s.ApiHistoryAdd)
 	g.DELETE("/api/history", s.ApiHistoryDelete)
+
 
 	if s.Config.EnableAll == true {
 		// Settings page.
@@ -402,7 +299,7 @@ func main() {
 		// Plugins page.
 		g.GET("/plugins", s.HandlePluginWithControl)
 	}
-
+  
 	// Other utility pages.
 	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
