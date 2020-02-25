@@ -283,13 +283,23 @@ func main() {
 	g.POST("/api/history", s.ApiHistoryAdd)
 	g.DELETE("/api/history", s.ApiHistoryDelete)
 
-	// Handle query validation
-	g.POST("/api/validate", searchrefiner.HandleQueryValidation)
 
-	// Settings page.
-	g.GET("/settings", s.HandleSettings)
-	g.POST("/api/settings/relevant", s.ApiSettingsRelevantSet)
+	if s.Config.EnableAll == true {
+		// Settings page.
+		g.GET("/settings", s.HandleSettings)
+		g.POST("/api/settings/relevant", s.ApiSettingsRelevantSet)
 
+		// Plugins page.
+		g.GET("/plugins", s.HandlePlugins)
+	} else {
+		// Settings page.
+		g.GET("/settings", s.HandlePluginWithControl)
+		g.POST("/api/settings/relevant", s.HandlePluginWithControl)
+
+		// Plugins page.
+		g.GET("/plugins", s.HandlePluginWithControl)
+	}
+  
 	// Other utility pages.
 	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
