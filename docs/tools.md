@@ -27,7 +27,7 @@ title: Tools
     <br/>
     <a href="https://github.com/ielab/queryformulation">https://github.com/ielab/queryformulation</a>
     <br/><br/>
-    <a href="assets/images/Pubmed-formulation.png"><img src="assets/images/Pubmed-formulation.png" title="queryformulation" width="100%" style="display:block"></a>
+    <a href="../assets/images/Pubmed-formulation.png"><img src="../assets/images/Pubmed-formulation.png" title="queryformulation" width="100%" style="display:block"></a>
 </div>
 
 <div id="suggest" class="tabcontent">
@@ -39,7 +39,7 @@ title: Tools
     <br/>
     <a href="https://github.com/ielab/wordsuggestion">https://github.com/ielab/wordsuggestion</a>
     <br/><br/>
-    <a href="assets/images/wordsuggestions.png"><img src="assets/images/wordsuggestions.png" title="wordsuggest" width="100%" style="display:block"></a>
+    <a href="../assets/images/wordsuggestions.png"><img src="../assets/images/wordsuggestions.png" title="wordsuggest" width="100%" style="display:block"></a>
 </div>
 
 <div id="vis" class="tabcontent">
@@ -50,7 +50,7 @@ title: Tools
     <br/>
     <a href="https://github.com/ielab/searchrefiner/tree/master/plugin/queryvis">https://github.com/ielab/searchrefiner/tree/master/plugin/queryvis</a>
     <br/><br/>
-    <a href="assets/images/queryvis-wordsuggest-post-cropped.png"><img src="assets/images/queryvis-wordsuggest-post-cropped.png" title="queryvis" width="100%" style="display:block"></a>
+    <a href="../assets/images/queryvis-wordsuggest-post-cropped.png"><img src="../assets/images/queryvis-wordsuggest-post-cropped.png" title="queryvis" width="100%" style="display:block"></a>
 </div>
 
 <div id="lens" class="tabcontent">
@@ -61,7 +61,7 @@ title: Tools
     <br/>
     <a href="https://github.com/ielab/querylens">https://github.com/ielab/querylens</a>
     <br/><br/>
-    <a href="assets/images/querylens.png"><img src="assets/images/querylens.png" title="querylens" width="100%" style="display:block"></a>
+    <a href="../assets/images/querylens.png"><img src="../assets/images/querylens.png" title="querylens" width="100%" style="display:block"></a>
 </div>
 
 <div id="doc" class="tabcontent">
@@ -73,7 +73,7 @@ title: Tools
     <br/>
     <a href="https://github.com/ielab/autodoc">https://github.com/ielab/autodoc</a>
     <br/><br/>
-    <a href="assets/images/autodoc.png"><img src="assets/images/autodoc.png" title="autodoc" width="100%" style="display:bock"></a>
+    <a href="../assets/images/autodoc.png"><img src="../assets/images/autodoc.png" title="autodoc" width="100%" style="display:bock"></a>
 </div>
 
 
