@@ -38,8 +38,7 @@ _Systematic Review Query Visualisation and Understanding Interface_
     </div>    
 </div>
 
-<a href="assets/images/tree.png"><img src="assets/images/tree.png" title="tree" width="49%" style="display:inline"></a>
-<a href="assets/images/query.png"><img src="assets/images/query.png" title="query" width="49%" style="display:inline"></a>
+<div style="text-align: center;"><a href="assets/images/web-interface.png"><img src="assets/images/web-interface.png" title="interface" width="90%" style="display:inline"></a></div>
 
 searchrefiner is an interactive interface for visualising and understanding queries used to retrieve medical literature for
 [systematic reviews](https://en.wikipedia.org/wiki/Systematic_review). searchrefiner is an open source project; the source is
