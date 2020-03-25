@@ -89,7 +89,8 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 
 	if !isAdmin {
 		s.Perm.UserState().AddUser(username, password, username)
-		s.Perm.UserState().AddUnconfirmed(username, "unconfirmed")
+		//s.Perm.UserState().AddUnconfirmed(username, "unconfirmed")
+		s.Perm.UserState().Confirm(username)
 	}
 
 	err := s.Perm.UserState().Login(c.Writer, username)
