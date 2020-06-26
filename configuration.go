@@ -32,14 +32,36 @@ type EntrezConfig struct {
 	APIKey string
 }
 
+type ESConfig struct {
+	URL					string
+	MetaMap				string
+	Username			string
+	Secret				string
+	IndexName			string
+	DefaultPool			int
+	DefaultRetSize		int
+	MaxRetSize			int
+	MaxPool				int
+	Merged				bool
+	Sources				string
+}
+
 type Config struct {
 	Host       string
 	AdminEmail string
 	Admins     []string
 	Entrez     EntrezConfig
-	Options    map[string]interface{}
+	Options    Options
 	Mode       string
 	EnableAll  bool
+	ES		   ESConfig
+}
+
+type Options struct {
+	Cui2VecEmbeddings	string
+	Cui2VecMappings		string
+	Quiche				string
+	QuickRank			string
 }
 
 type Query struct {
