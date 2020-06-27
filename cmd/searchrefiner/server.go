@@ -30,6 +30,18 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	fmt.Println("--------------------------------------------------")
+	fmt.Println("Loading CUI2Title Dict...")
+	var titleFile = c.Options.Cui2VecMappings
+	searchrefiner.Cui2TitleDict = searchrefiner.ReadCuiTitle(titleFile)
+	fmt.Println("Dict Loaded")
+	fmt.Println("--------------------------------------------------")
+	fmt.Println("Loading CUI Distance Matrix...")
+	var distanceFile = c.Options.Cui2VecEmbeddings
+	searchrefiner.DistanceEmbeddings = searchrefiner.ReadCuiDistance(distanceFile)
+	fmt.Println("Embeddings Loaded")
+	fmt.Println("--------------------------------------------------")
+
 	fs, err := ioutil.ReadDir(searchrefiner.PluginStoragePath)
 	if err != nil {
 		log.Fatalln(err)

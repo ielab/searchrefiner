@@ -1,12 +1,13 @@
 package searchrefiner
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/bbalet/stopwords"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
+	"github.com/hscells/cui2vec"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
@@ -17,12 +18,16 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var Cui2TitleDict map[string]string
+var DistanceEmbeddings *cui2vec.PrecomputedEmbeddings
 
 type searchResponse struct {
 	Start            int
@@ -374,24 +379,68 @@ func (s Server) getCUIWordRanking(word string, size int) []singleSuggestion {
 		size = s.Config.ES.MaxRetSize
 	}
 
-	intWordCUI := 0
+	similarCUIs, err := DistanceEmbeddings.Similar(wordCUI)
 
-	if wordCUI != "" {
-		intWordCUI = cui2int(wordCUI)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	fmt.Println(intWordCUI)
+	if len(similarCUIs) > 0 {
+		var temp []singleSuggestion
+		var sizeCount = 0
+		var term string
+		for _, item := range similarCUIs {
+			cui := item.CUI
+			score := item.Value
+			intCUI := cui2int(cui)
 
-	cuiDistanceFile := s.Config.Options.Cui2VecEmbeddings
-	//TODO FINISH THIS
-	readCuiDistance(cuiDistanceFile)
+			if val, ok := Cui2TitleDict[strconv.Itoa(intCUI)]; ok {
+				term = val
+			} else {
+				term = ""
+			}
+
+			if term != "" {
+				oneCUI := singleSuggestion{
+					Score: score,
+					Term:  term,
+				}
+				temp = append(temp, oneCUI)
+			}
+		}
+
+		for _, suggest := range temp {
+			if len(temp) < size {
+				if sizeCount < size {
+					ret = append(ret, suggest)
+					sizeCount = sizeCount + 1
+				}
+			} else {
+				ret = temp
+			}
+		}
+
+		rankerScore := func(s1, s2 *singleSuggestion) bool {
+			return s1.Score > s2.Score
+		}
+
+		By(rankerScore).Sort(ret)
+
+	}
 
 	return ret
 }
 
-//TODO FINISH THIS
-func readCuiDistance(cuiDistanceFile string) {
+func ReadCuiDistance(cuiDistanceFile string) *cui2vec.PrecomputedEmbeddings {
+	file, err := os.Open(cuiDistanceFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
+	v, _ := cui2vec.NewPrecomputedEmbeddings(file)
+
+	return v
 }
 
 func cui2int(cui string) int {
@@ -399,6 +448,27 @@ func cui2int(cui string) int {
 	t := strings.ReplaceAll(temp, "c", "")
 	res, _ := strconv.Atoi(t)
 	return res
+}
+
+func ReadCuiTitle(titleFile string) map[string]string {
+	var cui2titleDict = make(map[string]string)
+	file, err := os.Open(titleFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		raw := strings.ReplaceAll(scanner.Text(), "\"", "")
+		row := strings.Split(raw, ",")
+		cui2titleDict[row[0]] = row[1]
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+	return cui2titleDict
 }
 
 func (s Server) pmiSimilarity(word1Count float64, word1 string, word2 string) singleSuggestion {
