@@ -52,6 +52,12 @@ type singleSuggestion struct {
 	Term	string `json:"term"`
 }
 
+type combinedSingleSuggestion struct {
+	Score	float64 `json:"score"`
+	Term	string `json:"term"`
+	Source	string `json:"source"`
+}
+
 type suggestions struct {
 	ES		[]singleSuggestion `json:"ES"`
 	CUI		[]singleSuggestion `json:"CUI"`
@@ -172,17 +178,44 @@ func (s Server) ApiKeywordSuggestor(c *gin.Context) {
 	} else {
 		sources = es.Sources
 	}
-	var ret = s.getWordSuggestion(word, size, pool, merged, sources)
 
-	c.JSON(http.StatusOK, ret)
+	splitedSource := strings.Split(sources, ",")
+
+	if merged && len(splitedSource) > 1 {
+		var ret = s.getCombinedSuggestion(word, size, splitedSource, pool)
+		c.JSON(http.StatusOK, ret)
+	} else {
+		var ret = s.getWordSuggestion(word, size, splitedSource, pool)
+		c.JSON(http.StatusOK, ret)
+	}
 }
 
-func (s Server) getWordSuggestion(word string, size int, pool int, merged bool, sources string) suggestions {
+func (s Server) getCombinedSuggestion(word string, size int, splitedSource []string, pool int) []combinedSingleSuggestion {
+	var esRes []singleSuggestion
+	var cuiRes []singleSuggestion
+
+	for _, source := range splitedSource {
+		if strings.EqualFold(source, "ES") {
+			esRes = s.getESWordRanking(word, size, pool)
+		} else if strings.EqualFold(source, "CUI") {
+			cuiRes = s.getCUIWordRanking(word, size)
+		} else {
+			esRes = make([]singleSuggestion, 0)
+			cuiRes = make([]singleSuggestion, 0)
+		}
+	}
+
+	var normalizedScoreRes = minMax(esRes, cuiRes, size)
+
+	return normalizedScoreRes
+}
+
+func (s Server) getWordSuggestion(word string, size int, splitedSource []string, pool int) suggestions {
 	var ret = suggestions{
 		ES: make([]singleSuggestion, 0),
 		CUI: make([]singleSuggestion, 0),
 	}
-	splitedSource := strings.Split(sources, ",")
+
 	for _, source := range splitedSource {
 		if strings.EqualFold(source, "ES") {
 			esRes := s.getESWordRanking(word, size, pool)
@@ -199,18 +232,91 @@ func (s Server) getWordSuggestion(word string, size int, pool int, merged bool, 
 			}
 		}
 	}
-	if merged && len(splitedSource) > 1 {
-		var normalizedScoreRes = minMax(ret, size)
-		return normalizedScoreRes
-	} else {
-		return ret
-	}
+	return ret
 }
 
-//TODO FINISH THIS
-func minMax(res suggestions, size int) suggestions {
-	var ret suggestions
+func minMax(esRes []singleSuggestion, cuiRes []singleSuggestion, size int) []combinedSingleSuggestion {
+	var ret []combinedSingleSuggestion
+	var tempRet []combinedSingleSuggestion
+	var sortedTempRet []combinedSingleSuggestion
+
+	esMax, esMin := findMaxAndMin(esRes)
+	cuiMax, cuiMin := findMaxAndMin(cuiRes)
+
+	for _, esItem := range esRes {
+		var singleESRes combinedSingleSuggestion
+		singleESRes.Score = toFixed((esItem.Score - esMin.Score) / (esMax.Score - esMin.Score), 3)
+		singleESRes.Source = "ES"
+		singleESRes.Term = esItem.Term
+		tempRet = append(tempRet, singleESRes)
+	}
+
+	for _, cuiItem := range cuiRes {
+		var singleCUIRes combinedSingleSuggestion
+		singleCUIRes.Score = toFixed((cuiItem.Score - cuiMin.Score) / (cuiMax.Score - cuiMin.Score), 3)
+		singleCUIRes.Source = "CUI"
+		singleCUIRes.Term = cuiItem.Term
+		tempRet = append(tempRet, singleCUIRes)
+	}
+
+	scores := make([]float64, 0, len(tempRet))
+
+	for _, v := range tempRet {
+		_, found := find(scores, v.Score)
+		if !found {
+			scores = append(scores, v.Score)
+		}
+	}
+
+	sort.Slice(scores, func(i, j int) bool {
+		return scores[i] > scores[j]
+	})
+
+	for _, f := range scores {
+		for _, k := range tempRet {
+			if k.Score == f {
+				sortedTempRet = append(sortedTempRet, k)
+			}
+		}
+	}
+
+	if len(sortedTempRet) < size {
+		ret = sortedTempRet
+	} else {
+		var count = 0
+		for _, val := range sortedTempRet {
+			if count < size {
+				ret = append(ret, val)
+				count = count + 1
+			}
+		}
+	}
+
 	return ret
+}
+
+func find(slice []float64, val float64) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func findMaxAndMin(res []singleSuggestion) (singleSuggestion, singleSuggestion) {
+	var min = res[0]
+	var max = res[0]
+
+	for _, re := range res {
+		if re.Score > max.Score {
+			max = re
+		}
+		if re.Score < min.Score {
+			min = re
+		}
+	}
+	return max, min
 }
 
 func (s Server) getESWordRanking(word string, size int, pool int) []singleSuggestion {
@@ -271,8 +377,8 @@ func (s Server) getESWordRanking(word string, size int, pool int) []singleSugges
 			procTitle := reg.ReplaceAllString(t.Title, " ")
 			procAbs := reg.ReplaceAllString(t.Abstract, " ")
 
-			procTitle = strings.ToLower(procTitle)
-			procAbs = strings.ToLower(procAbs)
+			procTitle1 := strings.ToLower(procTitle)
+			procAbs1 := strings.ToLower(procAbs)
 
 			var meshHeadings []string
 
@@ -280,31 +386,63 @@ func (s Server) getESWordRanking(word string, size int, pool int) []singleSugges
 				meshHeadings = append(meshHeadings, strings.ToLower(item))
 			}
 
-			splitedTitle := strings.Split(strings.Trim(procTitle, " "), " ")
-			splitedAbs := strings.Split(strings.Trim(procAbs, " "), " ")
+			tempTitle := strings.Trim(procTitle1, " ")
+			tempAbs := strings.Trim(procAbs1, " ")
 
-			allTerms = append(allTerms, splitedTitle...)
-			allTerms = append(allTerms, splitedAbs...)
-			allTerms = append(allTerms, meshHeadings...)
+			splitedTitle := strings.Split(strings.Trim(tempTitle, "-"), " ")
+			splitedAbs := strings.Split(strings.Trim(tempAbs, "-"), " ")
+
+			if len(splitedTitle) > 1 {
+				var temp []string
+				for _, k := range splitedTitle {
+					if k != "" {
+						temp = append(temp, strings.Trim(k, "-"))
+					}
+				}
+				allTerms = append(allTerms, temp...)
+			}
+
+			if len(splitedAbs) > 1 {
+				var temp []string
+				for _, k := range splitedAbs {
+					if k != "" {
+						temp = append(temp, strings.Trim(k, "-"))
+					}
+				}
+				allTerms = append(allTerms, temp...)
+			}
+
+			if len(meshHeadings) > 1 {
+				var temp []string
+				for _, k := range meshHeadings {
+					if k != "" {
+						temp = append(temp, strings.Trim(k, "-"))
+					}
+				}
+				allTerms = append(allTerms, temp...)
+			}
 
 			count = count + 1
 		}
+
+		stopwords.DontStripDigits()
 
 		for ind, item := range allTerms {
 			allTerms[ind] = stopwords.CleanString(item, "en", false)
 			allTerms[ind] = strings.Trim(allTerms[ind], " ")
 		}
 
-		for ind, item := range allTerms {
-			if item == "" {
-				allTerms = append(allTerms[:ind], allTerms[ind+1:]...)
+		var noEmpty []string
+		for _, it := range allTerms {
+			if it != "" {
+				noEmpty = append(noEmpty, it)
 			}
 		}
 
 		encountered := map[string]bool{}
 
-		for v:= range allTerms {
-			encountered[allTerms[v]] = true
+		for v := range noEmpty {
+			encountered[noEmpty[v]] = true
 		}
 
 		for key := range encountered {
