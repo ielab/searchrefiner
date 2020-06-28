@@ -728,10 +728,10 @@
                     self.init = true;
                     self.busy = false;
                 });
-                // the retSize and pool size can be changed, default retSize = 10, pool = 20, merged = true, sources = cui,es
-                request.open("GET", "http://localhost:6688/search?retSize=10&pool=20&merged=true&sources=cui,es&term=" + word);
+                // the retSize and pool size can be changed, default retSize = 10, pool = 10, merged = true, sources = cui,es
+                request.open("POST", "/api/keywordSuggestor")
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                request.send(null);
+                request.send("retSize=10&pool=10&merged=true&sources=cui,es&term=" + word);
             },
             updateTree: function (stat, e) {
                 var self = this;

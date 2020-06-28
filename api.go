@@ -49,13 +49,22 @@ type searchResponse struct {
 
 type singleSuggestion struct {
 	Score	float64 `json:"score"`
-	Term	string `json:"term"`
+	Term	string 	`json:"term"`
+}
+
+type suggestorSettings struct {
+	DefaultPool		int   	`json:"default_pool"`
+	DefaultRetSize	int  	`json:"default_retSize"`
+	MaxPool			int  	`json:"max_pool"`
+	MaxRetSize		int  	`json:"max_retSize"`
+	Merged			bool 	`json:"merged"`
+	Sources			string  `json:"sources"`
 }
 
 type combinedSingleSuggestion struct {
 	Score	float64 `json:"score"`
-	Term	string `json:"term"`
-	Source	string `json:"source"`
+	Term	string 	`json:"term"`
+	Source	string 	`json:"source"`
 }
 
 type suggestions struct {
@@ -68,9 +77,9 @@ type errorMessage struct {
 }
 
 type doc struct {
-	Title			string `json:"title"`
-	Abstract		string `json:"abstract"`
-	MeshHeadings	[]string `json:"mesh_headings"`
+	Title			string 		`json:"title"`
+	Abstract		string 		`json:"abstract"`
+	MeshHeadings	[]string 	`json:"mesh_headings"`
 }
 
 type cui struct {
@@ -102,6 +111,19 @@ func (s *ranker) Swap (i, j int) {
 
 func (s *ranker) Less (i, j int) bool {
 	return s.by(&s.suggestions[i], &s.suggestions[j])
+}
+
+func (s Server) SuggestorSettings(c *gin.Context) {
+	var settings suggestorSettings
+	settings.MaxRetSize = s.Config.ES.MaxRetSize
+	settings.DefaultRetSize = s.Config.ES.DefaultRetSize
+	settings.MaxPool = s.Config.ES.MaxPool
+	settings.DefaultPool = s.Config.ES.DefaultPool
+	settings.Merged = s.Config.ES.Merged
+	settings.Sources = s.Config.ES.Sources
+
+	c.JSON(http.StatusOK, settings)
+	return
 }
 
 func (s Server) ApiKeywordSuggestor(c *gin.Context) {

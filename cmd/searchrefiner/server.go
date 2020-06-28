@@ -104,7 +104,7 @@ func main() {
 	perm.Clear()
 	perm.AddUserPath("/query")
 	perm.AddUserPath("/settings")
-	perm.AddPublicPath("/api") ////TODO CHANGE THIS BACK TO USER
+	perm.AddUserPath("/api")
 	perm.AddUserPath("/plugins")
 
 	perm.AddPublicPath("/account")
@@ -292,6 +292,7 @@ func main() {
 	g.POST("/api/cqr2query", searchrefiner.ApiCQR2Query)
 	g.POST("/api/query2cqr", searchrefiner.ApiQuery2CQR)
 	g.POST("/api/keywordSuggestor", s.ApiKeywordSuggestor)
+	g.GET("/api/suggestorSettings", s.SuggestorSettings)
 	g.GET("/api/history", s.ApiHistoryGet)
 	g.POST("/api/history", s.ApiHistoryAdd)
 	g.DELETE("/api/history", s.ApiHistoryDelete)
