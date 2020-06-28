@@ -30,6 +30,18 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	fmt.Println("--------------------------------------------------")
+	fmt.Println("Loading CUI2Title Dict...")
+	var titleFile = c.Options.Cui2VecMappings
+	searchrefiner.Cui2TitleDict = searchrefiner.ReadCuiTitle(titleFile)
+	fmt.Println("Dict Loaded")
+	fmt.Println("--------------------------------------------------")
+	fmt.Println("Loading CUI Distance Matrix...")
+	var distanceFile = c.Options.Cui2VecEmbeddings
+	searchrefiner.DistanceEmbeddings = searchrefiner.ReadCuiDistance(distanceFile)
+	fmt.Println("Embeddings Loaded")
+	fmt.Println("--------------------------------------------------")
+
 	fs, err := ioutil.ReadDir(searchrefiner.PluginStoragePath)
 	if err != nil {
 		log.Fatalln(err)
@@ -279,6 +291,8 @@ func main() {
 	g.POST("/api/transform", searchrefiner.ApiTransform)
 	g.POST("/api/cqr2query", searchrefiner.ApiCQR2Query)
 	g.POST("/api/query2cqr", searchrefiner.ApiQuery2CQR)
+	g.POST("/api/keywordSuggestor", s.ApiKeywordSuggestor)
+	g.GET("/api/suggestorSettings", s.SuggestorSettings)
 	g.GET("/api/history", s.ApiHistoryGet)
 	g.POST("/api/history", s.ApiHistoryAdd)
 	g.DELETE("/api/history", s.ApiHistoryDelete)
