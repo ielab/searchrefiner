@@ -183,17 +183,16 @@
                 <div id="alter" class="panel-footer">
                     <div class="divider"></div>
                     <div v-if="busy && !ready" class="loading loading-lg"></div>
-                    <div v-if="init" style="width: 100%; float: left; border: slateblue 1px solid;"></br>
+                    <div v-if="init" style="width: 100%; float: left;"></br>
                         <div style="text-align: center;"><h5>Alternative Words Found</h5></div>
                         <div class="divider"></div>
-                        <ol style="column-count: 2; -webkit-column-count: 2; -moz-column-count: 2;">
+                        <ol style="column-count: 2; -webkit-column-count: 2; -moz-column-count: 2; list-style: none">
                             <li v-if="init" v-for="item in wordSuggestions" class="pb-2">
-                                <input type="checkbox" class="termSelected" v-bind:name="item.term" v-bind:value="item.term"> [[ item.term ]]</br>
-                                <div class="text-left text-sm">
-                                    <span class="span-sm"><strong>Score:</strong> [[ item.score ]] </span>
-                                </div>
-                                <div class="text-left text-sm">
-                                    <span class="span-sm"><strong>Source:</strong> [[ item.source ]] </span>
+                                <div class="form-group">
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" class="termSelected" v-bind:name="item.term" v-bind:value="item.term">
+                                        <i class="form-icon"></i>[[ item.term ]]
+                                    </label>
                                 </div>
                             </li>
                         </ol>

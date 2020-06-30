@@ -1,33 +1,26 @@
 package searchrefiner
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
-	"github.com/bbalet/stopwords"
+	"fmt"
+	rake "github.com/afjoseph/RAKE.Go"
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
-	"github.com/hscells/cui2vec"
 	"github.com/hscells/guru"
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"math"
 	"net/http"
-	"net/url"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
-
-var Cui2TitleDict map[string]string
-var DistanceEmbeddings *cui2vec.PrecomputedEmbeddings
 
 type searchResponse struct {
 	Start            int
@@ -47,183 +40,93 @@ type searchResponse struct {
 	MeshMaxDepth     float64
 }
 
-type singleSuggestion struct {
-	Score	float64 `json:"score"`
-	Term	string 	`json:"term"`
-}
-
-type suggestorSettings struct {
-	DefaultPool		int   	`json:"default_pool"`
-	DefaultRetSize	int  	`json:"default_retSize"`
-	MaxPool			int  	`json:"max_pool"`
-	MaxRetSize		int  	`json:"max_retSize"`
-	Merged			bool 	`json:"merged"`
-	Sources			string  `json:"sources"`
-}
-
-type combinedSingleSuggestion struct {
-	Score	float64 `json:"score"`
-	Term	string 	`json:"term"`
-	Source	string 	`json:"source"`
+type suggestion struct {
+	Score  float64 `json:"score"`
+	Term   string  `json:"term"`
+	Source string  `json:"source"`
 }
 
 type suggestions struct {
-	ES		[]singleSuggestion `json:"ES"`
-	CUI		[]singleSuggestion `json:"CUI"`
-}
-
-type errorMessage struct {
-	Message string `json:"message"`
+	ES  []suggestion `json:"ES"`
+	CUI []suggestion `json:"CUI"`
 }
 
 type doc struct {
-	Title			string 		`json:"title"`
-	Abstract		string 		`json:"abstract"`
-	MeshHeadings	[]string 	`json:"mesh_headings"`
-}
-
-type cui struct {
-	CandidateCUI	string `json:"CandidateCUI"`
-}
-
-type By func(s1, s2 *singleSuggestion) bool
-
-func (by By) Sort(rankings []singleSuggestion) {
-	ss := &ranker {
-		suggestions: rankings,
-		by: by,
-	}
-	sort.Sort(ss)
-}
-
-type ranker struct {
-	suggestions		[]singleSuggestion
-	by				func(s1, s2 *singleSuggestion) bool
-}
-
-func (s *ranker) Len() int {
-	return len(s.suggestions)
-}
-
-func (s *ranker) Swap (i, j int) {
-	s.suggestions[i], s.suggestions[j] = s.suggestions[j], s.suggestions[i]
-}
-
-func (s *ranker) Less (i, j int) bool {
-	return s.by(&s.suggestions[i], &s.suggestions[j])
-}
-
-func (s Server) SuggestorSettings(c *gin.Context) {
-	var settings suggestorSettings
-	settings.MaxRetSize = s.Config.ES.MaxRetSize
-	settings.DefaultRetSize = s.Config.ES.DefaultRetSize
-	settings.MaxPool = s.Config.ES.MaxPool
-	settings.DefaultPool = s.Config.ES.DefaultPool
-	settings.Merged = s.Config.ES.Merged
-	settings.Sources = s.Config.ES.Sources
-
-	c.JSON(http.StatusOK, settings)
-	return
+	Title        string   `json:"title"`
+	Abstract     string   `json:"abstract"`
+	MeshHeadings []string `json:"mesh_headings"`
 }
 
 func (s Server) ApiKeywordSuggestor(c *gin.Context) {
-	var word, sources string
-	var size, pool int
-	var merged bool
+	var word string
+
 	es := s.Config.ES
+	size := es.DefaultRetSize
+	pool := es.DefaultPool
+	merged := es.Merged
+	sources := es.Sources
+
 	if w, ok := c.GetPostForm("term"); ok {
 		word = w
 		if word == "" {
-			c.JSON(http.StatusOK, make([]string,0))
+			c.JSON(http.StatusOK, make([]string, 0))
 			return
 		}
 	} else {
-		type message = []errorMessage
-		var ret = message{
-			{
-				Message: "No word supplied",
-			},
-		}
-		c.JSON(http.StatusBadRequest, ret)
+		c.Status(http.StatusBadRequest)
 		return
 	}
+
 	if retS, ok := c.GetPostForm("retSize"); ok {
 		s, err := strconv.Atoi(retS)
 		if err != nil {
-			type message = []errorMessage
-			var ret = message{
-				{
-					Message: "Invalid retSize.",
-				},
-			}
-			c.JSON(http.StatusBadRequest, ret)
+			c.Status(http.StatusBadRequest)
 			return
 		}
 		size = s
-	} else {
-		size = es.DefaultRetSize
 	}
+
 	if poo, ok := c.GetPostForm("pool"); ok {
 		p, err := strconv.Atoi(poo)
 		if err != nil {
-			type message = []errorMessage
-			var ret = message{
-				{
-					Message: "Invalid pool.",
-				},
-			}
-			c.JSON(http.StatusBadRequest, ret)
+			c.Status(http.StatusBadRequest)
 			return
 		}
 		pool = p
-	} else {
-		pool = es.DefaultPool
 	}
+
 	if merg, ok := c.GetPostForm("merged"); ok {
 		m, err := strconv.ParseBool(merg)
 		if err != nil {
-			type message = []errorMessage
-			var ret = message{
-				{
-					Message: "Invalid merge flag.",
-				},
-			}
-			c.JSON(http.StatusBadRequest, ret)
+			c.Status(http.StatusBadRequest)
 			return
 		}
 		merged = m
-	} else {
-		merged = es.Merged
-	}
-	if sour, ok := c.GetPostForm("sources"); ok {
-		sources = sour
-	} else {
-		sources = es.Sources
 	}
 
+	if sour, ok := c.GetPostForm("sources"); ok {
+		sources = sour
+	}
 	splitedSource := strings.Split(sources, ",")
 
 	if merged && len(splitedSource) > 1 {
-		var ret = s.getCombinedSuggestion(word, size, splitedSource, pool)
-		c.JSON(http.StatusOK, ret)
-	} else {
-		var ret = s.getWordSuggestion(word, size, splitedSource, pool)
-		c.JSON(http.StatusOK, ret)
+		c.JSON(http.StatusOK, s.getsuggestion(word, size, splitedSource, pool))
+		return
 	}
+
+	c.JSON(http.StatusOK, s.getWordSuggestion(word, size, splitedSource, pool))
+	return
 }
 
-func (s Server) getCombinedSuggestion(word string, size int, splitedSource []string, pool int) []combinedSingleSuggestion {
-	var esRes []singleSuggestion
-	var cuiRes []singleSuggestion
+func (s Server) getsuggestion(word string, size int, splitedSource []string, pool int) []suggestion {
+	var esRes []suggestion
+	var cuiRes []suggestion
 
 	for _, source := range splitedSource {
 		if strings.EqualFold(source, "ES") {
 			esRes = s.getESWordRanking(word, size, pool)
 		} else if strings.EqualFold(source, "CUI") {
 			cuiRes = s.getCUIWordRanking(word, size)
-		} else {
-			esRes = make([]singleSuggestion, 0)
-			cuiRes = make([]singleSuggestion, 0)
 		}
 	}
 
@@ -233,10 +136,7 @@ func (s Server) getCombinedSuggestion(word string, size int, splitedSource []str
 }
 
 func (s Server) getWordSuggestion(word string, size int, splitedSource []string, pool int) suggestions {
-	var ret = suggestions{
-		ES: make([]singleSuggestion, 0),
-		CUI: make([]singleSuggestion, 0),
-	}
+	var ret = suggestions{}
 
 	for _, source := range splitedSource {
 		if strings.EqualFold(source, "ES") {
@@ -245,37 +145,30 @@ func (s Server) getWordSuggestion(word string, size int, splitedSource []string,
 		} else if strings.EqualFold(source, "CUI") {
 			cuiRes := s.getCUIWordRanking(word, size)
 			ret.CUI = cuiRes
-		} else {
-			var ES = make([]singleSuggestion, 0)
-			var CUI = make([]singleSuggestion, 0)
-			ret = suggestions{
-				ES,
-				CUI,
-			}
 		}
 	}
 	return ret
 }
 
-func minMax(esRes []singleSuggestion, cuiRes []singleSuggestion, size int) []combinedSingleSuggestion {
-	var ret []combinedSingleSuggestion
-	var tempRet []combinedSingleSuggestion
-	var sortedTempRet []combinedSingleSuggestion
+func minMax(esRes []suggestion, cuiRes []suggestion, size int) []suggestion {
+	var ret []suggestion
+	var tempRet []suggestion
+	var sortedTempRet []suggestion
 
 	esMax, esMin := findMaxAndMin(esRes)
 	cuiMax, cuiMin := findMaxAndMin(cuiRes)
 
 	for _, esItem := range esRes {
-		var singleESRes combinedSingleSuggestion
-		singleESRes.Score = toFixed((esItem.Score - esMin.Score) / (esMax.Score - esMin.Score), 3)
+		var singleESRes suggestion
+		singleESRes.Score = (esItem.Score - esMin.Score) / (esMax.Score - esMin.Score)
 		singleESRes.Source = "ES"
 		singleESRes.Term = esItem.Term
 		tempRet = append(tempRet, singleESRes)
 	}
 
 	for _, cuiItem := range cuiRes {
-		var singleCUIRes combinedSingleSuggestion
-		singleCUIRes.Score = toFixed((cuiItem.Score - cuiMin.Score) / (cuiMax.Score - cuiMin.Score), 3)
+		var singleCUIRes suggestion
+		singleCUIRes.Score = (cuiItem.Score - cuiMin.Score) / (cuiMax.Score - cuiMin.Score)
 		singleCUIRes.Source = "CUI"
 		singleCUIRes.Term = cuiItem.Term
 		tempRet = append(tempRet, singleCUIRes)
@@ -284,7 +177,12 @@ func minMax(esRes []singleSuggestion, cuiRes []singleSuggestion, size int) []com
 	scores := make([]float64, 0, len(tempRet))
 
 	for _, v := range tempRet {
-		_, found := find(scores, v.Score)
+		found := false
+		for _, item := range scores {
+			if item == v.Score {
+				found = true
+			}
+		}
 		if !found {
 			scores = append(scores, v.Score)
 		}
@@ -317,16 +215,7 @@ func minMax(esRes []singleSuggestion, cuiRes []singleSuggestion, size int) []com
 	return ret
 }
 
-func find(slice []float64, val float64) (int, bool) {
-	for i, item := range slice {
-		if item == val {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
-func findMaxAndMin(res []singleSuggestion) (singleSuggestion, singleSuggestion) {
+func findMaxAndMin(res []suggestion) (suggestion, suggestion) {
 	var min = res[0]
 	var max = res[0]
 
@@ -341,8 +230,7 @@ func findMaxAndMin(res []singleSuggestion) (singleSuggestion, singleSuggestion) 
 	return max, min
 }
 
-func (s Server) getESWordRanking(word string, size int, pool int) []singleSuggestion {
-	var ret []singleSuggestion
+func (s Server) getESWordRanking(word string, size int, pool int) []suggestion {
 	c := s.Config.ES
 	username := c.Username
 	secret := c.Secret
@@ -358,140 +246,97 @@ func (s Server) getESWordRanking(word string, size int, pool int) []singleSugges
 	client, err := elastic.NewSimpleClient(
 		elastic.SetURL(preurl),
 		elastic.SetBasicAuth(username, secret))
-
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	client.Start()
-	query := elastic.NewQueryStringQuery(word)
-
 	result, err := client.Search().
-		Index(indexName).Query(query).
+		Index(indexName).Query(elastic.NewQueryStringQuery(word)).
 		Sort("_score", false).
 		From(0).
 		Size(pool).
 		Pretty(true).
 		Do(context.Background())
-
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	var t doc
 	var count = 0
 	var res []string
 	var word1Count = result.Hits.TotalHits.Value
+	encountered := map[string]struct{}{}
 
 	if word1Count > 0 && count < pool {
 		var allTerms []string
 		for _, hit := range result.Hits.Hits {
 			err := json.Unmarshal(hit.Source, &t)
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 
-			reg, err := regexp.Compile("[^a-zA-Z0-9-]+")
-			if err != nil {
-				log.Fatal(err)
+			title := strings.ToLower(t.Title)
+			abs := strings.ToLower(t.Abstract)
+
+			reg := regexp.MustCompile("[^a-zA-Z0-9-]+")
+
+			// "a b  c"
+			// {"a", "b", "", "c"}
+			//splitTitle := strings.Split(title, " ")
+			//splitAbs := strings.Split(abs, " ")
+			pairs := rake.RunRake(strings.Join([]string{title, abs}, ". "))
+			split := make([]string, len(pairs))
+			for i, pair := range pairs {
+				split[i] = pair.Key
+				fmt.Println(pair.Key, pair.Value)
 			}
-
-			procTitle := reg.ReplaceAllString(t.Title, " ")
-			procAbs := reg.ReplaceAllString(t.Abstract, " ")
-
-			procTitle1 := strings.ToLower(procTitle)
-			procAbs1 := strings.ToLower(procAbs)
 
 			var meshHeadings []string
-
 			for _, item := range t.MeshHeadings {
 				meshHeadings = append(meshHeadings, strings.ToLower(item))
 			}
 
-			tempTitle := strings.Trim(procTitle1, " ")
-			tempAbs := strings.Trim(procAbs1, " ")
+			tokens := append(split, meshHeadings...)
 
-			splitedTitle := strings.Split(strings.Trim(tempTitle, "-"), " ")
-			splitedAbs := strings.Split(strings.Trim(tempAbs, "-"), " ")
-
-			if len(splitedTitle) > 1 {
-				var temp []string
-				for _, k := range splitedTitle {
-					if k != "" {
-						temp = append(temp, strings.Trim(k, "-"))
-					}
+			for _, k := range tokens {
+				if len(k) >= 2 {
+					allTerms = append(allTerms, reg.ReplaceAllString(strings.TrimSpace(k), " "))
 				}
-				allTerms = append(allTerms, temp...)
 			}
-
-			if len(splitedAbs) > 1 {
-				var temp []string
-				for _, k := range splitedAbs {
-					if k != "" {
-						temp = append(temp, strings.Trim(k, "-"))
-					}
-				}
-				allTerms = append(allTerms, temp...)
-			}
-
-			if len(meshHeadings) > 1 {
-				var temp []string
-				for _, k := range meshHeadings {
-					if k != "" {
-						temp = append(temp, strings.Trim(k, "-"))
-					}
-				}
-				allTerms = append(allTerms, temp...)
-			}
-
 			count = count + 1
 		}
 
-		stopwords.DontStripDigits()
-
-		for ind, item := range allTerms {
-			allTerms[ind] = stopwords.CleanString(item, "en", false)
-			allTerms[ind] = strings.Trim(allTerms[ind], " ")
+		for _, v := range allTerms {
+			encountered[v] = struct{}{}
 		}
-
-		var noEmpty []string
-		for _, it := range allTerms {
-			if it != "" {
-				noEmpty = append(noEmpty, it)
-			}
-		}
-
-		encountered := map[string]bool{}
-
-		for v := range noEmpty {
-			encountered[noEmpty[v]] = true
-		}
-
 		for key := range encountered {
 			res = append(res, key)
 		}
 	}
 
-	defer client.Stop()
+	collectionSize, err := client.Count(indexName).Do(context.Background())
+	if err != nil {
+		panic(err)
+	}
 
+	var ret []suggestion
 	for _, term := range res {
-		singleRanking := s.pmiSimilarity(float64(word1Count), word, term)
+		singleRanking := s.pmiSimilarity(float64(word1Count), word, term, client, float64(collectionSize))
 		ret = append(ret, singleRanking)
 	}
 
-	rankerScore := func(s1, s2 *singleSuggestion) bool {
-		return s1.Score > s2.Score
-	}
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].Score > ret[j].Score
+	})
 
-	By(rankerScore).Sort(ret)
-
+	size = c.DefaultRetSize
 	if size == 0 {
-		size = c.DefaultRetSize
+
 	} else if size > c.MaxRetSize {
 		size = c.MaxRetSize
 	}
 
-	var returned []singleSuggestion
+	var returned []suggestion
 	var retCount = 0
 	for _, k := range ret {
 		if retCount < size {
@@ -503,34 +348,15 @@ func (s Server) getESWordRanking(word string, size int, pool int) []singleSugges
 	return returned
 }
 
-func (s Server) getCUIWordRanking(word string, size int) []singleSuggestion {
-	var ret []singleSuggestion
-	var wordCUI string
-	preurl := s.Config.ES.MetaMap
+func (s Server) getCUIWordRanking(word string, size int) []suggestion {
+	var ret []suggestion
 
-	response, err := http.PostForm(preurl, url.Values{
-		word: {""},
-	})
-
+	candidates, err := s.MetaMapClient.Candidates(word)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-
-	defer response.Body.Close()
-	byteBody, _ := ioutil.ReadAll(response.Body)
-
-	var cuis []cui
-
-	err = json.Unmarshal(byteBody, &cuis)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if len(cuis) > 0 {
-		wordCUI = cuis[0].CandidateCUI
-	} else {
-		wordCUI = ""
+	if len(candidates) == 0 {
+		return ret
 	}
 
 	if size == 0 {
@@ -539,168 +365,69 @@ func (s Server) getCUIWordRanking(word string, size int) []singleSuggestion {
 		size = s.Config.ES.MaxRetSize
 	}
 
-	similarCUIs, err := DistanceEmbeddings.Similar(wordCUI)
-
+	similarCUIs, err := s.CUIEmbeddings.Similar(candidates[0].CandidateCUI)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	if len(similarCUIs) > 0 {
-		var temp []singleSuggestion
-		var sizeCount = 0
-		var term string
-		for _, item := range similarCUIs {
-			cui := item.CUI
-			score := item.Value
-			intCUI := cui2int(cui)
+	if len(similarCUIs) == 0 {
+		return ret
+	}
 
-			if val, ok := Cui2TitleDict[strconv.Itoa(intCUI)]; ok {
-				term = val
-			} else {
-				term = ""
+	var term string
+	for _, item := range similarCUIs {
+		cui := item.CUI
+		score := item.Value
+		if val, ok := s.CUIMapping[cui]; ok {
+			term = val
+			oneCUI := suggestion{
+				Score: score,
+				Term:  term,
 			}
-
-			if term != "" {
-				oneCUI := singleSuggestion{
-					Score: score,
-					Term:  term,
-				}
-				temp = append(temp, oneCUI)
-			}
+			ret = append(ret, oneCUI)
 		}
-
-		for _, suggest := range temp {
-			if len(temp) < size {
-				if sizeCount < size {
-					ret = append(ret, suggest)
-					sizeCount = sizeCount + 1
-				}
-			} else {
-				ret = temp
-			}
-		}
-
-		rankerScore := func(s1, s2 *singleSuggestion) bool {
-			return s1.Score > s2.Score
-		}
-
-		By(rankerScore).Sort(ret)
-
 	}
 
-	return ret
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].Score > ret[j].Score
+	})
+
+	if len(ret) < size {
+		return ret
+	}
+	return ret[:size]
 }
 
-func ReadCuiDistance(cuiDistanceFile string) *cui2vec.PrecomputedEmbeddings {
-	file, err := os.Open(cuiDistanceFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	v, _ := cui2vec.NewPrecomputedEmbeddings(file)
-
-	return v
-}
-
-func cui2int(cui string) int {
-	temp := strings.ReplaceAll(cui, "C", "")
-	t := strings.ReplaceAll(temp, "c", "")
-	res, _ := strconv.Atoi(t)
-	return res
-}
-
-func ReadCuiTitle(titleFile string) map[string]string {
-	var cui2titleDict = make(map[string]string)
-	file, err := os.Open(titleFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		raw := strings.ReplaceAll(scanner.Text(), "\"", "")
-		row := strings.Split(raw, ",")
-		cui2titleDict[row[0]] = row[1]
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-	return cui2titleDict
-}
-
-func (s Server) pmiSimilarity(word1Count float64, word1 string, word2 string) singleSuggestion {
+func (s Server) pmiSimilarity(word1Count float64, word1 string, word2 string, client *elastic.Client, collectionSize float64) suggestion {
 	c := s.Config.ES
-	username := c.Username
-	secret := c.Secret
-	preurl := c.URL
 	indexName := c.IndexName
 
-	client, err := elastic.NewSimpleClient(
-		elastic.SetURL(preurl),
-		elastic.SetBasicAuth(username, secret))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client.Start()
+	fmt.Println(word1, word2)
 
 	query2 := elastic.NewQueryStringQuery(word2)
-	query3 := elastic.NewQueryStringQuery("(" + word1 + ")AND(" + word2 + ")")
+	//query3 := elastic.NewQueryStringQuery("(" + word1 + ") AND (" + word2 + ")")
+	//query2 := elastic.NewMatchQuery("_all", word2)
+	query3 := elastic.NewBoolQuery().Must(elastic.NewQueryStringQuery(word1), elastic.NewQueryStringQuery(word2))
 
-	result1, err := client.Search().
-		Index(indexName).
-		Sort("_score", false).
-		Do(context.Background())
-
+	result2, err := client.Count(indexName).Query(query2).Do(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	totalCount := result1.Hits.TotalHits.Value
-
-	result2, err := client.Search().
-		Index(indexName).Query(query2).
-		Sort("_score", false).
-		Do(context.Background())
-
+	result3, err := client.Count(indexName).Query(query3).Do(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	word2Count := result2.Hits.TotalHits.Value
+	score := calculateSimilarity(collectionSize, word1Count, float64(result2), float64(result3))
+	fmt.Println(word1, len(word1), word2, len(word2), collectionSize, word1Count, result2, result3, score)
 
-	result3, err := client.Search().
-		Index(indexName).Query(query3).
-		Sort("_score", false).
-		Do(context.Background())
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	combinedCount := result3.Hits.TotalHits.Value
-
-	score := calculateSimilarity(float64(totalCount), word1Count, float64(word2Count), float64(combinedCount))
-
-	res := singleSuggestion{
+	res := suggestion{
 		Term:  word2,
-		Score: toFixed(score, 4),
+		Score: score,
 	}
 
 	return res
-}
-
-func round(num float64) int {
-	return int(num + math.Copysign(0.5, num))
-}
-
-func toFixed(num float64, precision int) float64 {
-	output := math.Pow(10, float64(precision))
-	return float64(round(num * output)) / output
 }
 
 func pmi(x float64, y float64, xy float64) float64 {
@@ -715,7 +442,7 @@ func calculateSimilarity(documentCount float64, f1 float64, f2 float64, f12 floa
 	var x = (f1 + 1) / (documentCount + 1)
 	var y = (f2 + 1) / (documentCount + 1)
 	var xy = (f12 + 1) / (documentCount + 1)
-	return npmi(xy, pmi(x, y, xy))
+	return -npmi(xy, pmi(x, y, xy))
 }
 
 func (s Server) ApiScroll(c *gin.Context) {

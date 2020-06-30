@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/hscells/cui2vec"
 	"github.com/hscells/groove/stats"
+	"github.com/hscells/metawrap"
 	"github.com/ielab/searchrefiner"
 	log "github.com/sirupsen/logrus"
 	"github.com/xyproto/permissionbolt"
@@ -24,23 +26,27 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer f.Close()
 	var c searchrefiner.Config
 	err = json.NewDecoder(f).Decode(&c)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	fmt.Println("--------------------------------------------------")
-	fmt.Println("Loading CUI2Title Dict...")
-	var titleFile = c.Options.Cui2VecMappings
-	searchrefiner.Cui2TitleDict = searchrefiner.ReadCuiTitle(titleFile)
-	fmt.Println("Dict Loaded")
-	fmt.Println("--------------------------------------------------")
-	fmt.Println("Loading CUI Distance Matrix...")
-	var distanceFile = c.Options.Cui2VecEmbeddings
-	searchrefiner.DistanceEmbeddings = searchrefiner.ReadCuiDistance(distanceFile)
-	fmt.Println("Embeddings Loaded")
-	fmt.Println("--------------------------------------------------")
+	fmt.Println("loading cui2vec mapping...")
+	cuiMapping, err := cui2vec.LoadCUIMapping(c.Options.Cui2VecMappings)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("loading cui2vec model...")
+	cui2vecf, err := os.Open(c.Options.Cui2VecEmbeddings)
+	if err != nil {
+		panic(err)
+	}
+	cuiEmbeddings, err := cui2vec.NewPrecomputedEmbeddings(cui2vecf)
+	if err != nil {
+		panic(err)
+	}
 
 	fs, err := ioutil.ReadDir(searchrefiner.PluginStoragePath)
 	if err != nil {
@@ -129,8 +135,12 @@ func main() {
 		Config:   c,
 		Queries:  make(map[string][]searchrefiner.Query),
 		Settings: make(map[string]searchrefiner.Settings),
-		Entrez:   ss,
 		Storage:  storage,
+
+		Entrez:        ss,
+		CUIEmbeddings: cuiEmbeddings,
+		CUIMapping:    cuiMapping,
+		MetaMapClient: metawrap.HTTPClient{URL: c.ES.MetaMap},
 	}
 
 	permissionHandler := func(c *gin.Context) {
@@ -292,11 +302,9 @@ func main() {
 	g.POST("/api/cqr2query", searchrefiner.ApiCQR2Query)
 	g.POST("/api/query2cqr", searchrefiner.ApiQuery2CQR)
 	g.POST("/api/keywordSuggestor", s.ApiKeywordSuggestor)
-	g.GET("/api/suggestorSettings", s.SuggestorSettings)
 	g.GET("/api/history", s.ApiHistoryGet)
 	g.POST("/api/history", s.ApiHistoryAdd)
 	g.DELETE("/api/history", s.ApiHistoryDelete)
-
 
 	if s.Config.EnableAll == true {
 		// Settings page.
@@ -313,7 +321,7 @@ func main() {
 		// Plugins page.
 		g.GET("/plugins", s.HandlePluginWithControl)
 	}
-  
+
 	// Other utility pages.
 	g.GET("/help", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "help.html", nil)
@@ -328,7 +336,7 @@ func main() {
  |_ -| -_| .'|  _|  _|   |  _| -_|  _| |   | -_|  _|
  |___|___|__,|_| |___|_|_|_| |___|_| |_|_|_|___|_|  
 
- Harry Scells 2019
+ Harry Scells 2018-2020
  harry@scells.me
  https://ielab.io/searchrefiner
 

@@ -4,8 +4,10 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
+	"github.com/hscells/cui2vec"
 	"github.com/hscells/groove/combinator"
 	"github.com/hscells/groove/stats"
+	"github.com/hscells/metawrap"
 	"github.com/xyproto/permissionbolt"
 	"html/template"
 	"path"
@@ -33,17 +35,17 @@ type EntrezConfig struct {
 }
 
 type ESConfig struct {
-	URL					string
-	MetaMap				string
-	Username			string
-	Secret				string
-	IndexName			string
-	DefaultPool			int
-	DefaultRetSize		int
-	MaxRetSize			int
-	MaxPool				int
-	Merged				bool
-	Sources				string
+	URL            string
+	MetaMap        string
+	Username       string
+	Secret         string
+	IndexName      string
+	DefaultPool    int
+	DefaultRetSize int
+	MaxRetSize     int
+	MaxPool        int
+	Merged         bool
+	Sources        string
 }
 
 type Config struct {
@@ -54,14 +56,14 @@ type Config struct {
 	Options    Options
 	Mode       string
 	EnableAll  bool
-	ES		   ESConfig
+	ES         ESConfig
 }
 
 type Options struct {
-	Cui2VecEmbeddings	string
-	Cui2VecMappings		string
-	Quiche				string
-	QuickRank			string
+	Cui2VecEmbeddings string
+	Cui2VecMappings   string
+	Quiche            string
+	QuickRank         string
 }
 
 type Query struct {
@@ -87,9 +89,13 @@ type Server struct {
 	Queries  map[string][]Query
 	Settings map[string]Settings
 	Config   Config
-	Entrez   stats.EntrezStatisticsSource
 	Plugins  []InternalPluginDetails
 	Storage  map[string]*PluginStorage
+
+	Entrez        stats.EntrezStatisticsSource
+	CUIEmbeddings *cui2vec.PrecomputedEmbeddings
+	CUIMapping    cui2vec.Mapping
+	MetaMapClient metawrap.HTTPClient
 }
 
 // Plugin is the interface that must be implemented in order to register an external tool.
