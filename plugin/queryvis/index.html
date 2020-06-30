@@ -184,8 +184,7 @@
                     <div class="divider"></div>
                     <div v-if="busy && !ready" class="loading loading-lg"></div>
                     <div v-if="init" style="width: 100%; float: left;"></br>
-                        <div style="text-align: center;"><h5>Alternative Words Found</h5></div>
-                        <div class="divider"></div>
+                        <div style="text-align: center;">Suggestions:</div>
                         <ol style="column-count: 2; -webkit-column-count: 2; -moz-column-count: 2; list-style: none">
                             <li v-if="init" v-for="item in wordSuggestions" class="pb-2">
                                 <div class="form-group">
@@ -197,7 +196,7 @@
                             </li>
                         </ol>
                         <button class="btn btn nav-height" id="btn-reconstruct" v-on:click="reconstructQuery()" style="margin-left: 3%;">
-                            <i class="icon icon-refresh"></i> Reconstruct
+                            <i class="icon icon-plus"></i> Add terms to search
                         </button>
                         <div class="divider"></div>
                     </div>

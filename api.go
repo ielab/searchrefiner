@@ -155,6 +155,13 @@ func minMax(esRes []suggestion, cuiRes []suggestion, size int) []suggestion {
 	var tempRet []suggestion
 	var sortedTempRet []suggestion
 
+	if len(esRes) == 0 {
+		return cuiRes
+	}
+	if len(cuiRes) == 0 {
+		return esRes
+	}
+
 	esMax, esMin := findMaxAndMin(esRes)
 	cuiMax, cuiMin := findMaxAndMin(cuiRes)
 
