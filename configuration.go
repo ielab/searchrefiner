@@ -8,6 +8,7 @@ import (
 	"github.com/hscells/groove/combinator"
 	"github.com/hscells/groove/stats"
 	"github.com/hscells/metawrap"
+	"github.com/hscells/quickumlsrest"
 	"github.com/xyproto/permissionbolt"
 	"html/template"
 	"path"
@@ -34,18 +35,21 @@ type EntrezConfig struct {
 	APIKey string
 }
 
-type ESConfig struct {
-	URL            string
-	MetaMap        string
-	Username       string
-	Secret         string
-	IndexName      string
-	DefaultPool    int
-	DefaultRetSize int
-	MaxRetSize     int
-	MaxPool        int
-	Merged         bool
-	Sources        string
+type Services struct {
+	ElasticsearchPubMedURL      string
+	ElasticsearchPubMedUsername string
+	ElasticsearchPubMedPassword string
+	ElasticsearchUMLSURL        string
+	ElasticsearchUMLSUsername   string
+	ElasticsearchUMLSPassword   string
+	MetaMapURL                  string
+	IndexName                   string
+	DefaultPool                 int
+	DefaultRetSize              int
+	MaxRetSize                  int
+	MaxPool                     int
+	Merged                      bool
+	Sources                     string
 }
 
 type Config struct {
@@ -53,10 +57,10 @@ type Config struct {
 	AdminEmail string
 	Admins     []string
 	Entrez     EntrezConfig
-	Options    Options
+	Options    Options // TODO: This should be merged into the Services struct.
 	Mode       string
 	EnableAll  bool
-	ES         ESConfig
+	Services   Services
 }
 
 type Options struct {
@@ -94,6 +98,7 @@ type Server struct {
 
 	Entrez        stats.EntrezStatisticsSource
 	CUIEmbeddings *cui2vec.PrecomputedEmbeddings
+	QuicheCache   quickumlsrest.Cache
 	CUIMapping    cui2vec.Mapping
 	MetaMapClient metawrap.HTTPClient
 }

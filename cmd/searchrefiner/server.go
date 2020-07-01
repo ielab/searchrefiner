@@ -8,6 +8,7 @@ import (
 	"github.com/hscells/cui2vec"
 	"github.com/hscells/groove/stats"
 	"github.com/hscells/metawrap"
+	"github.com/hscells/quickumlsrest/quiche"
 	"github.com/ielab/searchrefiner"
 	log "github.com/sirupsen/logrus"
 	"github.com/xyproto/permissionbolt"
@@ -33,6 +34,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	fmt.Println("loading quiche...")
+	quicheCache, err := quiche.Load(c.Options.Quiche)
+	if err != nil {
+		panic(err)
+	}
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("loading cui2vec mapping...")
 	cuiMapping, err := cui2vec.LoadCUIMapping(c.Options.Cui2VecMappings)
 	if err != nil {
@@ -140,7 +149,8 @@ func main() {
 		Entrez:        ss,
 		CUIEmbeddings: cuiEmbeddings,
 		CUIMapping:    cuiMapping,
-		MetaMapClient: metawrap.HTTPClient{URL: c.ES.MetaMap},
+		QuicheCache:   quicheCache,
+		MetaMapClient: metawrap.HTTPClient{URL: c.Services.MetaMapURL},
 	}
 
 	permissionHandler := func(c *gin.Context) {

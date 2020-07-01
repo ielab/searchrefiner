@@ -8,25 +8,28 @@
     "Email": "you@example.com",
     "APIKey": "1234abcde"
   },
-  "Mode" : "",
-  "EnableAll" : true,
+  "Mode": "",
+  "EnableAll": true,
   "Options": {
     "Cui2VecEmbeddings": "path/to/cui2vec_precomputed.bin",
     "Cui2VecMappings": "path/to/cuis.csv",
     "Quiche": "path/to/quiche.cache",
     "QuickRank": "path/to/quicklearn"
   },
-  "ES" : {
-    "URL" : "ielab-pubmed-index",
-    "MetaMap": "ielab-metamap",
-    "Username" : "username-for-elastic-search-index-of-pubmed",
-    "Secret" : "pass-for-elastic-search-index-of-pubmed",
-    "IndexName" : "index-name",
-    "DefaultPool" : 5,
-    "DefaultRetSize" : 5,
-    "MaxRetSize" : 10,
-    "MaxPool" : 10,
-    "Merged" : false,
-    "Sources" : "cui,es"
+  "Services": {
+    "MetaMapURL": "ielab-metamap",
+    "ElasticsearchPubMedURL": "ielab-pubmed-index",
+    "ElasticsearchPubMedUsername": "username-for-elastic-search-index-of-pubmed",
+    "ElasticsearchPubMedPassword": "pass-for-elastic-search-index-of-pubmed",
+    "ElasticsearchPubMedUMLSURL": "ielab-pubmed-index",
+    "ElasticsearchPubMedUMLSUsername": "username-for-elastic-search-index-of-pubmed",
+    "ElasticsearchPubMedUMLSPassword": "pass-for-elastic-search-index-of-pubmed",
+    "IndexName": "index-name",
+    "DefaultPool": 5,
+    "DefaultRetSize": 5,
+    "MaxRetSize": 10,
+    "MaxPool": 10,
+    "Merged": false,
+    "Sources": "cui,es"
   }
 }

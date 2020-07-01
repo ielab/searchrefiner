@@ -47,7 +47,7 @@ type suggestion struct {
 }
 
 type suggestions struct {
-	ES  []suggestion `json:"ES"`
+	ES  []suggestion `json:"Services"`
 	CUI []suggestion `json:"CUI"`
 }
 
@@ -60,7 +60,7 @@ type doc struct {
 func (s Server) ApiKeywordSuggestor(c *gin.Context) {
 	var word string
 
-	es := s.Config.ES
+	es := s.Config.Services
 	size := es.DefaultRetSize
 	pool := es.DefaultPool
 	merged := es.Merged
@@ -123,7 +123,7 @@ func (s Server) getsuggestion(word string, size int, splitedSource []string, poo
 	var cuiRes []suggestion
 
 	for _, source := range splitedSource {
-		if strings.EqualFold(source, "ES") {
+		if strings.EqualFold(source, "Services") {
 			esRes = s.getESWordRanking(word, size, pool)
 		} else if strings.EqualFold(source, "CUI") {
 			cuiRes = s.getCUIWordRanking(word, size)
@@ -139,7 +139,7 @@ func (s Server) getWordSuggestion(word string, size int, splitedSource []string,
 	var ret = suggestions{}
 
 	for _, source := range splitedSource {
-		if strings.EqualFold(source, "ES") {
+		if strings.EqualFold(source, "Services") {
 			esRes := s.getESWordRanking(word, size, pool)
 			ret.ES = esRes
 		} else if strings.EqualFold(source, "CUI") {
@@ -168,7 +168,7 @@ func minMax(esRes []suggestion, cuiRes []suggestion, size int) []suggestion {
 	for _, esItem := range esRes {
 		var singleESRes suggestion
 		singleESRes.Score = (esItem.Score - esMin.Score) / (esMax.Score - esMin.Score)
-		singleESRes.Source = "ES"
+		singleESRes.Source = "Services"
 		singleESRes.Term = esItem.Term
 		tempRet = append(tempRet, singleESRes)
 	}
@@ -238,10 +238,10 @@ func findMaxAndMin(res []suggestion) (suggestion, suggestion) {
 }
 
 func (s Server) getESWordRanking(word string, size int, pool int) []suggestion {
-	c := s.Config.ES
-	username := c.Username
-	secret := c.Secret
-	preurl := c.URL
+	c := s.Config.Services
+	username := c.ElasticsearchPubMedUsername
+	secret := c.ElasticsearchPubMedPassword
+	preurl := c.ElasticsearchPubMedURL
 	indexName := c.IndexName
 
 	if pool == 0 {
@@ -367,9 +367,9 @@ func (s Server) getCUIWordRanking(word string, size int) []suggestion {
 	}
 
 	if size == 0 {
-		size = s.Config.ES.DefaultRetSize
-	} else if size > s.Config.ES.MaxRetSize {
-		size = s.Config.ES.MaxRetSize
+		size = s.Config.Services.DefaultRetSize
+	} else if size > s.Config.Services.MaxRetSize {
+		size = s.Config.Services.MaxRetSize
 	}
 
 	similarCUIs, err := s.CUIEmbeddings.Similar(candidates[0].CandidateCUI)
@@ -406,7 +406,7 @@ func (s Server) getCUIWordRanking(word string, size int) []suggestion {
 }
 
 func (s Server) pmiSimilarity(word1Count float64, word1 string, word2 string, client *elastic.Client, collectionSize float64) suggestion {
-	c := s.Config.ES
+	c := s.Config.Services
 	indexName := c.IndexName
 
 	fmt.Println(word1, word2)
