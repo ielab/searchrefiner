@@ -39,9 +39,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err != nil {
-		panic(err)
-	}
 	fmt.Println("loading cui2vec mapping...")
 	cuiMapping, err := cui2vec.LoadCUIMapping(c.Options.Cui2VecMappings)
 	if err != nil {
