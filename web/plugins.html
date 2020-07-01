@@ -14,15 +14,15 @@
 <div class="container">
 {{ template "nav" }}
     <div class="content">
-        <h1>Plugins</h1>
+        <h1>Automation Tools</h1>
     {{ if . }}
-        <p>This is a list of plugins that have been installed. Clicking the title of a plugin will navigate to the interface for that plugin.</p>
+        <p>This is a list of automation tools available. Clicking a tool will navigate to the corresponding interface.</p>
     {{ range . }}
         <div class="tile tile-centered">
             <div class="tile-content">
                 <div class="tile-title"><a href="{{ .URL }}">{{ .Title }}</a></div>
                 <div class="tile-subtitle"><em>{{ .Description }}</em></div>
-                <div class="tile-subtitle text-gray">{{ .Author }} · {{ .Version }} · <a href="{{ .ProjectURL }}">{{ .ProjectURL }}</a></div>
+{{/*                <div class="tile-subtitle text-gray">{{ .Author }} · {{ .Version }} · <a href="{{ .ProjectURL }}">{{ .ProjectURL }}</a></div>*/}}
             </div>
         </div>
     {{ end }}
@@ -30,8 +30,8 @@
         <p>There are no plugins installed.</p>
     {{end}}
         <div class="divider"></div>
-    {{template "footer"}}
     </div>
 </div>
+{{ template "stylish_footer" }}
 </body>
 </html>

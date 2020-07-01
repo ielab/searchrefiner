@@ -13,32 +13,36 @@
 <div class="container">
     <header class="navbar bg-secondary nav-height mb-2">
         <section class="navbar-section">
-        {{template "sidebar"}}
+            {{template "sidebar"}}
         </section>
     </header>
     <div class="columns">
         <div class="column col-1"></div>
         <div class="column col-10">
-            <h1>Settings</h1>
-            <p>Here you may configure parts of searchrefiner to assist with query formulation.</p>
-            <div class="divider"></div>
+            <h1>Seed PMIDs</h1>
             <div>
-                <label class="form-label" for="rel">Known Relevant PMIDs (separated by a new-line):</label>
-                <textarea class="form-input" id="rel" name="rel"
-                          rows="10">{{ range .Relevant }}{{ . }}
+                <label class="form-label" for="rel">Enter your seed PMIDs here, each one should be on a new line.</label>
+                <div class="form-group">
+                    <!-- @formatter:off -->
+                    <textarea class="form-input" id="rel" name="rel"
+                            rows="10">{{ range .Relevant }}{{ . }}
 {{ end }}</textarea>
-                <button id="btn-rel" class="btn btn-primary form-input">Load</button>
-            {{ if not .Relevant }}
-                <p><span class="text-error">No known relevant PMIDs have been loaded.</span></p>
-            {{ else }}
-                <p><span class="text-success">Loaded {{ len .Relevant }} Relevant PMIDs.</span></p>
-            {{ end }}
+                    <!-- @formatter:on -->
+                </div>
+                <div class="form-group">
+                    <button id="btn-rel" class="btn btn-primary form-input">Load</button>
+                </div>
+                {{ if not .Relevant }}
+                    <p><span class="text-error">No seed PMIDs have been loaded.</span></p>
+                {{ else }}
+                    <p><span class="text-success">Loaded {{ len .Relevant }} seed PMIDs.</span></p>
+                {{ end }}
             </div>
-        {{template "footer"}}
         </div>
         <div class="column col-1"></div>
     </div>
 </div>
+{{ template "stylish_footer" }}
 </body>
 <script type="text/javascript">
     let rel = document.getElementById("rel");

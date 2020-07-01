@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove/analysis"
+	"github.com/hscells/groove/combinator"
 	gpipeline "github.com/hscells/groove/pipeline"
 	"github.com/hscells/transmute"
 	tpipeline "github.com/hscells/transmute/pipeline"
@@ -188,7 +189,8 @@ func (s Server) HandleIndex(c *gin.Context) {
 		Plugins  []InternalPluginDetails
 		Queries  []Query
 		Language string
-	}{Plugins: s.Plugins, Queries: q, Language: "pubmed"})
+		Relevant combinator.Documents
+	}{Plugins: s.Plugins, Queries: q, Language: "pubmed", Relevant: s.Settings[username].Relevant})
 }
 
 func (s Server) HandlePlugins(c *gin.Context) {

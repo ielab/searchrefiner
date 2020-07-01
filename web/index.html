@@ -8,10 +8,14 @@
     <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="static/searchrefiner.css" type="text/css">
     <style>
-        body {
+        .container {
             padding: 32px;
-            background: url("static/searchrefiner.png") no-repeat fixed bottom right;
+            /*background: url("static/searchrefiner.png") no-repeat fixed bottom right;*/
             background-size: 50%;
+        }
+
+        body {
+            margin-bottom: 8%;
         }
 
         .card {
@@ -37,8 +41,7 @@
                             <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here." rows="16" required></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Query Language
-                                <small><a href="/help#WritingQueries">help?</a></small>
+                            <label>Query Language <small>All queries are executed on PubMed regardless of language.</small>
                                 <select class="form-select" name="lang">
                                     <option value="pubmed">PubMed</option>
                                     <option value="medline">Ovid MEDLINE</option>
@@ -89,8 +92,33 @@
             </div>
         </div>
         <div class="column col-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="divider" data-content="SEED PMIDs"></div>
+                </div>
+                <div class="card-body">
+                    <div>
+                        <div class="form-group">
+                            <!-- @formatter:off -->
+                            <textarea class="form-input" id="rel" name="rel" rows="3"
+                              placeholder="Enter your seed PMIDs here, each one should be on a new line.">{{ range .Relevant }}{{ . }}
+{{ end }}</textarea>
+                            <!-- @formatter:on -->
+                        </div>
+                        <div class="form-group">
+                            <button id="btn-rel" class="btn btn-primary form-input">Load</button>
+                        </div>
+                    </div>
+                    {{ if not .Relevant }}
+                        <small><span class="text-error">No seed PMIDs have been loaded.</span></small>
+                    {{ else }}
+                        <small><span class="text-success">Loaded {{ len .Relevant }} Relevant seed PMIDs.</span></small>
+                    {{ end }}
+                </div>
+            </div>
+            <div class="divider"></div>
             <ul class="menu">
-                <li class="divider" data-content="PLUGINS"></li>
+                <li class="divider" data-content="AUTOMATION TOOLS"></li>
                 {{ if .Plugins }}
                     {{ range .Plugins }}
                         <li class="menu-item"><a href="{{ .URL }}">{{ .Title }}</a>
@@ -100,13 +128,6 @@
                 {{ else }}
                     <p>There are no plugins installed.</p>
                 {{end}}
-                <li class="divider" data-content="TOOLS"></li>
-                <li class="menu-item"><a href="/settings">Settings</a>
-                    <small>Configure known relevant documents and other aspects of searchrefiner.</small>
-                </li>
-                <li class="menu-item"><a href="/plugins">Plugins</a>
-                    <small>View details of all installed plugins.</small>
-                </li>
                 <li class="divider" data-content="ACCOUNT"></li>
                 <li class="menu-item"><a href="/account/api/logout">Logout</a>
                     <small>Logout from searchrefiner.</small>
@@ -119,7 +140,33 @@
             bb.log(e, "searchsubmit", document.getElementById("search-box").value)
         })
     </script>
-    {{template "footer"}}
 </div>
+{{ template "stylish_footer" }}
 </body>
+<script type="text/javascript">
+    let rel = document.getElementById("rel");
+    let relBtn = document.getElementById("btn-rel");
+    relBtn.addEventListener("click", function () {
+        let v = rel.value.split("\n");
+        let d = [];
+        for (let i = 0; i < v.length; i++) {
+            if (v[i].length === 0) {
+                continue
+            }
+            let val = parseInt(v[i]);
+            if (isNaN(val)) {
+                alert("PMIDs must be numbers!");
+                return
+            }
+            d.push(val)
+        }
+        let request = new XMLHttpRequest();
+        request.addEventListener("load", function () {
+            window.location.reload();
+        });
+        request.open("POST", "/api/settings/relevant");
+        request.setRequestHeader("Content-Type", "application/json");
+        request.send(JSON.stringify(d));
+    })
+</script>
 </html>

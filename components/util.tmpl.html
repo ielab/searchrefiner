@@ -4,11 +4,9 @@
 
 {{define "footer"}}
     <footer class="pt-2">
-        searchrefiner version {{template "version"}} |
+        searchrefiner | version {{template "version"}} |
         <a href="https://ielab.io/searchrefiner/">about</a> |
-        <a href="/help">help</a> |
-        <a href="https://github.com/ielab/searchrefiner/issues">issues</a> |
-        <a href="https://ielab.io/searchrefiner/changelog">changelog</a>
+        <a href="https://github.com/ielab/searchrefiner/issues">issues</a>
     </footer>
 {{end}}
 
@@ -19,3 +17,9 @@
     <link rel="stylesheet" href="/static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="/static/searchrefiner.css" type="text/css">
 {{end}}
+
+{{ define "stylish_footer" }}
+    <div class="hero-lg bg-primary  " style="width: 100%;position:fixed;bottom: 0;padding: 1%;z-index: 10000">
+        {{template "footer"}}
+    </div>
+{{ end }}
