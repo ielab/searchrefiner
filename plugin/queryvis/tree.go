@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"github.com/hscells/cqr"
 	"github.com/hscells/groove/combinator"
-	"github.com/hscells/groove/stats"
 	"github.com/hscells/transmute/fields"
-	"github.com/ielab/searchrefiner"
 	log "github.com/sirupsen/logrus"
 	"strings"
 )
@@ -91,29 +89,14 @@ var fieldMapping = map[string]string{
 	fields.PublicationStatus:            "Publication Status",
 }
 
-func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss stats.StatisticsSource, relevant ...combinator.Document) (nid int, t tree) {
-	if t.relevant == nil {
-		t.relevant = make(map[combinator.Document]struct{})
-	}
-	if treeNode == nil {
-		log.Debugf("treeNode %v was nil (top treeNode?) (id %v) with parent %v at level %v\n", treeNode, id, parent, level)
-		return
-	}
-	foundRel := 0
-	docs := treeNode.Documents(searchrefiner.QueryCacher)
-	for _, doc := range docs {
-		for _, rel := range relevant {
-			if doc == rel {
-				t.relevant[doc] = struct{}{}
-				foundRel++
-			}
-		}
-	}
+func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int) (nid int, t tree) {
 	switch n := treeNode.(type) {
 	case combinator.Combinator:
-		t.Nodes = append(t.Nodes, node{id, len(docs), level, n.String(), fmtLabel(len(docs), foundRel), "circle"})
+		docs := int(n.N)
+		rels := int(n.R)
+		t.Nodes = append(t.Nodes, node{id, docs, level, n.String(), fmtLabel(docs, rels), "circle"})
 		if parent > 0 {
-			t.Edges = append(t.Edges, edge{parent, id, len(docs), fmtLabel(len(docs), foundRel)})
+			t.Edges = append(t.Edges, edge{parent, id, docs, fmtLabel(docs, rels)})
 		}
 		this := id
 		id++
@@ -123,29 +106,31 @@ func buildTreeRec(treeNode combinator.LogicalTreeNode, id, parent, level int, ss
 				continue
 			}
 			var nt tree
-			id, nt = buildTreeRec(child, id, this, level+1, ss, relevant...)
+			id, nt = buildTreeRec(child, id, this, level+1)
 			t.Nodes = append(t.Nodes, nt.Nodes...)
 			t.Edges = append(t.Edges, nt.Edges...)
 		}
-		log.Debugf("combined [clause#%d] %v (id %v - %v docs) with parent %v at level %v\n", n.Hash, treeNode, id, len(docs), parent, level)
+		log.Debugf("combined [clause#%d] %v (id %v - %v docs) with parent %v at level %v\n", n.Hash, treeNode, id, docs, parent, level)
 	case combinator.Atom:
+		docs := int(n.N)
+		rels := int(n.R)
 		q := n.Query().(cqr.Keyword)
 		mappedFields := make([]string, len(q.Fields))
 		for i, field := range q.Fields {
 			mappedFields[i] = fieldMapping[field]
 		}
-		t.Nodes = append(t.Nodes, node{id, len(docs), level, fmt.Sprintf("%s[%s]", q.QueryString, strings.Join(mappedFields, ",")), fmtLabel(len(docs), foundRel), "box"})
-		t.Edges = append(t.Edges, edge{parent, id, len(docs), fmtLabel(len(docs), foundRel)})
+		t.Nodes = append(t.Nodes, node{id, docs, level, fmt.Sprintf("%s[%s]", q.QueryString, strings.Join(mappedFields, ",")), fmtLabel(docs, rels), "box"})
+		t.Edges = append(t.Edges, edge{parent, id, docs, fmtLabel(docs, rels)})
 		id++
-		log.Debugf("combined [atom#%d] %s%s (id %v - %v docs) with parent %v at level %v\n", n.Hash, q.QueryString, q.Fields, id, len(docs), parent, level)
+		log.Debugf("combined [atom#%d] %s%s (id %v - %v docs) with parent %v at level %v\n", n.Hash, q.QueryString, q.Fields, id, docs, parent, level)
 	}
 	nid += id
 	return
 }
 
-func buildTree(node combinator.LogicalTreeNode, ss stats.StatisticsSource, relevant ...combinator.Document) (t tree) {
+func buildTree(node combinator.LogicalTreeNode, relevant ...combinator.Document) (t tree) {
 	log.Infof("received a query %s with  %d relevant documents", node.String(), len(relevant))
-	_, t = buildTreeRec(node, 1, 0, 0, ss, relevant...)
+	_, t = buildTreeRec(node, 1, 0, 0)
 	log.Infof("finished processing query, tree has been constructed")
 	return
 }

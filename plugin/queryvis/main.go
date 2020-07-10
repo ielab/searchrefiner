@@ -30,6 +30,7 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 	} else {
 		lang = "medline"
 	}
+	username := s.Perm.UserState().Username(c.Request)
 
 	log.Infof("recieved a query %s in format %s", rawQuery, lang)
 
@@ -44,17 +45,21 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 		return
 	}
 	var root combinator.LogicalTree
-	root, _, err = combinator.NewLogicalTree(gpipeline.NewQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, searchrefiner.QueryCacher)
+	root, err = combinator.NewShallowLogicalTree(gpipeline.NewQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, s.Settings[username].Relevant)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	t := buildTree(root.Root, s.Entrez, searchrefiner.GetSettings(s, c).Relevant...)
+	t := buildTree(root.Root, searchrefiner.GetSettings(s, c).Relevant...)
 
-	username := s.Perm.UserState().Username(c.Request)
 	t.NumRel = len(s.Settings[username].Relevant)
-	t.NumRelRet = len(t.relevant)
+	switch r := root.Root.(type) {
+	case combinator.Combinator:
+		t.NumRelRet = int(r.R)
+	case combinator.Atom:
+		t.NumRelRet = int(r.R)
+	}
 
 	var numRet int64
 	if len(t.Nodes) > 0 {

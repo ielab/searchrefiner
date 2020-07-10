@@ -81,7 +81,6 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 		if u == username {
 			s.Perm.UserState().AddUser(username, password, username)
 			s.Perm.UserState().SetAdminStatus(username)
-			s.Perm.UserState().MarkConfirmed(username)
 			isAdmin = true
 			break
 		}
@@ -89,9 +88,9 @@ func (s Server) ApiAccountCreate(c *gin.Context) {
 
 	if !isAdmin {
 		s.Perm.UserState().AddUser(username, password, username)
-		s.Perm.UserState().AddUnconfirmed(username, "unconfirmed")
 	}
 
+	s.Perm.UserState().MarkConfirmed(username)
 	err := s.Perm.UserState().Login(c.Writer, username)
 	if err != nil {
 		c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/account/create"})
