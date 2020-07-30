@@ -1,6 +1,7 @@
 package searchrefiner
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,8 +12,10 @@ import (
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
+	"github.com/ielab/toolexchange"
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
@@ -715,6 +718,60 @@ func (s Server) ApiHistoryAdd(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 	return
+}
+func (s Server) ApiRequestTokenFromExchangeServer(query string) string {
+
+	body := &toolexchange.Item{
+		Data: map[string]string{
+			"query": query,
+		},
+		Referrer: "searchrefiner",
+	}
+
+	reqBody, err1 := json.Marshal(body)
+
+	if err1 != nil {
+		panic(err1)
+	}
+
+	resp, err2 := http.Post(s.Config.ExchangeServerAddress, "application/json", bytes.NewBuffer(reqBody))
+
+	if err2 != nil {
+		panic(err2)
+	}
+
+	defer resp.Body.Close()
+
+	content, err3 := ioutil.ReadAll(resp.Body)
+
+	if err3 != nil {
+		panic(err3)
+	}
+
+	return string(content)
+}
+
+func (s Server) ApiGetQuerySeedFromExchangeServer(token string) (toolexchange.Item, error) {
+	var content toolexchange.Item
+	path := s.Config.ExchangeServerAddress + "?token=" + token
+	resp, err := http.Get(path)
+
+	if err != nil {
+		return content, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return content, err
+	}
+
+	err = json.Unmarshal(body, &content)
+	if err != nil {
+		return content, err
+	}
+
+	return content, nil
 }
 
 func (s Server) ApiHistoryDelete(c *gin.Context) {

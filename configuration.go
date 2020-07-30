@@ -52,6 +52,10 @@ type Services struct {
 	Sources                     string
 }
 
+type OtherServiceAddresses struct {
+	SRA string
+}
+
 type Config struct {
 	Host       string
 	AdminEmail string
@@ -61,6 +65,8 @@ type Config struct {
 	Mode       string
 	EnableAll  bool
 	Services   Services
+	ExchangeServerAddress string
+	OtherServiceAddresses OtherServiceAddresses
 }
 
 type Options struct {

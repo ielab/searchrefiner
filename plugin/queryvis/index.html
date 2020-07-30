@@ -518,7 +518,7 @@
             textQuery: "{{.QueryString}}",
             queryLanguage: "pubmed",
             cqrQuery: {},
-            wordSuggestions: [{"term":"", "score":0.0}],
+            wordSuggestions: [{"term": "", "score": 0.0}],
             init: false,
             busy: false,
             ready: false,
@@ -579,25 +579,25 @@
                     var trimmedField = field.substr(1).slice(0, -1);
                     var fields = [trimmedField];
                     var child = {
-                        "fields" : fields,
-                        "options" : {
-                            "exploded" : true,
-                            "truncated" : false
+                        "fields": fields,
+                        "options": {
+                            "exploded": true,
+                            "truncated": false
                         },
-                        "id" : maxId += 1,
-                        "parentId" : id,
-                        "shape" : "box",
-                        "query" : selectedTerms[j].split("[", 1)[0],
-                        "label" : selectedTerms[j].split("[", 1)[0] + field,
+                        "id": maxId += 1,
+                        "parentId": id,
+                        "shape": "box",
+                        "query": selectedTerms[j].split("[", 1)[0],
+                        "label": selectedTerms[j].split("[", 1)[0] + field,
                     }
                     newNodes.push(child);
                 }
                 var newNode = {
-                    "id" : id,
-                    "operator" : "or",
-                    "label" : "or",
-                    "shape" : "circle",
-                    "options" : {},
+                    "id": id,
+                    "operator": "or",
+                    "label": "or",
+                    "shape": "circle",
+                    "options": {},
                 };
                 for (var i = 0; i < filteredNodes.length; i++) {
                     if (filteredNodes[i].id === id) {
@@ -648,10 +648,10 @@
                 let self = this;
                 // Thanks to https://stackoverflow.com/a/31247960
                 var base = [],
-                dict = {},
-                item,
-                itemInMap;
-                for(var i = 0; i < filteredNodes.length; i++) {
+                    dict = {},
+                    item,
+                    itemInMap;
+                for (var i = 0; i < filteredNodes.length; i++) {
                     item = filteredNodes[i];
                     dict[item.id] = item;
                     dict[item.id]['children'] = [];
@@ -667,8 +667,8 @@
                             } else if (itemInMap['children'].length === 0) {
                                 delete itemInMap.children;
                                 itemInMap['options'] = {
-                                    "exploded" : true,
-                                    "truncated" : false
+                                    "exploded": true,
+                                    "truncated": false
                                 };
                                 if (itemInMap['query'] === undefined || itemInMap['query'] === null || itemInMap['query'] === '') {
                                     var field = "[" + itemInMap['label'].split("[", 2)[1];
@@ -743,7 +743,12 @@
                     self.numRel = resp.NumRel;
                     self.numRelRet = resp.NumRelRet;
                 });
-                request.open("POST", "/plugin/queryvis?tree=y", true);
+                var url = "/plugin/queryvis?tree=y"
+                var urlParams = new URLSearchParams(window.location.search)
+                if (urlParams.has("token")) {
+                    url += "&token=" + urlParams.get("token")
+                }
+                request.open("POST", url, true);
                 request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 request.send("query=" + this.textQuery + "&lang=" + this.queryLanguage);
             },
