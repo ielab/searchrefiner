@@ -12,6 +12,7 @@ import (
 	"github.com/hscells/transmute"
 	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
+	"github.com/ielab/toolexchange"
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -724,18 +725,13 @@ type Data struct {
 	Seeds string `json:"seeds"`
 }
 
-type ExchangeContent struct {
-	Data Data `json:"data"`
-	Referrer string `json:"referrer"`
-}
-
 func (s Server) ApiRequestTokenFromExchangeServer(query string) string {
 
-	body := &ExchangeContent{
-		Data{
-			Query: query,
+	body := &toolexchange.Item{
+		Data: map[string]string{
+			"query": query,
 		},
-		"searchrefiner",
+		Referrer: "searchrefiner",
 	}
 
 	reqBody, err1 := json.Marshal(body)
@@ -761,64 +757,27 @@ func (s Server) ApiRequestTokenFromExchangeServer(query string) string {
 	return string(content)
 }
 
-// TODO
-//func (s Server) ApiDirectToSRA(c *gin.Context) {
-//	query := c.PostForm("query")
-//	token := s.ApiRequestTokenFromExchangeServer(query)
-//
-//	SRAPath := s.Config.OtherServiceAddresses.SRA + "?token=" + token
-//
-//	http.Redirect(http.ResponseWriter(), *http.Request{}, SRAPath, http.StatusSeeOther)
-//}
-
-// TODO
-// Issues:
-// 1. Seems all plugins paths are public now
-// 2. Since the redirected users dont have username, where should we store the seeds
-// 3. If plugins are not public, how to handle the auth
-// 4. Should we put the request to SRA in the frontend or in the backend cause now I see you add a button to direct to SRA
-// 5. Now it is working if someone requests the url to queryvis as: https://www.xxx.com/plugin/queryvis?token=xxxxxxxxxxxxx
-// because now we dont know how to distinguish between different tools
-
-// TODO
-func (s Server) ApiPassExchangeToken(c *gin.Context) {
-	query := c.PostForm("query")
-	token := s.ApiRequestTokenFromExchangeServer(query)
-
-	resp := map[string]string{
-		"token" : token,
-	}
-
-	c.JSON(http.StatusOK, resp)
-	return
-}
-
-func (s Server) ApiGetQuerySeedFromExchangeServer (token string) ExchangeContent {
+func (s Server) ApiGetQuerySeedFromExchangeServer(token string) (toolexchange.Item, error) {
+	var content toolexchange.Item
 	path := s.Config.ExchangeServerAddress + "?token=" + token
+	resp, err := http.Get(path)
 
-	resp, err1 := http.Get(path)
-
-	if err1 != nil {
-		panic(err1)
+	if err != nil {
+		return content, err
 	}
-
 	defer resp.Body.Close()
 
-	body, err2 := ioutil.ReadAll(resp.Body)
-
-	if err2 != nil {
-		panic(err2)
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return content, err
 	}
 
-	content := ExchangeContent{}
-
-	err3 := json.Unmarshal(body, &content)
-
-	if err3 != nil {
-		panic(err3)
+	err = json.Unmarshal(body, &content)
+	if err != nil {
+		return content, err
 	}
 
-	return content
+	return content, nil
 }
 
 func (s Server) ApiHistoryDelete(c *gin.Context) {
