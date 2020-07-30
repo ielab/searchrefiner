@@ -56,11 +56,13 @@ func handleTree(s searchrefiner.Server, c *gin.Context, relevant ...combinator.D
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
-	}
-	if relevant != nil && len(relevant) == 0 {
-		relevant = s.Settings[username].Relevant
+
 	}
 
+	if len(relevant) == 0 {
+		relevant = s.Settings[username].Relevant
+	}
+	
 	var root combinator.LogicalTree
 	root, err = combinator.NewShallowLogicalTree(gpipeline.NewQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, relevant)
 	if err != nil {
