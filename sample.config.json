@@ -31,5 +31,9 @@
     "MaxPool": 10,
     "Merged": false,
     "Sources": "cui,es"
+  },
+  "ExchangeServerAddress": "https://abc.com/exchange",
+  "OtherServiceAddresses": {
+    "SRA": ""
   }
 }

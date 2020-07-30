@@ -78,12 +78,23 @@ func handleTree(s searchrefiner.Server, c *gin.Context) {
 }
 
 func (QueryVisPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
-	if c.Request.Method == "POST" && c.Query("tree") == "y" {
+	if c.Request.Method == "POST" && (c.Query("tree") == "y") {
 		handleTree(s, c)
 		return
 	}
-	rawQuery := c.PostForm("query")
-	lang := c.PostForm("lang")
+
+	rawQuery := ""
+	lang := ""
+
+	if c.Request.Method == "GET" && c.Query("token") != "" {
+		content := s.ApiGetQuerySeedFromExchangeServer(c.Query("token"))
+		rawQuery = content.Data.Query
+		lang = "pubmed"
+	} else {
+		rawQuery = c.PostForm("query")
+		lang = c.PostForm("lang")
+	}
+
 	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/queryvis/index.html"), struct {
 		searchrefiner.Query
 		View string
