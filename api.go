@@ -719,12 +719,6 @@ func (s Server) ApiHistoryAdd(c *gin.Context) {
 	c.Status(http.StatusOK)
 	return
 }
-
-type Data struct {
-	Query string `json:"query"`
-	Seeds string `json:"seeds"`
-}
-
 func (s Server) ApiRequestTokenFromExchangeServer(query string) string {
 
 	body := &toolexchange.Item{
