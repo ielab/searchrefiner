@@ -170,8 +170,8 @@
                         <button class="btn btn nav-height" id="btn-update-tree" v-on:click="updateTree('none')">
                             <i class="icon icon-refresh"></i> Visualise
                         </button>
-                        <button class="btn btn-link" onclick="resultsView()" type="button">
-                            Analysis <i class="icon icon-arrow-right"></i>
+                        <button class="btn btn-link" v-on:click="sendToPolyglot()" type="button">
+                            Open Query in Polyglot <i class="icon icon-arrow-right"></i>
                         </button>
                     </div>
                 </div>
@@ -763,7 +763,18 @@
                 request.open("POST", "/api/query2cqr");
                 request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                 request.send("query=" + self.textQuery + "&lang=" + self.queryLanguage);
-            }, 300)
+            }, 300),
+            sendToPolyglot: function () {
+                var request = new XMLHttpRequest();
+                request.addEventListener("load", function (ev) {
+                    if (ev.currentTarget.status === 200) {
+                        window.open("https://sr-accelerator.com/#/polyglot?token=" + ev.target.responseText, target = "_blank");
+                    }
+                });
+                request.open("POST", "https://ielab-sysrev3.uqcloud.net/exchange", true);
+                request.setRequestHeader('Content-Type', 'application/json');
+                request.send(JSON.stringify({data: {query: this.textQuery}, referrer: "searchrefiner"}));
+            }
         },
         mounted: function () {
             highlightPubmed()

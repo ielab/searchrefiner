@@ -5,7 +5,6 @@ go_source = *.go cmd/searchrefiner/*.go
 
 SERVER = server
 
-all: $(SERVER)
 plugin: $(plugin_obs)
 PHONEY: run all plugin clean
 
@@ -16,8 +15,8 @@ $(SERVER): $(plugin_obs) $(go_source)
 $(plugin_obs): $$(patsubst %plugin.so,%*.go,$$@)
 	go build -buildmode=plugin -o $@ $^
 
-run: all
+run: clean $(SERVER)
 	@./server
 
 clean:
-	rm $(foreach plugin,$(plugin_obs),$(plugin)) server
+	@[ -f server ] && rm $(foreach plugin,$(plugin_obs),$(plugin)) server] || true
