@@ -57,19 +57,19 @@ type OtherServiceAddresses struct {
 }
 
 type Config struct {
-	Host       string
-	AdminEmail string
-	Admins     []string
-	Entrez     EntrezConfig
-	Options    Options // TODO: This should be merged into the Services struct.
-	Mode       string
-	EnableAll  bool
-	Services   Services
+	Host                  string
+	AdminEmail            string
+	Admins                []string
+	Entrez                EntrezConfig
+	Resources             Resources // TODO: This should be merged into the Services struct.
+	Mode                  string
+	EnableAll             bool
+	Services              Services
 	ExchangeServerAddress string
 	OtherServiceAddresses OtherServiceAddresses
 }
 
-type Options struct {
+type Resources struct {
 	Cui2VecEmbeddings string
 	Cui2VecMappings   string
 	Quiche            string
@@ -83,6 +83,9 @@ type Query struct {
 	NumRet      int64     `csv:"num_ret"`
 	NumRelRet   int64     `csv:"num_rel_ret"`
 	Relevant    []string  `csv:"relevant"`
+
+	Plugins     []InternalPluginDetails
+	PluginTitle string
 }
 
 type ErrorPage struct {
@@ -124,6 +127,8 @@ type PluginDetails struct {
 	Author      string
 	Version     string
 	ProjectURL  string
+
+	AcceptsQueryPosts bool
 }
 
 // InternalPluginDetails contains details about a plugin which are vital in rendering the plugin page.

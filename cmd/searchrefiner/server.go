@@ -35,17 +35,17 @@ func main() {
 	}
 
 	fmt.Println("loading quiche...")
-	quicheCache, err := quiche.Load(c.Options.Quiche)
+	quicheCache, err := quiche.Load(c.Resources.Quiche)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("loading cui2vec mapping...")
-	cuiMapping, err := cui2vec.LoadCUIMapping(c.Options.Cui2VecMappings)
+	cuiMapping, err := cui2vec.LoadCUIMapping(c.Resources.Cui2VecMappings)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("loading cui2vec model...")
-	cui2vecf, err := os.Open(c.Options.Cui2VecEmbeddings)
+	cui2vecf, err := os.Open(c.Resources.Cui2VecEmbeddings)
 	if err != nil {
 		panic(err)
 	}

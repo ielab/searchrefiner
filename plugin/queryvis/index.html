@@ -170,9 +170,10 @@
                         <button class="btn btn nav-height" id="btn-update-tree" v-on:click="updateTree('none')">
                             <i class="icon icon-refresh"></i> Visualise
                         </button>
-                        <button class="btn btn-link" v-on:click="sendToPolyglot()" type="button">
-                            Open Query in Polyglot <i class="icon icon-arrow-right"></i>
-                        </button>
+                        {{ template "send_query" .}}
+                        {{/*                        <button class="btn btn-link" v-on:click="sendToPolyglot()" type="button">*/}}
+                        {{/*                            Open Query in Polyglot <i class="icon icon-arrow-right"></i>*/}}
+                        {{/*                        </button>*/}}
                     </div>
                 </div>
                 <div class="form-group p-2">
@@ -926,6 +927,8 @@
         document.body.appendChild(form);
         form.submit();
     };
+    sendToPolyglot = function () {
+    }
 </script>
 </body>
 </html>

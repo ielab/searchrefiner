@@ -36,7 +36,7 @@
                     <h3>Query Analysis</h3>
                     <form action="/query" method="post" accept-charset="UTF-8">
                         <div class="form-group">
-                            <textarea name="query" id="query" class="form-input" placeholder="Enter query here." rows="10" required>{{ .OriginalQuery }}</textarea>
+                            <textarea name="query" id="query" class="form-input" placeholder="Enter query here." rows="10" required>{{ .QueryString }}</textarea>
                         </div>
                         <div class="form-group">
                             <label>Query Language
@@ -66,13 +66,13 @@
                     <h4>Statistics</h4>
                     <ul>
                         <li><b>{{ .TotalHits }}</b> results.</li>
+                        <li><b>{{ .RelRet }}</b> seed studies retrieved.</li>
                         <li><b>{{ .BooleanClauses }}</b> clauses.</li>
                         <li><b>{{ .BooleanKeywords }}</b> keywords.</li>
                         <li><b>{{ .MeshKeywords }}</b> MeSH Term keywords.</li>
-                        <li><b>{{ .MeshExploded }}</b> MeSH Term keywords (exploded).</li>
-                        <li><b>{{ .MeshAvgDepth }}</b> MeSH Term average depth.</li>
-                        <li><b>{{ .MeshMaxDepth }}</b> MeSH Term maximum depth.</li>
                     </ul>
+                    <h4>Send this query to...</h4>
+                    {{ template "send_query" .}}
                 </div>
             </div>
             <div class="divider"></div>
@@ -121,7 +121,7 @@
                     Query Analysis
                 </label>
                 <div class="accordion-body">
-                    <pre id="original" class="code" data-lang="Original">{{ .OriginalQuery }}</pre>
+                    <pre id="original" class="code" data-lang="Original">{{ .QueryString }}</pre>
                     <pre id="transformed" class="code" data-lang="Transformed">{{ .TransformedQuery }}</pre>
                 </div>
             </div>

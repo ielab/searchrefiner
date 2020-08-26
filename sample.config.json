@@ -8,13 +8,13 @@
     "Email": "you@example.com",
     "APIKey": "1234abcde"
   },
-  "Mode": "",
   "EnableAll": true,
-  "Options": {
-    "Cui2VecEmbeddings": "path/to/cui2vec_precomputed.bin",
-    "Cui2VecMappings": "path/to/cuis.csv",
-    "Quiche": "path/to/quiche.cache",
-    "QuickRank": "path/to/quicklearn"
+  "Mode": "",
+  "Resources": {
+    "Cui2VecEmbeddings": "resources/cui2vec_precomputed.bin",
+    "Cui2VecMappings": "resources/cuis.csv",
+    "Quiche": "resources/quiche.cache",
+    "QuickRank": "resources/quickrank/bin/quicklearn"
   },
   "Services": {
     "MetaMapURL": "ielab-metamap",
@@ -32,8 +32,5 @@
     "Merged": false,
     "Sources": "cui,es"
   },
-  "ExchangeServerAddress": "https://abc.com/exchange",
-  "OtherServiceAddresses": {
-    "SRA": ""
-  }
+  "ExchangeServerAddress": "https://ielab-sysrev3.uqcloud.net/exchange"
 }

@@ -28,8 +28,9 @@ import (
 type searchResponse struct {
 	Start            int
 	TotalHits        int64
+	RelRet           float64
 	TookInMillis     float64
-	OriginalQuery    string
+	QueryString      string
 	TransformedQuery string
 	PreviousQueries  []Query
 	Documents        []guru.MedlineDocument
@@ -41,6 +42,9 @@ type searchResponse struct {
 	MeshExploded     float64
 	MeshAvgDepth     float64
 	MeshMaxDepth     float64
+
+	Plugins     []InternalPluginDetails
+	PluginTitle string
 }
 
 type suggestion struct {

@@ -85,7 +85,7 @@ func (s Server) HandleResults(c *gin.Context) {
 		Start:            len(docs),
 		TotalHits:        int64(size),
 		TookInMillis:     float64(time.Since(start).Nanoseconds()) / 1e-6,
-		OriginalQuery:    rawQuery,
+		QueryString:      rawQuery,
 		TransformedQuery: q,
 		Documents:        docs,
 		Language:         lang,
@@ -143,9 +143,11 @@ func (s Server) HandleQuery(c *gin.Context) {
 	sr := searchResponse{
 		TotalHits:        int64(size),
 		TookInMillis:     float64(time.Since(start).Nanoseconds()) / 1e-6,
-		OriginalQuery:    rawQuery,
+		QueryString:      rawQuery,
 		TransformedQuery: transformed,
 		Language:         lang,
+
+		PluginTitle: "searchrefiner",
 	}
 
 	gq := gpipeline.NewQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation))
@@ -153,22 +155,33 @@ func (s Server) HandleQuery(c *gin.Context) {
 	sr.BooleanFields, _ = analysis.BooleanFields.Execute(gq, s.Entrez)
 	sr.BooleanKeywords, _ = analysis.BooleanKeywords.Execute(gq, s.Entrez)
 	sr.MeshKeywords, _ = analysis.MeshKeywordCount.Execute(gq, s.Entrez)
-	sr.MeshExploded, _ = analysis.MeshExplodedCount.Execute(gq, s.Entrez)
-	sr.MeshAvgDepth, _ = analysis.MeshAvgDepth.Execute(gq, s.Entrez)
-	sr.MeshMaxDepth, _ = analysis.MeshMaxDepth.Execute(gq, s.Entrez)
 
-	username := s.Perm.UserState().Username(c.Request)
+	if s.Perm.UserState().UserRights(c.Request) {
+		username := s.Perm.UserState().Username(c.Request)
+		t, err := combinator.NewShallowLogicalTree(gq, s.Entrez, s.Settings[username].Relevant)
+		if err != nil {
+			c.HTML(http.StatusInternalServerError, "error.html", ErrorPage{Error: err.Error(), BackLink: "/"})
+			return
+		}
+		switch q := t.Root.(type) {
+		case combinator.Combinator:
+			sr.RelRet = q.R
+		case combinator.Atom:
+			sr.RelRet = q.R
+		}
 
-	// Reverse the list of previous queries.
-	rev := make([]Query, len(s.Queries[username]))
-	j := 0
-	for i := len(s.Queries[username]) - 1; i >= 0; i-- {
-		rev[j] = s.Queries[username][i]
-		j++
+		// Reverse the list of previous queries.
+		rev := make([]Query, len(s.Queries[username]))
+		j := 0
+		for i := len(s.Queries[username]) - 1; i >= 0; i-- {
+			rev[j] = s.Queries[username][i]
+			j++
+		}
+		sr.PreviousQueries = rev
+
+		s.Queries[username] = append(s.Queries[username], Query{QueryString: rawQuery, Language: lang, NumRet: sr.TotalHits})
 	}
-	sr.PreviousQueries = rev
-
-	s.Queries[username] = append(s.Queries[username], Query{QueryString: rawQuery, Language: lang, NumRet: sr.TotalHits})
+	sr.Plugins = s.Plugins
 	c.HTML(http.StatusOK, "query.html", sr)
 }
 

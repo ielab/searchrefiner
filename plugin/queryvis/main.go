@@ -62,7 +62,7 @@ func handleTree(s searchrefiner.Server, c *gin.Context, relevant ...combinator.D
 	if len(relevant) == 0 {
 		relevant = s.Settings[username].Relevant
 	}
-	
+
 	var root combinator.LogicalTree
 	root, err = combinator.NewShallowLogicalTree(gpipeline.NewQuery("searchrefiner", "0", repr.(cqr.CommonQueryRepresentation)), s.Entrez, relevant)
 	if err != nil {
@@ -147,7 +147,7 @@ func (QueryVisPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/queryvis/index.html"), struct {
 		searchrefiner.Query
 		View string
-	}{searchrefiner.Query{QueryString: rawQuery, Language: lang}, c.Query("view")}))
+	}{searchrefiner.Query{QueryString: rawQuery, Language: lang, Plugins: s.Plugins, PluginTitle: "QueryVis"}, c.Query("view")}))
 	return
 }
 
@@ -157,11 +157,12 @@ func (QueryVisPlugin) PermissionType() searchrefiner.PluginPermission {
 
 func (QueryVisPlugin) Details() searchrefiner.PluginDetails {
 	return searchrefiner.PluginDetails{
-		Title:       "QueryVis",
-		Description: "Visualise queries as a syntax tree overlaid with retrieval statistics and other understandability visualisations.",
-		Author:      "ielab",
-		Version:     "12.Feb.2019",
-		ProjectURL:  "ielab.io/searchrefiner",
+		Title:             "QueryVis",
+		Description:       "Visualise queries as a syntax tree overlaid with retrieval statistics and other understandability visualisations.",
+		Author:            "ielab",
+		Version:           "26.Aug.2020",
+		ProjectURL:        "ielab.io/searchrefiner",
+		AcceptsQueryPosts: true,
 	}
 }
 

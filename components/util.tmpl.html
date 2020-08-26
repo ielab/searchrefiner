@@ -1,5 +1,5 @@
 {{define "version"}}
-    30.June.2020
+    25.Aug.2020
 {{end}}
 
 {{define "footer"}}
@@ -22,4 +22,36 @@
     <div class="hero-lg bg-primary  " style="width: 100%;position:fixed;bottom: 0;padding: 1%;z-index: 10000">
         {{template "footer"}}
     </div>
+{{ end }}
+
+
+{{ define "send_query" }}
+    {{ $query := .QueryString }}
+    {{ $lang := .Language }}
+    {{ $title := .PluginTitle }}
+    {{ range $plugin := .Plugins }}
+        {{ if $plugin.AcceptsQueryPosts }}
+            {{ if ne $title $plugin.Title }}
+                <form action="/{{ $plugin.URL }}" method="post">
+                    <input type="hidden" name="query" v-bind:value="textQuery" value="{{ $query }}">
+                    <input type="hidden" name="lang" value="{{ $lang }}">
+                    <button class="btn btn-link">{{ $plugin.Title }} <i class="icon icon-arrow-right"></i></button>
+                </form>
+            {{ end }}
+        {{ end }}
+    {{ end }}
+    <button class="btn btn-link" v-on:click="sendToPolyglot()" onclick="sendToPolyglot()">Polyglot (external tool)<i class="icon icon-arrow-right"></i></button>
+    <script>
+        sendToPolyglot = function () {
+            var request = new XMLHttpRequest();
+            request.addEventListener("load", function (ev) {
+                if (ev.currentTarget.status === 200) {
+                    window.open("https://sr-accelerator.com/#/polyglot?token=" + ev.target.responseText, target = "_blank");
+                }
+            });
+            request.open("POST", "https://ielab-sysrev3.uqcloud.net/exchange", true);
+            request.setRequestHeader('Content-Type', 'application/json');
+            request.send(JSON.stringify({data: {query: {{ $query }}}, referrer: "searchrefiner"}));
+        }
+    </script>
 {{ end }}
