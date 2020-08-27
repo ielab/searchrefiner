@@ -89,6 +89,8 @@ func (s Server) HandleResults(c *gin.Context) {
 		TransformedQuery: q,
 		Documents:        docs,
 		Language:         lang,
+		Plugins:          s.Plugins,
+		PluginTitle:      "Results",
 	}
 
 	c.HTML(http.StatusOK, "results.html", sr)

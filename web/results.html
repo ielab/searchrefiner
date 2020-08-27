@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:v-bind="http://www.w3.org/1999/xhtml">
+<html lang="en" xmlns:v-bind="http://www.w3.org/1999/xhtml" xmlns:v-model="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <title>searchrefiner - Search Results</title>
@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="static/spectre-icons.min.css" type="text/css">
     <link rel="stylesheet" href="static/spectre-exp.min.css" type="text/css">
     <link rel="stylesheet" href="static/searchrefiner.css" type="text/css">
+    <link rel="stylesheet" href="static/jquery.highlight-within-textarea.css"/>
     <style>
         .text-sm {
             line-height: 0.9rem;
@@ -41,77 +42,112 @@
         .a-sm:last-child:after {
             content: none;
         }
+
+        .abstract {
+            min-width: 0;
+            overflow: hidden;
+            flex: 1;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .abstract:hover {
+            overflow: visible;
+            white-space: normal;
+        }
+    </style>
+    <style>
+        .bracket {
+            background-color: #ccc9ff;
+            border-bottom: 1px solid black;
+        }
+
+        .operator {
+            background-color: #fbffe1;
+        }
+
+        .fields {
+            background-color: #e6ffef;
+        }
     </style>
 </head>
 <body>
 <div class="container" id="app">
     <header class="navbar bg-secondary nav-height mb-2">
         <section class="navbar-section">
-        {{template "sidebar"}}
+            {{template "sidebar"}}
         </section>
     </header>
     <div class="columns">
         <div class="column col-1"></div>
         <div class="column col-10">
-            <strong>Submitted Query:</strong>
-            <pre class="code" data-lang="{{.Language}}">{{.OriginalQuery}}</pre>
             <form method="POST" action="/query">
-                <input type="hidden" value="{{.OriginalQuery}}" name="query">
+                <input type="hidden" v-bind:value="textQuery" name="query">
                 <input type="hidden" value="{{.Language}}" name="lang">
-                <button type="submit" class="btn btn-link"><i class="icon icon-arrow-left"></i>Reformulate</button>
+                <button type="submit" class="btn btn-link"><i class="icon icon-arrow-left"></i>Back to overview</button>
             </form>
-            <strong>Results:</strong>
-            <p>
-                <small><em>Retrieved <b>{{ .TotalHits }}</b> citations in {{ .TookInMillis }}ms</em></small>
-            </p>
-            <div>
-                <ol v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="100">
-                {{ range .Documents }}
-                    <li class="pb-2">
-                        <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.PMID}}">{{.TI}}</a>
-                        <div class="text-left text-sm">
-                        {{range .AU}}<a class="text-success author-sm"
-                                             href='https://www.ncbi.nlm.nih.gov/pubmed/?term="{{ . }}"[Author]'>{{.}}</a>{{end}}
-                        </div>
-                        <div class="text-left text-sm">{{.AB}}</div>
-                        <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>PMID</strong>: {{.PMID}}</span>
-                        </div>
-                        <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>Publication Types</strong>:</span>
-                        {{range .PT}}<a class="text-gray a-sm"
-                                                      href="https://www.ncbi.nlm.nih.gov/pubmed/?term={{ . }}[Publication Type]">{{ . }}</a>{{end}}
-                        </div>
-                        <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>MeSH headings</strong>:</span>
-                        {{range .MH}}<a class="text-gray a-sm"
-                                                  href="https://www.ncbi.nlm.nih.gov/mesh/?term={{ . }}">{{ . }}</a>{{end}}
-                        </div>
-                    </li>
-                {{ end }}
-                    <li v-for="c in data" class="pb-2">
-                        <a v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/' + c.PMID">[[c.TI]]</a>
-                        <div class="text-left text-sm">
-                            <a v-for="author in c.AU" class="text-success author-sm"
-                               v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=%22' + author + '%22[Author]'">[[author]]</a>
-                        </div>
-                        <div class="text-left text-sm">[[c.AB]]</div>
-                        <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>PMID</strong>: [[ c.PMID ]]</span>
-                        </div>
-                        <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>Publication Types</strong>:</span>
-                            <a v-for="pubtype in c.PT" class="text-gray a-sm"
-                               v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=' + pubtype + '[Publication Type]'">[[pubtype]]</a>
-                        </div>
-                        <div class="text-left text-sm text-gray">
-                            <span class="span-sm"><strong>MeSH headings</strong>:</span>
-                            <a v-for="heading in c.MH" class="text-gray a-sm"
-                               v-bind:href="'https://www.ncbi.nlm.nih.gov/mesh/?term=' + heading">[[heading]]</a>
-                        </div>
-                    </li>
-                </ol>
-                <div v-if="busy" class="loading loading-lg"></div>
+            <div class="form-group">
+                <textarea name="query" id="query" class="form-input" placeholder="Enter query here." rows="5" required v-model:value="textQuery"></textarea>
+            </div>
+            <div class="columns">
+                <div class="col-3">
+                    <strong>Send this query to...</strong>
+                    {{ template "send_query" . }}
+                </div>
+                <div class="col-9">
+                    <strong>Results:</strong>
+                    <p>
+                        <small><em>Retrieved <b>{{ .TotalHits }}</b> citations</em></small>
+                    </p>
+                    <div>
+                        <ol v-infinite-scroll="loadMore" infinite-scroll-disabled="busy" infinite-scroll-distance="100">
+                            {{ range .Documents }}
+                                <li class="pb-2">
+                                    <a href="https://www.ncbi.nlm.nih.gov/pubmed/{{.PMID}}">{{.TI}}</a>
+                                    <div class="text-left text-sm">
+                                        {{range .AU}}<a class="text-success author-sm"
+                                                        href='https://www.ncbi.nlm.nih.gov/pubmed/?term="{{ . }}"[Author]'>{{.}}</a>{{end}}
+                                    </div>
+                                    <div class="text-left text-sm abstract">{{.AB}}</div>
+                                    <div class="text-left text-sm text-gray">
+                                        <span class="span-sm"><strong>PMID</strong>: {{.PMID}}</span>
+                                    </div>
+                                    <div class="text-left text-sm text-gray">
+                                        <span class="span-sm"><strong>Publication Types</strong>:</span>
+                                        {{range .PT}}<a class="text-gray a-sm"
+                                                        href="https://www.ncbi.nlm.nih.gov/pubmed/?term={{ . }}[Publication Type]">{{ . }}</a>{{end}}
+                                    </div>
+                                    <div class="text-left text-sm text-gray">
+                                        <span class="span-sm"><strong>MeSH headings</strong>:</span>
+                                        {{range .MH}}<a class="text-gray a-sm"
+                                                        href="https://www.ncbi.nlm.nih.gov/mesh/?term={{ . }}">{{ . }}</a>{{end}}
+                                    </div>
+                                </li>
+                            {{ end }}
+                            <li v-for="c in data" class="pb-2">
+                                <a v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/' + c.PMID">[[c.TI]]</a>
+                                <div class="text-left text-sm">
+                                    <a v-for="author in c.AU" class="text-success author-sm"
+                                       v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=%22' + author + '%22[Author]'">[[author]]</a>
+                                </div>
+                                <div class="text-left text-sm abstract">[[c.AB]]</div>
+                                <div class="text-left text-sm text-gray">
+                                    <span class="span-sm"><strong>PMID</strong>: [[ c.PMID ]]</span>
+                                </div>
+                                <div class="text-left text-sm text-gray">
+                                    <span class="span-sm"><strong>Publication Types</strong>:</span>
+                                    <a v-for="pubtype in c.PT" class="text-gray a-sm"
+                                       v-bind:href="'https://www.ncbi.nlm.nih.gov/pubmed/?term=' + pubtype + '[Publication Type]'">[[pubtype]]</a>
+                                </div>
+                                <div class="text-left text-sm text-gray">
+                                    <span class="span-sm"><strong>MeSH headings</strong>:</span>
+                                    <a v-for="heading in c.MH" class="text-gray a-sm"
+                                       v-bind:href="'https://www.ncbi.nlm.nih.gov/mesh/?term=' + heading">[[heading]]</a>
+                                </div>
+                            </li>
+                        </ol>
+                        <div v-if="busy" class="loading loading-lg"></div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="column col-1"></div>
@@ -124,7 +160,7 @@
 </div>
 <script src="static/vue.js" type="text/javascript"></script>
 <script src="static/vue-infinite-scroll.js" type="text/javascript"></script>
-<script type="text/javascript">
+<script>
     var count = 0;
 
     var vm = new Vue({
@@ -135,7 +171,7 @@
             busy: false,
             finished: false,
             start: {{.Start}},
-            query: "{{.OriginalQuery}}",
+            textQuery: "{{.QueryString}}",
             lang: "{{.Language}}"
         },
         methods: {
@@ -164,9 +200,47 @@
                     request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
                     request.send("start=" + self.start + "&query=" + self.query + "&lang=" + self.lang);
                 }
+            },
+            sendToPolyglot: function () {
+                var request = new XMLHttpRequest();
+                request.addEventListener("load", function (ev) {
+                    if (ev.currentTarget.status === 200) {
+                        window.open("https://sr-accelerator.com/#/polyglot?token=" + ev.target.responseText, target = "_blank");
+                    }
+                });
+                request.open("POST", "https://ielab-sysrev3.uqcloud.net/exchange", true);
+                request.setRequestHeader('Content-Type', 'application/json');
+                request.send(JSON.stringify({data: {query: this.textQuery}, referrer: "searchrefiner"}));
             }
         }
     });
+    sendToPolyglot = function () {
+    }
 </script>
+<script>
+</script>
+{{- if eq .Language "pubmed" -}}
+    <script src="static/jquery-3.4.1.min.js" type="text/javascript"></script>
+    <script src="/static/jquery.highlight-within-textarea.js" type="text/javascript"></script>
+    <script>
+        $("#query").highlightWithinTextarea({
+                highlight: [
+                    {
+                        highlight: /\(|\)/g,
+                        className: 'bracket'
+                    },
+                    {
+                        highlight: /AND|OR|NOT/g,
+                        className: 'operator'
+                    },
+                    {
+                        highlight: /\[[a-zA-Z /]+\]/ig,
+                        className: 'fields'
+                    }
+                ]
+            }
+        )
+    </script>
+{{- end -}}
 </body>
 </html>

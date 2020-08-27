@@ -40,6 +40,19 @@
             {{ end }}
         {{ end }}
     {{ end }}
+    {{ if ne .PluginTitle "Results" }}
+        <form action="/results" method="post">
+            <input type="hidden" name="query" v-bind:value="textQuery" value="{{ $query }}">
+            <input type="hidden" name="lang" value="{{ $lang }}">
+            <button class="btn btn-link">Search Results <i class="icon icon-arrow-right"></i></button>
+        </form>
+    {{ end }}
+    {{ if eq .PluginTitle "Results" }}
+        <form action="https://pubmed.ncbi.nlm.nih.gov/" method="get">
+            <input type="hidden" name="term" v-bind:value="textQuery" value="{{ $query }}">
+            <button class="btn btn-link">PubMed (external tool) <i class="icon icon-arrow-right"></i></button>
+        </form>
+    {{ end }}
     <button class="btn btn-link" v-on:click="sendToPolyglot()" onclick="sendToPolyglot()">Polyglot (external tool)<i class="icon icon-arrow-right"></i></button>
     <script>
         sendToPolyglot = function () {
