@@ -38,15 +38,13 @@
                 <div class="card-body">
                     <form action="/query" method="post" accept-charset="UTF-8">
                         <div class="form-group">
-                            <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here." rows="16" required></textarea>
+                            <textarea name="query" class="form-input" id="search-box" placeholder="Enter query here." rows="6" required></textarea>
                         </div>
                         <div class="form-group">
                             <label>Query Language <small>All queries are executed on PubMed regardless of language.</small>
                                 <select class="form-select" name="lang">
                                     <option value="pubmed">PubMed</option>
                                     <option value="medline">Ovid MEDLINE</option>
-                                    <option disabled>Cochrane Library</option>
-                                    <option disabled>EMBASE</option>
                                 </select>
                             </label>
                         </div>
@@ -57,36 +55,58 @@
                 </div>
                 <div class="card-footer">
                     <div>
-                        {{ if .Queries  }}
-                            <h3>Previous Queries</h3>
-                            {{ range .Queries }}
-                                <div class="columns">
-                                    <div class="column col-10">
-                                        <form action="/query" method="post" accept-charset="UTF-8">
-                                            <input type="hidden" name="query" value="{{ .QueryString }}">
-                                            <input type="hidden" name="lang" value="{{ .Language }}">
-                                            <div>
-                                                <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>
-                                                <div class="form-group">
-                                                    <input class="btn btn-primary" type="submit" value="Resubmit"/>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div class="column col-2">
-                                        <form action="/results" method="post">
-                                            <div class="ml-2 mt-2">
-                                                <small><b>{{ .NumRet }}</b> results</small>
-                                            </div>
-                                            <input type="hidden" name="query" value="{{ .QueryString }}">
-                                            <input type="hidden" name="lang" value="{{ .Language }}">
-                                            <input class="btn btn-link btn-sm" type="submit" value="Explore Results">
-                                        </form>
-                                    </div>
-                                </div>
-                            {{ end }}
-                            <a href="/clear" class="btn btn-link">Clear</a>
-                        {{ end }}
+                        <div class="divider" data-content="ABOUT"></div>
+                        <p>If you use or have used any of the automation tools including QueryVis and QueryLens as part of your own research or work, or you would like to refer to searchrefiner as a whole, please cite us as:</p>
+                        <pre style="font-size: 8pt;overflow-x: scroll">
+@inproceedings{scells2018searchrefiner,
+    Title = {searchrefiner: A Query Visualisation and Understanding Tool for Systematic Reviews},
+    Author = {Scells, Harrisen and Zuccon, Guido},
+    Booktitle = {Proceedings of the 27th International CIKM Conference on Information and Knowledge Management},
+    Pages={1939--1942},
+    Year = {2018}
+}
+                        </pre>
+                        <p>If you have used the AutoFormulate, AutoDoc, or KeywordSuggest tools, please cite us as:</p>
+                        <pre style="font-size: 8pt;overflow-x: scroll">
+@inproceedings{li2020systematic,
+    Title = {Systematic Review Automation Tools for End-to-End Query Formulation},
+    Author = {Li, Hang and Scells, Harrisen and Zuccon, Guido},
+    Booktitle = {Proceedings of the 43rd International SIGIR Conference on Research and Development in Information Retrieval},
+    Pages = {25--30},
+    Year = {2020}
+}
+                        </pre>
+                        <p>searchrefiner is developed at The University of Queensland by <a href="https://ielab.io/people/harry-scells">Harry Scells</a> and <a href="https://ielab.io/people/hang-li">Hang Li</a>. For any questions or enquiries, please contact Harry Scells or refer to the Community links on the right hand side of this page.</p>
+                        {{/*                        {{ if .Queries  }}*/}}
+                        {{/*                            <h3>Previous Queries</h3>*/}}
+                        {{/*                            {{ range .Queries }}*/}}
+                        {{/*                                <div class="columns">*/}}
+                        {{/*                                    <div class="column col-10">*/}}
+                        {{/*                                        <form action="/query" method="post" accept-charset="UTF-8">*/}}
+                        {{/*                                            <input type="hidden" name="query" value="{{ .QueryString }}">*/}}
+                        {{/*                                            <input type="hidden" name="lang" value="{{ .Language }}">*/}}
+                        {{/*                                            <div>*/}}
+                        {{/*                                                <pre class="code" data-lang="{{ .Language }}">{{ .QueryString }}</pre>*/}}
+                        {{/*                                                <div class="form-group">*/}}
+                        {{/*                                                    <input class="btn btn-primary" type="submit" value="Resubmit"/>*/}}
+                        {{/*                                                </div>*/}}
+                        {{/*                                            </div>*/}}
+                        {{/*                                        </form>*/}}
+                        {{/*                                    </div>*/}}
+                        {{/*                                    <div class="column col-2">*/}}
+                        {{/*                                        <form action="/results" method="post">*/}}
+                        {{/*                                            <div class="ml-2 mt-2">*/}}
+                        {{/*                                                <small><b>{{ .NumRet }}</b> results</small>*/}}
+                        {{/*                                            </div>*/}}
+                        {{/*                                            <input type="hidden" name="query" value="{{ .QueryString }}">*/}}
+                        {{/*                                            <input type="hidden" name="lang" value="{{ .Language }}">*/}}
+                        {{/*                                            <input class="btn btn-link btn-sm" type="submit" value="Explore Results">*/}}
+                        {{/*                                        </form>*/}}
+                        {{/*                                    </div>*/}}
+                        {{/*                                </div>*/}}
+                        {{/*                            {{ end }}*/}}
+                        {{/*                            <a href="/clear" class="btn btn-link">Clear</a>*/}}
+                        {{/*                        {{ end }}*/}}
                     </div>
                 </div>
             </div>
