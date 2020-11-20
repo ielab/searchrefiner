@@ -177,12 +177,12 @@
                     </div>
                 </div>
                 <div class="form-group p-2">
-                    <form class="form-group" action="/plugin/queryvis{{ if ne .View "g" }}?view=g{{ end }}" method="post">
+                    <form class="form-group" action="/plugin/queryvis{{ if ne .View "h" }}?view=h{{ end }}" method="post">
                         <input type="hidden" name="query" v-bind:value="textQuery">
                         <input type="hidden" name="lang" v-bind:value="queryLanguage">
                         <label class="form-switch">
-                            <input type="checkbox" {{ if eq .View "g" }} checked {{ end }} onclick="this.form.submit()">
-                            <i class="form-icon"></i> {{ if eq .View "g" }} graph view {{ else }} hierarchical view {{ end }}
+                            <input type="checkbox" {{ if eq .View "h" }} checked {{ end }} onclick="this.form.submit()">
+                            <i class="form-icon"></i> {{ if eq .View "h" }} hierarchical view {{ else }} graph view {{ end }}
                         </label>
                     </form>
                 </div>
@@ -868,7 +868,7 @@
         layout: {
             improvedLayout: true,
             hierarchical: {
-                enabled: {{ if eq .View "g"}} false {{else}} true {{end}},
+                enabled: {{ if eq .View "h"}} true {{else}} false {{end}},
                 blockShifting: true,
                 edgeMinimization: true,
                 parentCentralization: true,
