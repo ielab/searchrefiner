@@ -113,6 +113,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	// 24 hours * 7 = 7 days worth of log in time.
+	cookieSeconds := time.Duration(24 * time.Hour * 7).Seconds()
+	perm.UserState().SetCookieTimeout(int64(cookieSeconds))
+
 	perm.Clear()
 	perm.AddUserPath("/query")
 	perm.AddUserPath("/settings")

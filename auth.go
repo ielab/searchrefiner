@@ -1,7 +1,9 @@
 package searchrefiner
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -35,6 +37,7 @@ func (s Server) ApiAccountLogin(c *gin.Context) {
 			c.HTML(http.StatusUnauthorized, "error.html", ErrorPage{Error: err.Error(), BackLink: "/account/login"})
 			return
 		}
+		log.Info(fmt.Sprintf("[login=%s]", username))
 		c.Redirect(http.StatusFound, "/")
 		return
 	}

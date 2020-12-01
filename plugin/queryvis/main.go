@@ -29,6 +29,8 @@ var (
 	tokenCache = cache.New(1*time.Hour, 1*time.Hour)
 )
 
+const pluginStorageName = "queryvis_consent"
+
 func handleTree(s searchrefiner.Server, c *gin.Context, relevant ...combinator.Document) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
@@ -44,8 +46,11 @@ func handleTree(s searchrefiner.Server, c *gin.Context, relevant ...combinator.D
 		lang = "medline"
 	}
 	username := s.Perm.UserState().Username(c.Request)
-
-	log.Infof("recieved a query %s in format %s", rawQuery, lang)
+	if len(username) == 0 {
+		if token, ok := c.GetQuery("token"); ok {
+			username = token
+		}
+	}
 
 	cq, err := compiler.Execute(rawQuery)
 	if err != nil {
@@ -85,6 +90,17 @@ func handleTree(s searchrefiner.Server, c *gin.Context, relevant ...combinator.D
 		numRet = int64(t.Nodes[0].Value)
 	}
 
+	err = s.Storage[pluginStorageName].CreateBucket("consent")
+	if err != nil {
+		panic(err)
+	}
+
+	if v, err := s.Storage[pluginStorageName].GetValue("consent", username); err == nil {
+		if v != "n" {
+			log.Infof(fmt.Sprintf("[username=%s][query=%s][lang=%s][pmids=%v][numrel=%d][numret=%d][numrelret=%d]", username, rawQuery, lang, relevant, t.NumRel, numRet, t.NumRelRet))
+		}
+	}
+
 	s.Queries[username] = append(s.Queries[username], searchrefiner.Query{
 		Time:        time.Now(),
 		QueryString: rawQuery,
@@ -97,16 +113,42 @@ func handleTree(s searchrefiner.Server, c *gin.Context, relevant ...combinator.D
 }
 
 func (QueryVisPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
+	if _, ok := s.Storage[pluginStorageName]; !ok {
+		var err error
+		s.Storage[pluginStorageName], err = searchrefiner.OpenPluginStorage("queryvis_consent")
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	if c.Request.Method == "POST" && (c.Query("tree") == "y") {
 		var item cachedItem
 		if token, ok := c.GetQuery("token"); ok {
-			fmt.Println(ok)
 			if i, ok := tokenCache.Get(token); ok {
 				item = i.(cachedItem)
 			}
 		}
 		handleTree(s, c, item.seeds...)
 		return
+	}
+
+	username := s.Perm.UserState().Username(c.Request)
+	if len(username) == 0 {
+		if token, ok := c.GetQuery("token"); ok {
+			username = token
+		}
+	}
+	if c.Request.Method == "POST" && (len(c.Query("consent")) > 0) {
+		s.Storage[pluginStorageName].PutValue("consent", username, c.Query("consent"))
+	}
+
+	var consent bool
+	{
+		c, err := s.Storage[pluginStorageName].GetValue("consent", username)
+		if err != nil {
+			panic(err)
+		}
+		consent = c != "n"
 	}
 
 	rawQuery := ""
@@ -146,8 +188,13 @@ func (QueryVisPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 
 	c.Render(http.StatusOK, searchrefiner.RenderPlugin(searchrefiner.TemplatePlugin("plugin/queryvis/index.html"), struct {
 		searchrefiner.Query
-		View string
-	}{searchrefiner.Query{QueryString: rawQuery, Language: lang, Plugins: s.Plugins, PluginTitle: "QueryVis"}, c.Query("view")}))
+		View    string
+		Consent bool
+	}{
+		Query:   searchrefiner.Query{QueryString: rawQuery, Language: lang, Plugins: s.Plugins, PluginTitle: "QueryVis"},
+		View:    c.Query("view"),
+		Consent: consent,
+	}))
 	return
 }
 
@@ -160,7 +207,7 @@ func (QueryVisPlugin) Details() searchrefiner.PluginDetails {
 		Title:             "QueryVis",
 		Description:       "Visualise queries as a syntax tree overlaid with retrieval statistics and other understandability visualisations.",
 		Author:            "ielab",
-		Version:           "26.Aug.2020",
+		Version:           "01.Dec.2020",
 		ProjectURL:        "ielab.io/searchrefiner",
 		AcceptsQueryPosts: true,
 	}
