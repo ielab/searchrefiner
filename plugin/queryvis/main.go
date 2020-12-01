@@ -165,11 +165,13 @@ func (QueryVisPlugin) Serve(s searchrefiner.Server, c *gin.Context) {
 			rawQuery = content.Data["query"]
 			lang = content.Data["lang"]
 			var rel []combinator.Document
-			err = json.Unmarshal([]byte(content.Data["seeds"]), &rel)
-			if err != nil {
-				c.String(http.StatusOK, err.Error())
-				panic(err)
-				return
+			if _, ok := content.Data["seeds"]; ok {
+				err = json.Unmarshal([]byte(content.Data["seeds"]), &rel)
+				if err != nil {
+					c.String(http.StatusOK, err.Error())
+					panic(err)
+					return
+				}
 			}
 			tokenCache.Set(token, cachedItem{
 				query: rawQuery,
