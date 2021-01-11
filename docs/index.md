@@ -18,21 +18,21 @@ _Systematic Review Query Visualisation and Understanding Interface_
     <div>
         <article class="card">
             <footer>
-                 <b>Visit the on-line <a href="https://ielab-sysrev2.uqcloud.net">demo</a>!</b>
+                 <b>Use <a href="https://ielab-sysrev2.uqcloud.net">searchrefiner</a></b>
             </footer>
         </article>
     </div>
     <div>
         <article class="card">
             <footer>
-                 Read the <a href="documentation">documentation</a>!
+                 Read the <a href="documentation">documentation</a>
             </footer>
         </article>
     </div>
     <div>
         <article class="card">
             <footer>
-                 Discover <a href="tools">tools</a>!
+                 Discover <a href="tools">tools</a>
             </footer>
         </article>
     </div>    
