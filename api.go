@@ -13,7 +13,7 @@ import (
 	"github.com/hscells/transmute/fields"
 	tpipeline "github.com/hscells/transmute/pipeline"
 	"github.com/ielab/toolexchange"
-	"github.com/olivere/elastic"
+	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math"

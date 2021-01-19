@@ -1,0 +1,18 @@
+{
+  "Host": "localhost:4853",
+  "AdminEmail": "admin@example.com",
+  "Admins": [
+    "admin"
+  ],
+  "Entrez": {
+    "Email": "you@example.com",
+    "APIKey": "1234abcde"
+  },
+  "Resources": {
+    "Cui2VecEmbeddings": "resources/cui2vec_precomputed.bin",
+    "Cui2VecMappings": "resources/cuis.csv",
+    "Quiche": "resources/quiche.cache",
+    "QuickRank": "resources/quickrank/bin/quicklearn"
+  },
+  "ExchangeServerAddress": "https://ielab-sysrev3.uqcloud.net/exchange"
+}

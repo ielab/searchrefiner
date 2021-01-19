@@ -12,7 +12,7 @@ PHONEY: run all plugin clean quicklearn
 $(quicklearn_bin):
 	@git clone --recursive https://github.com/hpclab/quickrank.git
 	@cd quickrank && mkdir build_ && cd build_ && cmake .. -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_BUILD_TYPE=Release && make
-	@mv quickrank quickrank/resources
+	@mv quickrank resources/quickrank
 
 quicklearn: $(quicklearn_bin)
 
@@ -27,6 +27,7 @@ $(plugin_obs): $$(patsubst %plugin.so,%*.go,$$@)
 
 # Running the server may optionally depend on quicklearn.
 run: quicklearn $(SERVER)
+	@mkdir -p plugin_storage
 	@./server
 
 clean:
