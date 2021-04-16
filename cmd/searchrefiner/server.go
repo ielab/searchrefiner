@@ -259,6 +259,9 @@ func main() {
 					handle.Serve(s, c)
 				})
 			}
+
+			log.Println("running startup for", p)
+			handle.Startup(s)
 		}
 	}
 

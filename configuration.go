@@ -115,6 +115,7 @@ type Server struct {
 // Plugin is the interface that must be implemented in order to register an external tool.
 // See more: http://ielab.io/searchrefiner/plugins/
 type Plugin interface {
+	Startup(Server)
 	Serve(Server, *gin.Context)
 	PermissionType() PluginPermission
 	Details() PluginDetails

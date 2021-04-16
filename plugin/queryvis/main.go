@@ -31,6 +31,9 @@ var (
 
 const pluginStorageName = "queryvis_consent"
 
+func (QueryVisPlugin) Startup(server searchrefiner.Server) {
+}
+
 func handleTree(s searchrefiner.Server, c *gin.Context, relevant ...combinator.Document) {
 	rawQuery := c.PostForm("query")
 	lang := c.PostForm("lang")
