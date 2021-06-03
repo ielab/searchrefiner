@@ -18,6 +18,14 @@ searchrefiner is built as a Go application. It needs to be installed slightly di
 
 At the moment, you still need to make an account to use searchrefiner, even locally. The account that you make is a local account and is not the same as the one you might create on another instance of searchrefiner.
 
+## Docker build
+searchrefiner can also be run from a preprepared [Dockerfile](./Dockerfile):
+1. Setup the docker image with `docker build -t ielab-searchrefiner .`
+2. Create a `config.json` file (see above)
+3. Run the server with `docker run --net=host ielab-searchrefiner`
+4. Open the site at [http://localhost:4853](http://localhost:4853)
+
+
 ## Documentation
 
 Documentation for authentication, administration, and usage can be found at the project homepage: 
