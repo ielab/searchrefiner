@@ -6,7 +6,7 @@ require (
 	github.com/afjoseph/RAKE.Go v0.0.0-20191109090147-068a9e43b194
 	github.com/boltdb/bolt v1.3.1
 	github.com/gin-contrib/gzip v0.0.3
-	github.com/gin-gonic/gin v1.7.0
+	github.com/gin-gonic/gin v1.7.7
 	github.com/hscells/cqr v0.0.0-20190116111110-345896d4b48b
 	github.com/hscells/cui2vec v0.0.0-20200214070337-d05e62281087
 	github.com/hscells/groove v0.0.0-20210119001446-4d808c22d939
