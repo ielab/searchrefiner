@@ -10,7 +10,8 @@ You can currently sign up to use a shared, on-line demo of searchrefiner. This d
     <div>
         <article class="card">
             <footer class>
-                <a href="https://ielab-sysrev2.uqcloud.net">Click here to go to searchrefiner</a>
+                <a href="http://ec2-3-106-54-166.ap-southeast-2.compute.amazonaws.com">Click here to go to searchrefiner (instance 1: hosted by UQ)</a>
+                <a href="https://sr-accelerator.com/#/searchrefinery">Click here to go to searchrefiner (instance 2: hosted by Bond SRA)</a>
             </footer>
         </article>
     </div>
