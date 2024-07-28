@@ -18,7 +18,7 @@ _Systematic Review Query Visualisation and Understanding Interface_
     <div>
         <article class="card">
             <footer>
-                 <b>Use <a href="http://ec2-13-211-162-52.ap-southeast-2.compute.amazonaws.com/">searchrefiner</a></b>
+                 <b>Use <a href="http://ec2-3-106-54-166.ap-southeast-2.compute.amazonaws.com">searchrefiner</a></b>
             </footer>
         </article>
     </div>
