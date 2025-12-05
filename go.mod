@@ -17,6 +17,6 @@ require (
 	github.com/ielab/toolexchange v0.0.0-20210118233513-e4083499eb9a
 	github.com/olivere/elastic/v7 v7.0.22
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/sirupsen/logrus v1.7.0
+	github.com/sirupsen/logrus v1.8.3
 	github.com/xyproto/permissionbolt v1.2.6
 )
